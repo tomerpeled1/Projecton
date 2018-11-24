@@ -171,7 +171,6 @@ if (((args.video_file) and (cap.open(str(args.video_file))))
         v_upper = cv2.getTrackbarPos("v upper", windowName2)
 
         # select region using the mouse and display it
-
         if (len(boxes) > 1) and (boxes[0][1] < boxes[1][1]) and (boxes[0][0] < boxes[1][0]):
             crop = frame[boxes[0][1]:boxes[1][1],boxes[0][0]:boxes[1][0]].copy()
 
