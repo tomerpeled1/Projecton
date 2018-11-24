@@ -19,9 +19,7 @@ def fruit_detection(frame, background):
 
     morphed = cv2.morphologyEx(thresh_sub, cv2.MORPH_GRADIENT, None)
     im2, cont, hier = cv2.findContours(morphed, cv2.RETR_TREE, cv2.CHAIN_APPROX_NONE)
-    cv2.drawContours(real, cont, -1, (0,255,0), 2)
 
-    # cv2.imwrite("amazing.png",real)
     print(time.perf_counter()-t)
 
     return  cont
