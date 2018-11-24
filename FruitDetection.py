@@ -7,11 +7,8 @@ def fruit_detection(frame, background):
     t = time.perf_counter()
 
     real = frame
-    real = cv2.resize(real,(0,0), fx=0.3,fy= 0.3)
-    cv2.imshow("real", real)
-    cv2.waitKey(0)
     back = background
-    back = cv2.resize(back,(0,0), fx=0.3,fy= 0.3)
+
 
     subtract = cv2.absdiff(real, back)
     graysub = cv2.cvtColor(subtract, cv2.COLOR_BGR2GRAY)
