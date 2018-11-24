@@ -7,11 +7,7 @@ def fruit_detection(frame, background):
     t = time.perf_counter()
 
     real = frame
-    real = cv2.resize(real,(0,0), fx=0.3,fy= 0.3)
-    cv2.imshow("real", real)
-    cv2.waitKey(0)
     back = background
-    back = cv2.resize(back,(0,0), fx=0.3,fy= 0.3)
 
     subtract = cv2.absdiff(real, back)
     graysub = cv2.cvtColor(subtract, cv2.COLOR_BGR2GRAY)
@@ -19,7 +15,6 @@ def fruit_detection(frame, background):
 
     morphed = cv2.morphologyEx(thresh_sub, cv2.MORPH_GRADIENT, None)
     im2, cont, hier = cv2.findContours(morphed, cv2.RETR_TREE, cv2.CHAIN_APPROX_NONE)
-    cv2.drawContours(real, cont, -1, (0,255,0), 2)
 
     # cv2.imwrite("amazing.png",real)
     print(time.perf_counter()-t)
