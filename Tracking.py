@@ -10,7 +10,7 @@ if __name__ == '__main__':
 
     tracker_types = ['BOOSTING', 'MIL', 'KCF', 'TLD', 'MEDIANFLOW', 'GOTURN',
                      'MOSSE', 'CSRT']
-    tracker_type = tracker_types[2]
+    tracker_type = tracker_types[1]
 
 
     if tracker_type == 'BOOSTING':
@@ -40,7 +40,7 @@ if __name__ == '__main__':
 
     # Read first frame.
     counter = 0
-    while (counter <= 450):
+    while (counter <= 700):
         ok, frame = video.read()
         counter += 1
     ok, frame = video.read()
@@ -93,7 +93,9 @@ if __name__ == '__main__':
 
         # Display result
         cv2.imshow("Tracking", frame)
-
+        cv2.waitKey(0)
+        counter +=1
+        print(counter)
         # Exit if ESC pressed
         k = cv2.waitKey(1) & 0xff
         if k == 27: break
