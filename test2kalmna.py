@@ -197,7 +197,7 @@ if (((args.video_file) and (cap.open(str(args.video_file))))
 
             # reset list of boxes
 
-            boxes = [];
+            boxes = []
 
         # interactive display of selection box
 
@@ -286,7 +286,7 @@ if (((args.video_file) and (cap.open(str(args.video_file))))
         # e.g. if user presses "x" then exit  / press "f" for fullscreen display
 
         if (key == ord('p')):
-            time.sleep(3)
+            time.sleep(1.5)
         if (key == ord('x')):
             keep_processing = False;
         elif (key == ord('f')):
