@@ -3,35 +3,26 @@ import cv2
 import time
 
 
+def fruit_detection(frame, background):
+    t = time.perf_counter()
 
-t = time.clock()
+    real = frame
+    real = cv2.resize(real,(0,0), fx=0.3,fy= 0.3)
+    cv2.imshow("real", real)
+    cv2.waitKey(0)
+    back = background
+    back = cv2.resize(back,(0,0), fx=0.3,fy= 0.3)
 
-print(11111)
+    subtract = cv2.absdiff(real, back)
+    graysub = cv2.cvtColor(subtract, cv2.COLOR_BGR2GRAY)
+    ret, thresh_sub = cv2.threshold(graysub,40, 255, cv2.THRESH_TOZERO)
 
-cap = cv2.VideoCapture(1)
-print(cap.isOpened())
-while(True):
-    # Capture frame-by-frame
-    ret, frame = cap.read()
+    morphed = cv2.morphologyEx(thresh_sub, cv2.MORPH_GRADIENT, None)
+    im2, cont, hier = cv2.findContours(morphed, cv2.RETR_TREE, cv2.CHAIN_APPROX_NONE)
+    cv2.drawContours(real, cont, -1, (0,255,0), 2)
 
-    # Our operations on the frame come here
-    gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
+    # cv2.imwrite("amazing.png",real)
+    print(time.perf_counter()-t)
 
-    # Display the resulting frame
-    cv2.imshow('frame',gray)
-    if cv2.waitKey(1) & 0xFF == ord('q'):
-        break
+    return  cont
 
-# When everything done, release the capture
-cap.release()
-cv2.destroyAllWindows()
-
-
-# x = cv2.resize(x,(0,0), fx=0.3,fy= 0.3)
-# y = cv2.imrea
-# cv2.imshow("ttt", x)
-# cv2.imwrite("tomer.png", x)
-# cv2.waitKey(0)
-# cv2.destroyAllWindows()
-
-print(time.clock()-t)
