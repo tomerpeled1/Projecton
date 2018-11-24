@@ -33,6 +33,7 @@ def wait(x, cap):
     counter = 0
     while counter < 30*x:
         cap.grab()
+
         counter += 1
 
 def get_background(cap):

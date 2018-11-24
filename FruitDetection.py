@@ -9,6 +9,7 @@ def fruit_detection(frame, background):
     real = frame
     back = background
 
+
     subtract = cv2.absdiff(real, back)
     graysub = cv2.cvtColor(subtract, cv2.COLOR_BGR2GRAY)
     ret, thresh_sub = cv2.threshold(graysub,40, 255, cv2.THRESH_TOZERO)
