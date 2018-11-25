@@ -1,30 +1,8 @@
-#####################################################################
-
-# Example : kalman filtering based cam shift object track processing
-# from a video file specified on the command line (e.g. python FILE.py video_file)
-# or from an attached web camera
-
-# N.B. use mouse to select region
-
-# Author : Toby Breckon, toby.breckon@durham.ac.uk
-
-# Copyright (c) 2016 Toby Breckon
-#                    Durham University, UK
-# License : LGPL - http://www.gnu.org/licenses/lgpl.html
-
-# based in part on code from: Learning OpenCV 3 Computer Vision with Python
-# Chapter 8 code samples, Minichino / Howse, Packt Publishing.
-# and also code from:
-# https://docs.opencv.org/3.3.1/dc/df6/tutorial_py_histogram_backprojection.html
-
-#####################################################################
-
 import cv2
 import argparse
 import sys
 import math
 import numpy as np
-
 #####################################################################
 import time
 
@@ -39,32 +17,36 @@ parser.add_argument('video_file', metavar='video_file', type=str, nargs='?', hel
 args = parser.parse_args()
 
 #####################################################################
-
 # select a region using the mouse
 
 boxes = []
 current_mouse_position = np.ones(2, dtype=np.int32)
-
+box = []
+track_windows = []
+bprojects = []
 def on_mouse(event, x, y, flags, params):
 
     global boxes
     global selection_in_progress
+    global box
 
     current_mouse_position[0] = x
     current_mouse_position[1] = y
 
     if event == cv2.EVENT_LBUTTONDOWN:
-        boxes = []
+        box = []
         # print 'Start Mouse Position: '+str(x)+', '+str(y)
         sbox = [x, y]
         selection_in_progress = True
-        boxes.append(sbox)
+        box.append(sbox)
 
     elif event == cv2.EVENT_LBUTTONUP:
-        # print 'End Mouse Position: '+str(x)+', '+str(y)
+        # print ('End Mouse Position: '+str(x)+', '+str(y))
         ebox = [x, y]
         selection_in_progress = False
-        boxes.append(ebox)
+        box.append(ebox)
+        boxes.append(box)
+        print(boxes)
 #####################################################################
 
 # return centre of a set of points representing a rectangle
@@ -93,27 +75,6 @@ windowName = "Kalman Object Tracking" # window name
 windowName2 = "Hue histogram back projection" # window name
 windowNameSelection = "initial selected region"
 
-# init kalman filter object
-
-kalman = cv2.KalmanFilter(4,2)
-kalman.measurementMatrix = np.array([[1,0,0,0],
-                                     [0,1,0,0]],np.float32)
-
-kalman.transitionMatrix = np.array([[1,0,1,0],
-                                    [0,1,0,1],
-                                    [0,0,1,0],
-                                    [0,0,0,1]],np.float32)
-
-kalman.processNoiseCov = np.array([[1,0,0,0],
-                                   [0,1,0,0],
-                                   [0,0,1,0],
-                                   [0,0,0,1]],np.float32) * 0.03
-
-measurement = np.array((2,1), np.float32)
-# prediction = np.zeros((2,1), np.float32)
-
-print("\nObservation in image: BLUE")
-print("Prediction from Kalman: GREEN\n")
 
 # if command line arguments are provided try to read video_name
 # otherwise default to capture from attached H/W camera
@@ -147,11 +108,6 @@ if (((args.video_file) and (cap.open(str(args.video_file))))
     # move by at least 1 pixel pos. difference
     term_crit = ( cv2.TERM_CRITERIA_EPS | cv2.TERM_CRITERIA_COUNT, 10, 1 )
 
-
-    ###################
-    # intersting part #
-    ###################
-
     while (keep_processing):
 
         # if video file successfully open then read frame from video
@@ -171,39 +127,40 @@ if (((args.video_file) and (cap.open(str(args.video_file))))
         v_upper = cv2.getTrackbarPos("v upper", windowName2)
 
         # select region using the mouse and display it
+        for box in boxes:
+            if (len(box) > 1) and (box[0][1] < box[1][1]) and (box[0][0] < box[1][0]):
+                crop = frame[box[0][1]:box[1][1],box[0][0]:box[1][0]].copy()
 
-        if (len(boxes) > 1) and (boxes[0][1] < boxes[1][1]) and (boxes[0][0] < boxes[1][0]):
-            crop = frame[boxes[0][1]:boxes[1][1],boxes[0][0]:boxes[1][0]].copy()
-            print(boxes)
-            h, w, c = crop.shape   # size of template
-            if (h > 0) and (w > 0):
-                cropped = True
+                h, w, c = crop.shape   # size of template
+                if (h > 0) and (w > 0):
+                    cropped = True
 
-                # convert region to HSV
+                    # convert region to HSV
 
-                hsv_crop =  cv2.cvtColor(crop, cv2.COLOR_BGR2HSV)
+                    hsv_crop =  cv2.cvtColor(crop, cv2.COLOR_BGR2HSV)
 
-                # select all Hue (0-> 180) and Sat. values but eliminate values with very low
-                # saturation or value (due to lack of useful colour information)
+                    # select all Hue (0-> 180) and Sat. values but eliminate values with very low
+                    # saturation or value (due to lack of useful colour information)
 
-                mask = cv2.inRange(hsv_crop, np.array((0., float(s_lower),float(v_lower))), np.array((180.,float(s_upper),float(v_upper))))
+                    mask = cv2.inRange(hsv_crop, np.array((0., float(s_lower),float(v_lower))), np.array((180.,float(s_upper),float(v_upper))))
+                    # mask = cv2.inRange(hsv_crop, np.array((0., 60.,32.)), np.array((180.,255.,255.)))
 
-                # construct a histogram of hue and saturation values and normalize it
+                    # construct a histogram of hue and saturation values and normalize it
 
-                crop_hist = cv2.calcHist([hsv_crop],[0, 1],mask,[180, 255],[0,180, 0, 255])
-                cv2.normalize(crop_hist,crop_hist,0,255,cv2.NORM_MINMAX)
+                    crop_hist = cv2.calcHist([hsv_crop],[0, 1],mask,[180, 255],[0,180, 0, 255])
+                    cv2.normalize(crop_hist,crop_hist,0,255,cv2.NORM_MINMAX)
 
-                # set intial position of object
+                    # set intial position of object
 
-                track_window = (boxes[0][0],boxes[0][1],boxes[1][0] - boxes[0][0],boxes[1][1] - boxes[0][1])
+                    track_window = (box[0][0],box[0][1],box[1][0] - box[0][0],box[1][1] - box[0][1])
 
-                cv2.imshow(windowNameSelection,crop)
+                    cv2.imshow(windowNameSelection,crop)
 
-            # reset list of boxes
+                # reset list of boxes
 
-            boxes = []
+                boxes.remove(box)
 
-        # interactive display of selection box
+            # interactive display of selection box
 
         if (selection_in_progress):
             top_left = (boxes[0][0], boxes[0][1])
@@ -221,22 +178,36 @@ if (((args.video_file) and (cap.open(str(args.video_file))))
             # back projection of histogram based on Hue and Saturation only
 
             img_bproject = cv2.calcBackProject([img_hsv],[0,1],crop_hist,[0,180,0,255],1)
+            bprojects.append(img_bproject)
             cv2.imshow(windowName2,img_bproject)
 
-            # apply meanshift to predict new location (observation)
+            # apply camshift to predict new location (observation)
             # basic HSV histogram comparision with adaptive window size
             # see : http://docs.opencv.org/3.1.0/db/df8/tutorial_py_meanshift.html
-            ret, track_window = cv2.meanShift(img_bproject, track_window, term_crit) ##credit for eisner
+            ret, track_window = cv2.meanShift(img_bproject, track_window, term_crit)
 
             # draw observation on image - in BLUE
             x,y,w,h = track_window
+            # track_windows.append(track_window)
             frame = cv2.rectangle(frame, (x,y), (x+w,y+h), (255,0,0),2)
 
             # extract centre of this observation as points
 
             # pts = cv2.boxPoints(ret)
             # pts = np.int0(pts)
+            # (cx, cy), radius = cv2.minEnclosingCircle(pts)
+            # cv2.circle(frame, (int(cx),int(cy)), int(radius), (0,0,255), 2)
+            # use to correct kalman filter
 
+            # kalman.correct(center(pts))
+
+            # get new kalman filter prediction
+
+            # prediction = kalman.predict()
+
+            # draw predicton on image - in GREEN
+
+            # frame = cv2.rectangle(frame, (prediction[0]-(0.5*w),prediction[1]-(0.5*h)), (prediction[0]+(0.5*w),prediction[1]+(0.5*h)), (0,255,0),2)
 
         else:
 
@@ -253,13 +224,21 @@ if (((args.video_file) and (cap.open(str(args.video_file))))
             cv2.imshow(windowName2,mask)
 
         # display image
+        #
+        # for i in range(len(bprojects)):
+        #     ret, track_window = cv2.meanShift(bprojects[i], track_windows[i],
+        #                                       term_crit)
+        #
+        #     print(track_window)
+        #     x, y, w, h = track_window
+        #     frame = cv2.rectangle(frame, (x, y), (x + w, y + h), (255, 0, 0),
+        #                           2)
 
         cv2.imshow(windowName,frame)
 
         # stop the timer and convert to ms. (to see how long processing and display takes)
 
-        stop_t = ((cv2.getTickCount() - start_t)/cv2.getTickFrequency())
-        print(stop_t)
+        stop_t = ((cv2.getTickCount() - start_t)/cv2.getTickFrequency()) * 1000
 
         # start the event loop - essential
 
