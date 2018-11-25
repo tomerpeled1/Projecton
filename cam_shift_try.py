@@ -24,6 +24,7 @@ current_mouse_position = np.ones(2, dtype=np.int32)
 box = []
 track_windows = []
 bprojects = []
+crop_hists = []
 def on_mouse(event, x, y, flags, params):
 
     global boxes
@@ -153,7 +154,7 @@ if (((args.video_file) and (cap.open(str(args.video_file))))
                     # set intial position of object
 
                     track_window = (box[0][0],box[0][1],box[1][0] - box[0][0],box[1][1] - box[0][1])
-
+                    track_windows.append(track_window)
                     cv2.imshow(windowNameSelection,crop)
 
                 # reset list of boxes
@@ -162,10 +163,10 @@ if (((args.video_file) and (cap.open(str(args.video_file))))
 
             # interactive display of selection box
 
-        if (selection_in_progress):
-            top_left = (boxes[0][0], boxes[0][1])
-            bottom_right = (current_mouse_position[0], current_mouse_position[1])
-            cv2.rectangle(frame,top_left, bottom_right, (0,255,0), 2)
+            if (selection_in_progress):
+                top_left = (boxes[0][0], boxes[0][1])
+                bottom_right = (current_mouse_position[0], current_mouse_position[1])
+                cv2.rectangle(frame,top_left, bottom_right, (0,255,0), 2)
 
         # if we have a selected region
 
@@ -177,21 +178,23 @@ if (((args.video_file) and (cap.open(str(args.video_file))))
 
             # back projection of histogram based on Hue and Saturation only
 
-            img_bproject = cv2.calcBackProject([img_hsv],[0,1],crop_hist,[0,180,0,255],1)
-            bprojects.append(img_bproject)
-            cv2.imshow(windowName2,img_bproject)
+            for crop_hist in crop_hists:
+                img_bproject = cv2.calcBackProject([img_hsv],[0,1],crop_hist,[0,180,0,255],1)
+                bprojects.append(img_bproject)
+                cv2.imshow(windowName2,img_bproject)
 
             # apply camshift to predict new location (observation)
             # basic HSV histogram comparision with adaptive window size
             # see : http://docs.opencv.org/3.1.0/db/df8/tutorial_py_meanshift.html
-            ret, track_window = cv2.meanShift(img_bproject, track_window, term_crit)
+            for i in range(len(bprojects)):
+                ret, track_window = cv2.meanShift(bprojects[i], track_windows[i], term_crit)
 
-            # draw observation on image - in BLUE
-            x,y,w,h = track_window
-            # track_windows.append(track_window)
-            frame = cv2.rectangle(frame, (x,y), (x+w,y+h), (255,0,0),2)
-
-            # extract centre of this observation as points
+                # draw observation on image - in BLUE
+                x,y,w,h = track_window
+                # track_windows.append(track_window)
+                frame = cv2.rectangle(frame, (x,y), (x+w,y+h), (255,0,0),2)
+                cv2.imshow(i, frame)
+                # extract centre of this observation as points
 
             # pts = cv2.boxPoints(ret)
             # pts = np.int0(pts)
