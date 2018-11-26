@@ -9,7 +9,7 @@ def video_reader(name):
     wait(6, cap)
     original = get_background(cap)
     while True:
-        if cap.grab() and counter%2 == 0:#grabs a frame. tempo can be controlled.
+        if cap.grab() and counter%1 == 0:#grabs a frame. tempo can be controlled.
             flag, frame = cap.retrieve()
             if not flag:
                 continue
@@ -18,6 +18,7 @@ def video_reader(name):
                 cont = FruitDetection.fruit_detection(frame, original)
                 cv2.drawContours(frame, cont, -1, (0, 255, 0), 2)
                 cv2.imshow("video", frame)
+                cv2.waitKey(0)
             if cv2.waitKey(10) == 27:
                 break
         counter += 1
