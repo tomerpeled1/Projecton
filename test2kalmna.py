@@ -46,10 +46,8 @@ boxes = []
 current_mouse_position = np.ones(2, dtype=np.int32)
 
 def on_mouse(event, x, y, flags, params):
-
     global boxes
     global selection_in_progress
-
     current_mouse_position[0] = x
     current_mouse_position[1] = y
 
