@@ -2,7 +2,7 @@ import cv2
 import numpy as np
 import time
 import FruitDetection
-import TrackerIntegrate as ti
+# import TrackerIntegrate as ti
 
 def video_reader(name):
     cropped = False
@@ -49,4 +49,5 @@ def get_background(cap):
         exit()
 
 
-video_reader("first_video.mp4")
+if __name__ == "__main__":
+    video_reader("first_video.mp4")

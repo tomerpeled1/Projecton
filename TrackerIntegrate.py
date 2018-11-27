@@ -169,9 +169,17 @@ if args.video_file and cap.open(str(args.video_file)):
     term_crit = ( cv2.TERM_CRITERIA_EPS | cv2.TERM_CRITERIA_COUNT, 10, 1 )
     ##
 
+    if cap.isOpened():
+        ret, bg = cap.read()
+
+    ret, frame = cap.read()
+    conts, rects = fd.fruit_detection(frame, bg, 4100)
+
     #### this is the main part which runs the program:
-    frame_number = 0
-    # while keep_processing:
+    while keep_processing:
+        if cap.isOpened():
+            ret, frame = cap.read()
+        cropped = track_objects(rects,frame,cropped)
 
     ##### after the proccecing, close all the windows
     cv2.destroyAllWindows()

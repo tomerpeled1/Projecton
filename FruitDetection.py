@@ -76,7 +76,7 @@ def fruit_detection(frame, background, contour_area_thresh):
         up_left = (x_min, y_max)
         bot_right = (x_max, y_min)
         up_right = (x_max, y_max)
-        rect = [bot_left, up_left, bot_right, up_right]
+        rect = [bot_left, up_right  ]
         cont_rect_coordinates.append(rect)
 
     print(time.perf_counter()-t)

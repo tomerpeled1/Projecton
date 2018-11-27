@@ -165,6 +165,7 @@ if (((args.video_file) and (cap.open(str(args.video_file))))
 
         ## shit for timing
         stop_t = ((cv2.getTickCount() - start_t)/cv2.getTickFrequency())
+        print(stop_t)
         key = cv2.waitKey(max(2, 40 - int(math.ceil(stop_t)))) & 0xFF
         if (key == ord('x')):
             keep_processing = False
