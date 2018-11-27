@@ -15,7 +15,7 @@ def video_reader(name):
                 continue
             else:
                 frame = crop_image(frame)
-                cont = FruitDetection.fruit_detection(frame, original, 4100)
+                cont = FruitDetection.fruit_detection(frame, original, 4000)
                 cv2.drawContours(frame, cont, -1, (0, 255, 0), 2)
                 cv2.imshow("video", frame)
                 cv2.waitKey(0)
