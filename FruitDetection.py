@@ -34,7 +34,6 @@ def fruit_detection(frame, background, contour_area_thresh):
 
     # mask that removes very bright noises (blade)
     ret, mask_s = cv2.threshold(real_s, 31, 255, cv2.THRESH_BINARY)
-    cv2.imshow("mask_s", mask_s)
 
     # combine masks
     mask = cv2.bitwise_and(add_thresh, mask_s)
@@ -45,7 +44,6 @@ def fruit_detection(frame, background, contour_area_thresh):
 
     # apply mask
     masked = cv2.bitwise_and(real, real, mask=mask)
-    cv2.imshow("masked", masked)
 
     # find lapping fruit - not ready!!!
     masked_hsv = cv2.cvtColor(masked, cv2.COLOR_BGR2HSV)
@@ -56,15 +54,30 @@ def fruit_detection(frame, background, contour_area_thresh):
     normalized_masked_h = cv2.normalize(blurred_masked_h, None, 0, 255, norm_type=cv2.NORM_MINMAX)
     #cv2.imshow("norm", normalized_masked_h)
     gradient_hue = cv2.morphologyEx(normalized_masked_h, cv2.MORPH_GRADIENT, None)
-    #cv2.imshow("gradient_hue", gradient_hue)
+    # cv2.imshow("gradient_hue", gradient_hue)
 
     # create contours
     gray_masked = cv2.cvtColor(masked, cv2.COLOR_BGR2GRAY)
     im2, cont, hier = cv2.findContours(gray_masked, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
     cont = [c for c in cont if cv2.contourArea(c) > contour_area_thresh]
+
+    # calculate coordinates of surrounding rect of cont
+    cont_rect_coordinates = []
+    for c in cont:
+        x_min = c[c[:, :, 0].argmin()][0][0]
+        x_max = c[c[:, :, 0].argmax()][0][0]
+        y_min = c[c[:, :, 1].argmin()][0][1]
+        y_max = c[c[:, :, 1].argmax()][0][1]
+        bot_left = (x_min, y_min)
+        up_left = (x_min, y_max)
+        bot_right = (x_max, y_min)
+        up_right = (x_max, y_max)
+        rect = [bot_left, up_left, bot_right, up_right]
+        cont_rect_coordinates.append(rect)
+
     print(time.perf_counter()-t)
 
-    return cont
+    return cont, cont_rect_coordinates
 
 if __name__ == "__main__":
     frame = cv2.imread("pic3.jpg")
@@ -73,7 +86,7 @@ if __name__ == "__main__":
     back = cv2.imread("pic2.jpg")
     back = cv2.resize(back, None, fx=0.3, fy=0.3)
 
-    cont = fruit_detection(frame, back, 1000)
+    cont, rects = fruit_detection(frame, back, 1000)[0]
     cv2.drawContours(frame, cont, -1, (0, 255, 0), 2)
     cv2.imshow("frame", frame)
     cv2.waitKey(0)
