@@ -2,6 +2,10 @@ import numpy as np
 import cv2
 import time
 
+UP_LEFT = 1
+BOTTOM_RIGHT = 2
+
+
 def fruit_detection(frame, background, contour_area_thresh):
     t = time.perf_counter()
 
@@ -86,8 +90,11 @@ if __name__ == "__main__":
     back = cv2.imread("pic2.jpg")
     back = cv2.resize(back, None, fx=0.3, fy=0.3)
 
-    cont, rects = fruit_detection(frame, back, 1000)[0]
+    cont, rects = fruit_detection(frame, back, 1000)
     cv2.drawContours(frame, cont, -1, (0, 255, 0), 2)
+    for i in range(len(rects)):
+        frame = cv2.rectangle(frame, rects[i][UP_LEFT], rects[i][BOTTOM_RIGHT],
+                          (255, 0, 0), 2)
     cv2.imshow("frame", frame)
     cv2.waitKey(0)
     cv2.destroyAllWindows()

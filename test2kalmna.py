@@ -219,6 +219,8 @@ if (((args.video_file) and (cap.open(str(args.video_file))))
             # back projection of histogram based on Hue and Saturation only
 
             img_bproject = cv2.calcBackProject([img_hsv],[0,1],crop_hist,[0,180,0,255],1)
+            # cv2.imshow("hist",crop_hist)
+
             cv2.imshow(windowName2,img_bproject)
 
             # apply meanshift to predict new location (observation)

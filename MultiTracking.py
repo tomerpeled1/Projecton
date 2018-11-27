@@ -12,6 +12,7 @@ import math
 import numpy as np
 
 #####
+NUM_OF_FRAMES = 50
 WINDOW = 0
 HIST = 1
 COUNTER = 2
@@ -45,6 +46,7 @@ def on_mouse(event, x, y, flags, params):
 
 
     if event == cv2.EVENT_LBUTTONDOWN:
+        box = []
         sbox = [x, y]
         selection_in_progress = True
         box.append(sbox)
@@ -55,7 +57,6 @@ def on_mouse(event, x, y, flags, params):
         selection_in_progress = False
         box.append(ebox)
         boxes.append(box)
-        box = []
 
 
 ##### find center of rectangle
@@ -95,7 +96,7 @@ if (((args.video_file) and (cap.open(str(args.video_file))))
     v_upper = 255
     cv2.createTrackbar("v upper", "Slide Bars", v_upper, 255, nothing)
 
-    #### attaches the function for mose detectiokn to the window.
+    #### attaches the function for mouse detection to the window.
     cv2.setMouseCallback(WINDOW_NAME, on_mouse, 0)
     cropped = False
 
@@ -104,58 +105,54 @@ if (((args.video_file) and (cap.open(str(args.video_file))))
     ##
 
     #### this is the main part which runs the program:
+    frame_number = 0
     while keep_processing:
         start_t = cv2.getTickCount()
         if cap.isOpened():
             ret, frame = cap.read()
 
-        ### get parameters from TrackBar:
-        s_lower = cv2.getTrackbarPos("s lower", "SlideBars")
-        s_upper = cv2.getTrackbarPos("s upper", "SlideBars")
-        v_lower = cv2.getTrackbarPos("v lower", "SlideBars")
-        v_upper = cv2.getTrackbarPos("v upper", "SlideBars")
+        ### it didn't work to read from taskbar so i put it manually.
+        s_lower = 60
+        s_upper = 255
+        v_lower = 32
+        v_upper = 255
 
         ### get the hue histogram from every new fruit.
-        print("boxes" + str(boxes))
-        for box in boxes:
-            print(box)
-            if ((box[0][1] < box[1][1]) and (box[0][0] < box[1][0])):
-                crop = frame[box[0][1]:box[1][1],
-                       box[0][0]:box[1][0]].copy()
+        for i in range(len(boxes)):
+            if ((boxes[0][0][1] < boxes[0][1][1]) and (boxes[0][0][0] < boxes[0][1][0])):
+                crop = frame[boxes[0][0][1]:boxes[0][1][1],
+                       boxes[0][0][0]:boxes[0][1][0]].copy()
                 h, w, c = crop.shape
                 if (h > 0) and (w > 0):
                     cropped = True
                     hsv_crop = cv2.cvtColor(crop, cv2.COLOR_BGR2HSV)
-                    mask = cv2.inRange(hsv_crop, np.array(
-                        (0., float(s_lower), float(v_lower))), np.array(
-                        (180., float(s_upper), float(v_upper))))
-                    crop_hist = cv2.calcHist([hsv_crop], [0, 1], mask,
-                                             [180, 255], [0, 180, 0, 255])
-                    cv2.normalize(crop_hist, crop_hist, 0, 255,
-                                  cv2.NORM_MINMAX)
-                    track_window = (box[0][0], box[0][1], box[1][0] - box[0][0],box[1][1] - box[0][1])
+
+                    mask = cv2.inRange(hsv_crop, np.array((0., float(s_lower), float(v_lower))), np.array((180., float(s_upper), float(v_upper))))
+
+                    crop_hist = cv2.calcHist([hsv_crop], [0, 1], mask, [180, 255], [0, 180, 0, 255])
+                    cv2.normalize(crop_hist, crop_hist, 0, 255, cv2.NORM_MINMAX)
+                    track_window = (boxes[0][0][0], boxes[0][0][1], boxes[0][1][0] - boxes[0][0][0],boxes[0][1][1] - boxes[0][0][1])
 
                     ##after calculating the histrogram of the fruit, we add it to the big array and the window to the big array.
-                    data.append([track_window, crop_hist, 0])
+                    data.append({"window": track_window, "hist": crop_hist,"counter": 0})
 
                 ### finished dealing with box, now free it.
-                boxes.remove(box)
-
+                boxes.remove(boxes[0])
         ### in this section we calculate the new place of every fruit every frame.
         if cropped:
             img_hsv = cv2.cvtColor(frame, cv2.COLOR_BGR2HSV)
 
-            for i in range(len(data)):
-                img_bproject = cv2.calcBackProject([img_hsv], [0, 1], data[i][HIST],
+            for d in data:
+                img_bproject = cv2.calcBackProject([img_hsv], [0,1], d["hist"],
                                            [0, 180, 0, 255], 1)
-                ret, track_window = cv2.meanShift(img_bproject, data[i][WINDOW], term_crit) ##credit for eisner
-                data[i][WINDOW] = track_window
-                print("t" + str(track_window))
-                print("d" + str(data[i][WINDOW]))
-                data[i][COUNTER] +=1
+                ret, track_window = cv2.meanShift(img_bproject, d["window"], term_crit) ##credit for eisner
+                d["window"] = track_window
+                d["counter"] +=1
+                if d["counter"] >= NUM_OF_FRAMES:
+                   data.remove(d)
 
             for i in range(len(data)):
-                x, y, w, h = data[i][WINDOW]
+                x, y, w, h = data[i]["window"]
                 frame = cv2.rectangle(frame, (x, y), (x + w, y + h),
                                       (255, 0, 0), 2)
 
@@ -174,6 +171,8 @@ if (((args.video_file) and (cap.open(str(args.video_file))))
         elif (key == ord('f')):
             cv2.setWindowProperty("MultiTracking", cv2.WND_PROP_FULLSCREEN,
                                   cv2.WINDOW_FULLSCREEN)
+        frame_number +=1
+        # if frame_number > 130: ## just to pass the start of the video
         cv2.waitKey(0)
 
     ##### after the proccecing, close all the windows
