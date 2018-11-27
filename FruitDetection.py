@@ -1,62 +1,79 @@
 import numpy as np
 import cv2
 import time
-from PIL import Image
 
-def fruit_detection(frame, background):
+def fruit_detection(frame, background, contour_area_thresh):
     t = time.perf_counter()
 
     real = frame
     back = background
 
+    # split hvs of frame
+    real_hsv = cv2.cvtColor(real, cv2.COLOR_BGR2HSV)
+    real_h, real_s, real_v = cv2.split(real_hsv)
+    real_h = cv2.convertScaleAbs(real_h, alpha=255/179)
+    real_h = cv2.morphologyEx(real_h, cv2.MORPH_OPEN, np.ones((5,5), np.uint8))
 
-    real_h = cv2.cvtColor(real, cv2.COLOR_BGR2HSV)[:,:,0]
-    back_h = cv2.cvtColor(back, cv2.COLOR_BGR2HSV)[:,:,0]
+    # split hvs of background
+    back_hsv = cv2.cvtColor(back, cv2.COLOR_BGR2HSV)
+    back_h, _, back_v = cv2.split(back_hsv)
+    back_h = cv2.convertScaleAbs(back_h, alpha=255/179)
+    back_h = cv2.morphologyEx(back_h, cv2.MORPH_OPEN, np.ones((5,5), np.uint8))
 
-    subtract = cv2.absdiff(real, back)
-    graysub = cv2.cvtColor(subtract, cv2.COLOR_BGR2GRAY)
-    ret1, sub_mask = cv2.threshold(graysub, 45, 255, cv2.THRESH_BINARY)
+    # find value change
+    subtract_v = cv2.absdiff(real_v, back_v)
 
+    # find hue change, amplify hue
     subtract_h = cv2.absdiff(real_h, back_h)
-    opened_h = cv2.morphologyEx(subtract_h, cv2.MORPH_OPEN, np.ones((5,5),np.uint8))
-    ret2, sub_h_mask = cv2.threshold(opened_h, 10, 255, cv2.THRESH_BINARY)
+    subtract_h_mod = cv2.convertScaleAbs(subtract_h, alpha=1.3)
 
-    mask = cv2.bitwise_or(sub_mask, sub_h_mask)
+    # calc total change (value + hue) and remove noise
+    sub_add = cv2.add(subtract_v, subtract_h_mod)
+    ret3, add_thresh = cv2.threshold(sub_add, 55, 255, cv2.THRESH_BINARY)
+    add_thresh = cv2.morphologyEx(add_thresh, cv2.MORPH_OPEN, np.ones((5,5), np.uint8))
 
-    # ret, thresh_sub = cv2.threshold(norm_sub, 45, 255, cv2.THRESH_TOZERO)
-    # cv2.imshow("c", thresh_sub)
-    # _ , masked = cv2.bitwise_and(real,real, mask=mask)
-    # cv2.imshow("d", masked)
-    # hsvsub = cv2.cvtColor(masked, cv2.COLOR_BGR2HSV)
-    # morphed = cv2.morphologyEx(thresh_sub, cv2.MORPH_GRADIENT, None)
+    # mask that removes very bright noises (blade)
+    ret, mask_s = cv2.threshold(real_s, 31, 255, cv2.THRESH_BINARY)
+    cv2.imshow("mask_s", mask_s)
 
+    # combine masks
+    mask = cv2.bitwise_and(add_thresh, mask_s)
 
-    # h = hsvsub[:,:,0]
-    # cv2.imshow("e", h)
-    # h = cv2.blur(h, (5,5))
-    # cv2.imshow("blur", h)
-    # h_array = cv2.normalize(h, None, 0, 255, norm_type=cv2.NORM_MINMAX)
-    # cv2.imshow("f", h_array)
+    #connect pieces of fruit and remove noises
+    mask = cv2.morphologyEx(mask, cv2.MORPH_CLOSE, np.ones((5,5), np.uint8))
+    mask = cv2.morphologyEx(mask, cv2.MORPH_OPEN, np.ones((10,10), np.uint8))
 
-    # morphed = cv2.morphologyEx(masked, cv2.MORPH_GRADIENT, None)
-    # cv2.imshow("g", morphed)
-
+    # apply mask
     masked = cv2.bitwise_and(real, real, mask=mask)
+    cv2.imshow("masked", masked)
+
+    # find lapping fruit - not ready!!!
+    masked_hsv = cv2.cvtColor(masked, cv2.COLOR_BGR2HSV)
+    masked_h = masked_hsv[:, :, 0]
+    #cv2.imshow("masked_h", masked_h)
+    blurred_masked_h = cv2.blur(masked_h, (5, 5))
+    #cv2.imshow("b_masked_h", blurred_masked_h)
+    normalized_masked_h = cv2.normalize(blurred_masked_h, None, 0, 255, norm_type=cv2.NORM_MINMAX)
+    #cv2.imshow("norm", normalized_masked_h)
+    gradient_hue = cv2.morphologyEx(normalized_masked_h, cv2.MORPH_GRADIENT, None)
+    #cv2.imshow("gradient_hue", gradient_hue)
+
+    # create contours
     gray_masked = cv2.cvtColor(masked, cv2.COLOR_BGR2GRAY)
     im2, cont, hier = cv2.findContours(gray_masked, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
-    cont = [c for c in cont if cv2.contourArea(c) > 4000]
+    cont = [c for c in cont if cv2.contourArea(c) > contour_area_thresh]
     print(time.perf_counter()-t)
 
     return cont
 
 if __name__ == "__main__":
-    frame = cv2.imread("pic4.jpg")
+    frame = cv2.imread("pic3.jpg")
     frame = cv2.resize(frame, None, fx=0.3, fy=0.3)
     (height, width, depth) = frame.shape
     back = cv2.imread("pic2.jpg")
     back = cv2.resize(back, None, fx=0.3, fy=0.3)
 
-    cont = fruit_detection(frame, back)
+    cont = fruit_detection(frame, back, 1000)
     cv2.drawContours(frame, cont, -1, (0, 255, 0), 2)
     cv2.imshow("frame", frame)
     cv2.waitKey(0)
