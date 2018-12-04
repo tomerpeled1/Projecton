@@ -79,12 +79,12 @@ def fruit_detection(frame, background, contour_area_thresh):
         rect = [bot_left, up_right  ]
         cont_rect_coordinates.append(rect)
 
-    print(time.perf_counter()-t)
+    print("time for detection: " + str(time.perf_counter()-t))
 
     return cont, cont_rect_coordinates
 
 if __name__ == "__main__":
-    frame = cv2.imread("pic3.jpg")
+    frame = cv2.imread("pic1.jpg")
     frame = cv2.resize(frame, None, fx=0.3, fy=0.3)
     (height, width, depth) = frame.shape
     back = cv2.imread("pic2.jpg")
@@ -92,9 +92,9 @@ if __name__ == "__main__":
 
     cont, rects = fruit_detection(frame, back, 1000)
     cv2.drawContours(frame, cont, -1, (0, 255, 0), 2)
-    for i in range(len(rects)):
-        frame = cv2.rectangle(frame, rects[i][UP_LEFT], rects[i][BOTTOM_RIGHT],
-                          (255, 0, 0), 2)
+    # for i in range(len(rects)):
+    #     frame = cv2.rectangle(frame, rects[i][UP_LEFT], rects[i][BOTTOM_RIGHT],
+    #                       (255, 0, 0), 2)
     cv2.imshow("frame", frame)
     cv2.waitKey(0)
     cv2.destroyAllWindows()

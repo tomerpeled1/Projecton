@@ -31,7 +31,9 @@ def crop_image(frame):
     (height, width, depth) = frame.shape
     new_h = int(height/3)
     new_w = int(width/7)
-    return frame[2*new_h:height, new_w:6*new_w]
+    frame = frame[2*new_h:height, new_w:6*new_w]
+    frame = cv2.resize(frame,(0,0),fx = 0.7, fy = 0.7)
+    return frame
 
 def wait(x, cap):
     counter = 0
@@ -41,6 +43,7 @@ def wait(x, cap):
         counter += 1
 
 def get_background(cap):
+    cap.grab()
     flag, frame = cap.retrieve()
     frame = crop_image(frame)
     if flag:
