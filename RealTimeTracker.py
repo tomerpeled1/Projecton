@@ -13,21 +13,15 @@ def center(box):
 def dis(x, y):
     return pow(x[0] - y[0], 2) + pow(x[1] - y[1], 2)
 
-def stupid_tracker(conts, data):
-    conts_centers = []
-    for c in conts:
-        M = cv2.moments(c)
-        cX = int(M["m10"] / M["m00"])
-        cY = int(M["m01"] / M["m00"])
-        conts_centers.append((cX, cY))
+def stupid_tracker(conts_and_rects, data):
     for d in data:
         r = d["window"]
         r_cent = center(r)
-        min = conts_centers[0]
-        minDis = dis(r_cent, min)
-        for c in conts_centers:
-            if dis(c, r_cent) < minDis:
-                minDis = dis(c, r_cent)
+        min = conts_and_rects[0]
+        minDis = dis(r_cent, min["center"])
+        for c in conts_and_rects:
+            if dis(c["center"], r_cent) < minDis:
+                minDis = dis(c["center"], r_cent)
                 min = c
-        conts_centers.remove(min)
-        d["centers"].append(min)
+        conts_and_rects.remove(min)
+        d["centers"].append(min["center"])
