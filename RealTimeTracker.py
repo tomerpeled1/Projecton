@@ -1,6 +1,11 @@
 import cv2
 import numpy as np
 
+CONT = 0
+RECT = 1
+CENTER = 2
+
+
 def center(box):
     '''
     returns center of a box.
@@ -17,11 +22,14 @@ def stupid_tracker(conts_and_rects, data):
     for d in data:
         r = d["window"]
         r_cent = center(r)
-        min = conts_and_rects[0]
-        minDis = dis(r_cent, min["center"])
-        for c in conts_and_rects:
-            if dis(c["center"], r_cent) < minDis:
-                minDis = dis(c["center"], r_cent)
-                min = c
-        conts_and_rects.remove(min)
-        d["centers"].append(min["center"])
+        n = len(conts_and_rects[CENTER])
+        min = conts_and_rects[CENTER][0]
+        minDis = dis(r_cent, min)
+        index = 0
+        for i in range (1,n):
+            if dis(conts_and_rects[CENTER][i], r_cent) < minDis:
+                minDis = dis(conts_and_rects[CENTER][i], r_cent)
+                min = conts_and_rects[CENTER][i]
+                index = i
+        del conts_and_rects[:][index]
+        d["centers"].append(min)
