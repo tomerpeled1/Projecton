@@ -25,6 +25,10 @@ def stupid_tracker(conts_and_rects, data):
     at the end, conts_and_rects contains only the rects the did not match anything, aka the new fruits.
     '''
     for d in data:
+        #if a fruit is falling
+        if len(d["centers"]) > 1 and d["centers"][0][1] < d["centers"][1][1]:
+            print("ggggggggggggg")
+
         if len(conts_and_rects[0]) > 0: #we found some fruits in the current pic
             x,y,w,h = d["window"]
             r = [(x,y), (x+w, y+h)]

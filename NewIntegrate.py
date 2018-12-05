@@ -112,6 +112,8 @@ def run_detection(video_name):
         calc_meanshift_all_fruits(data, img_hsv)
         #detection
         conts_and_rects = fd.fruit_detection(frame, background, 4000)
+        cv2.drawContours(frame, conts_and_rects[rtt.CONT], -1, (0, 255, 0), 2)
+
         #track - get centers from fruits and match it to the right fruit.
         if len(conts_and_rects[0]) > 0:
             rtt.stupid_tracker(conts_and_rects, data)
@@ -134,13 +136,7 @@ def run_shit_for_display(counter, data, frame):
     return counter, frame
 
 
-def stupid_tracker(conts, data):
-    # pairs = []
-    # i = 0
-    # for old in old_conts:
-    #     pairs[i] = old
-    #     i += 1
-    pass
+
 
 if __name__ == '__main__':
     run_detection("first_video.mp4")
