@@ -4,6 +4,9 @@ import time
 
 UP_LEFT = 1
 BOTTOM_RIGHT = 2
+CONT = 0
+RECT = 1
+CENTER = 2
 
 
 def fruit_detection(frame, background, contour_area_thresh):
@@ -66,8 +69,9 @@ def fruit_detection(frame, background, contour_area_thresh):
     cont = [c for c in cont if cv2.contourArea(c) > contour_area_thresh]
 
     # calculate coordinates of surrounding rect of cont
-    cont_rect_coordinates = []
-    for c in cont:
+    conts_and_rects = [[],[],[]]
+    for i in range(len(cont)):
+        c = cont[i]
         x_min = c[c[:, :, 0].argmin()][0][0]
         x_max = c[c[:, :, 0].argmax()][0][0]
         y_min = c[c[:, :, 1].argmin()][0][1]
@@ -76,12 +80,22 @@ def fruit_detection(frame, background, contour_area_thresh):
         up_left = (x_min, y_max)
         bot_right = (x_max, y_min)
         up_right = (x_max, y_max)
-        rect = [bot_left, up_right  ]
-        cont_rect_coordinates.append(rect)
+        rect = [bot_left, up_right]
+        center = center_of_contour(c)
+        conts_and_rects[CONT].append(c)
+        conts_and_rects[RECT].append(rect)
+        conts_and_rects[CENTER].append(center)
 
     print("time for detection: " + str(time.perf_counter()-t))
 
-    return cont, cont_rect_coordinates
+    return conts_and_rects # a list of lists, representing all the fruits found.
+
+
+def center_of_contour(c):
+    M = cv2.moments(c)
+    cX = int(M["m10"] / M["m00"])
+    cY = int(M["m01"] / M["m00"])
+    return (cX,cY)
 
 if __name__ == "__main__":
     frame = cv2.imread("pic1.jpg")

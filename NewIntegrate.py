@@ -1,5 +1,6 @@
 import VideoInterface as vi
 import FruitDetection as fd
+import RealTimeTracker as rtt
 import cv2
 import argparse
 import time
@@ -14,7 +15,7 @@ v_lower = 32
 v_upper = 255
 
 ##consts
-NUM_OF_FRAMES = 7
+NUM_OF_FRAMES = 5
 WINDOW_NAME = "Fruit tracker"
 term_crit = (cv2.TERM_CRITERIA_EPS | cv2.TERM_CRITERIA_COUNT, 10, 1)
 ##init window
@@ -55,7 +56,6 @@ def calc_meanshift_all_fruits(data, img_hsv):
             print_centers(d["centers"])
             data.remove(d)
         x, y, w, h = track_window
-        d["centers"].append((x + h / 2.0, y + w / 2.0)) ########## this does not work yet!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
 
 def print_centers(arr):
@@ -97,39 +97,44 @@ def run_detection(video_name):
     vi.wait(6, cap)
     background = vi.get_background(cap)
     vi.wait(4, cap)
-    # start_t = cv2.getTickCount()
     frame = vi.get_background(cap)
-    conts, boxes = fd.fruit_detection(frame, background, 3000) #runs detection on the first frame.
-    # stop_t = ((cv2.getTickCount() - start_t) / cv2.getTickFrequency())
-    # print("detect" + str(stop_t))
-
-    cv2.drawContours(frame, conts, -1, (0, 255, 0), 2)
-    for i in range(len(boxes)):
-        frame = cv2.rectangle(frame, boxes[i][0], boxes[i][1],
-                              (255, 0, 0), 2)
-    for i in range(len(boxes)):
-        get_hists(boxes, data, frame)
-
+    conts_and_rects = fd.fruit_detection(frame, background, 3000) #runs detection on the first frame  .
+    get_hists(conts_and_rects[fd.RECT], data, frame)
     null = draw_rectangles(data, frame)
     cv2.waitKey(0)
-
     counter = 0
-    while counter < 10 * NUM_OF_FRAMES: # proccess that runs on every frame, updates the prediction and
-                                        # draws rectangles.
-        start_t = cv2.getTickCount()
+    #### main loop
+    while counter < 100 * NUM_OF_FRAMES: # proccess that runs on every frame, updates the prediction and
         if cap.isOpened():
             frame = vi.get_background(cap)
+        # meanShift
         img_hsv = cv2.cvtColor(frame, cv2.COLOR_BGR2HSV)
         calc_meanshift_all_fruits(data, img_hsv)
-        frame = draw_rectangles(data, frame)
-        cv2.imshow(WINDOW_NAME, frame)
-        counter += 1
-        stop_t = ((cv2.getTickCount() - start_t) / cv2.getTickFrequency())
-        print("all proccess of meanshift:" + str(stop_t))
-        cv2.waitKey(0)
+        #detection
+        conts_and_rects = fd.fruit_detection(frame, background, 4000)
+        #track - get centers from fruits and match it to the right fruit.
+        if len(conts_and_rects[0]) > 0:
+            rtt.stupid_tracker(conts_and_rects, data)
+        # now that stupid_tracker left in conts_and_rects only new fruits, we add them to data and to meanshift search cycle.
+        if len(conts_and_rects[0]) != 0:
+            get_hists(conts_and_rects[fd.RECT], data, frame)
 
 
-def stupid_tracker(old_conts, new_conts):
+        counter, frame = run_shit_for_display(counter, data, frame)
+
+
+def run_shit_for_display(counter, data, frame):
+    '''
+    auto generated function, does some things and displays shit.
+    '''
+    frame = draw_rectangles(data, frame)
+    cv2.imshow(WINDOW_NAME, frame)
+    counter += 1
+    cv2.waitKey(0)
+    return counter, frame
+
+
+def stupid_tracker(conts, data):
     # pairs = []
     # i = 0
     # for old in old_conts:
