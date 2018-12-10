@@ -4,6 +4,11 @@ import time
 import FruitDetection
 # import TrackerIntegrate as ti
 
+CONT = 0
+RECT = 1
+CENTER = 2
+
+
 def video_reader(name):
     cropped = False
     cap = cv2.VideoCapture(name) #creates a video reading object.
@@ -17,9 +22,8 @@ def video_reader(name):
                 continue
             else:
                 frame = crop_image(frame)
-                cont, rects = FruitDetection.fruit_detection(frame, original, 4100)
-                cropped = ti.track_objects(rects, frame, cropped)
-                # cv2.drawContours(frame, cont, -1, (0, 255, 0), 2)
+                conts_and_rects = FruitDetection.fruit_detection(frame, original, 4100)
+                cv2.drawContours(frame, conts_and_rects[CONT], -1, (0, 255, 0), 2)
                 cv2.imshow("video", frame)
                 cv2.waitKey(0)
             if cv2.waitKey(10) == 27:

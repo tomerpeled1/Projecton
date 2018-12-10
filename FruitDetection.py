@@ -28,6 +28,7 @@ def fruit_detection(frame, background, contour_area_thresh):
     back_h = cv2.morphologyEx(back_h, cv2.MORPH_OPEN, np.ones((5,5), np.uint8))
 
     # find value change
+    print(real_v.shape, back_v.shape)
     subtract_v = cv2.absdiff(real_v, back_v)
 
     # find hue change, amplify hue

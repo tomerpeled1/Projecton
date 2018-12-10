@@ -35,7 +35,7 @@ def stupid_tracker(conts_and_rects, data):
             r_cent = center(r)
             n = len(conts_and_rects[CENTER])
             min = (0,0)
-            minDis = 1000000000000000 ##arab shit ron WTF
+            minDis = 1000000000000000
             index = 0
             for i in range (0,n): # runs on all contours and finds the one with the smallest distance from
                                   # meanShift prediction
