@@ -26,26 +26,27 @@ def stupid_tracker(conts_and_rects, data):
     '''
     for d in data:
         #if a fruit is falling
-        if len(d["centers"]) > 1 and d["centers"][0][1] < d["centers"][1][1]:
+        if len(d["centers"]) > 1 and d["centers"][0][1] <= d["centers"][1][1]:
             print("ggggggggggggg")
+            # todo do shit to remove contour
 
-        if len(conts_and_rects[0]) > 0: #we found some fruits in the current pic
+        if len(conts_and_rects.centers) > 0: #we found some fruits in the current pic
             x,y,w,h = d["window"]
             r = [(x,y), (x+w, y+h)]
             r_cent = center(r)
-            n = len(conts_and_rects[CENTER])
+            n = len(conts_and_rects.centers)
             min = (0,0)
             minDis = 1000000000000000
             index = 0
             for i in range (0,n): # runs on all contours and finds the one with the smallest distance from
                                   # meanShift prediction
-                if dis(conts_and_rects[CENTER][i], r_cent) < minDis:
-                    minDis = dis(conts_and_rects[CENTER][i], r_cent)
-                    min = conts_and_rects[CENTER][i]
+                if dis(conts_and_rects.centers[i], r_cent) < minDis:
+                    minDis = dis(conts_and_rects.centers[i], r_cent)
+                    min = conts_and_rects.centers[i]
                     index = i
-            conts_and_rects[CONT].pop(index) ##removes the contour so we won't look for it again.
-            conts_and_rects[RECT].pop(index)
-            conts_and_rects[CENTER].pop(index)
+            conts_and_rects.conts.pop(index) ##removes the contour so we won't look for it again.
+            conts_and_rects.rects.pop(index)
+            conts_and_rects.centers.pop(index)
             ## at the end, we add another center.
             d["centers"].append(min)
 
