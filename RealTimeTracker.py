@@ -19,7 +19,7 @@ def dis(x, y):
 
 def update_falling(fruit):
     assert len(fruit.centers) > 1
-    if fruit.centers[0][1] <= fruit.centers[1][1]:
+    if fruit.centers[0][1] < fruit.centers[1][1]:
         fruit.is_falling = True
 
 def track_object(detection_results, fruit):

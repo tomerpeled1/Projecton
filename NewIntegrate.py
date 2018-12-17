@@ -18,12 +18,13 @@ v_upper = 255
 
 ##consts
 NUM_OF_FRAMES = 5
+MAX_NUM_OF_FRAMES_ON_SCREEN = 13
 WINDOW_NAME = "Fruit tracker"
 term_crit = (cv2.TERM_CRITERIA_EPS | cv2.TERM_CRITERIA_COUNT, 10, 1)
 ##init window
 # cv2.namedWindow(WINDOW_NAME, cv2.WINDOW_NORMAL)  # the window to show
 
-HISTS_THRESH = 0.85
+HISTS_THRESH = 0.80
 HISTS_COMPARE_METHOD = 0
 
 def center(box):
@@ -41,7 +42,7 @@ def draw_rectangles(fruit, frame, color):
     draws the current tracking windows on the frame
     '''
     x, y, w, h = fruit.track_window
-    frame = cv2.rectangle(frame, (x, y), (x + w, y + h),color, 2)
+    return cv2.rectangle(frame, (x, y), (x + w, y + h),color, 2)
 
 def draw_center(fruit, frame):
     '''
@@ -63,18 +64,22 @@ def calculate_hist_window(cropped):
     cv2.normalize(crop_hist, crop_hist, 0, 255, cv2.NORM_MINMAX)
     return crop_hist
 
-def calc_meanshift_all_fruits(fruits_info, img_hsv):
+def calc_meanshift_all_fruits(fruits_info, img_hsv, frame):
     # does the proccess of calculating the new meanshift every frame.
     # compares the hist to the known one to see if the fruit has left the screen.
     for fruit in fruits_info:
-        img_bproject = cv2.calcBackProject([img_hsv], [0, 1], fruit.hist, [0, 180, 0, 255], 1)
+        x, y, w, h = fruit.track_window
+        if not fruit.is_falling:
+            img_bproject = cv2.calcBackProject([img_hsv[:y+h,:]], [0, 1], fruit.hist, [0, 180, 0, 255], 1)
+        else:
+            img_bproject = cv2.calcBackProject([img_hsv[y:,:]], [0, 1], fruit.hist, [0, 180, 0, 255], 1)
         ret, track_window = cv2.meanShift(img_bproject, fruit.track_window, term_crit) ##credit for eisner
         x, y, w, h = track_window
         cropped_window = img_hsv[y:y+h, x:x+w].copy()
         new_hist = calculate_hist_window(cropped_window)
         dis = cv2.compareHist(new_hist, fruit.hist, HISTS_COMPARE_METHOD)
-        cv2.imshow("ggg", cropped_window)
-        if(abs(dis) > HISTS_THRESH): #threshold for hist resemblance.
+        # cv2.imshow("ggg", cropped_window)
+        if(abs(dis) > HISTS_THRESH) and fruit.counter < MAX_NUM_OF_FRAMES_ON_SCREEN: #threshold for hist resemblance.
             fruit.track_window = track_window
             fruit.counter += 1
         else:
@@ -131,7 +136,9 @@ def track_known_fruits(fruits_info, current_frame, detection_results):
     :param detection_results: the fruits detected in the current frame.
     '''
     img_hsv = cv2.cvtColor(current_frame, cv2.COLOR_BGR2HSV) #turn image to hsv.
-    calc_meanshift_all_fruits(fruits_info, img_hsv) #calculate the meanshift for all fruits.
+    calc_meanshift_all_fruits(fruits_info, img_hsv, current_frame) #calculate the meanshift for all fruits.
+    for fruit in fruits_info:
+        current_frame = draw_rectangles(fruit, current_frame, (255,192,203))
     if(len(detection_results.conts) > 0):
         for fruit in fruits_info:
             rtt.track_object(detection_results, fruit) #update tracker using the detection results.
@@ -161,6 +168,7 @@ def run_detection(video_name):
             if not fruit.is_falling:
                 draw(fruit, current)
         cv2.imshow("frame", current)
+        print("len of fruits: " + str(len(fruits_info)))
         cv2.waitKey(0)
 
 def draw(fruit, frame):
