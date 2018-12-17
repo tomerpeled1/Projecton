@@ -57,4 +57,4 @@ def get_background(cap):
 
 
 if __name__ == "__main__":
-    video_reader("first_video.mp4")
+    video_reader(0)

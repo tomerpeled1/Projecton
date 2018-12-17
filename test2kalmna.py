@@ -143,7 +143,7 @@ if (((args.video_file) and (cap.open(str(args.video_file))))
 
     # Setup the termination criteria for search, either 10 iteration or
     # move by at least 1 pixel pos. difference
-    term_crit = ( cv2.TERM_CRITERIA_EPS | cv2.TERM_CRITERIA_COUNT, 10, 1 )
+    term_crit = ( cv2.TERM_CRITERIA_EPS | cv2.TERM_CRITERIA_COUNT, 10, 10 )
 
 
     ###################
@@ -172,7 +172,7 @@ if (((args.video_file) and (cap.open(str(args.video_file))))
 
         if (len(boxes) > 1) and (boxes[0][1] < boxes[1][1]) and (boxes[0][0] < boxes[1][0]):
             crop = frame[boxes[0][1]:boxes[1][1],boxes[0][0]:boxes[1][0]].copy()
-            print(boxes)
+            # print(boxes)
             h, w, c = crop.shape   # size of template
             if (h > 0) and (w > 0):
                 cropped = True
