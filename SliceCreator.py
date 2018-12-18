@@ -9,7 +9,7 @@ CROP_SIZE = (200, 600)
 FRAME_SIZE = (720, 1080)
 SCREEN_SIZE = (26, 18)
 
-CHOSEN_SLICE_TYPE = SliceTypes.stupid_slice()
+CHOSEN_SLICE_TYPE = SliceTypes.stupid_slice
 
 class Trajectory:
     def __init__(self, x0, v, theta):
