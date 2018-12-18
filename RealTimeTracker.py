@@ -1,9 +1,11 @@
 import cv2
 import numpy as np
 from Fruit import Fruit
+import NewIntegrate as ni
 
 NUM_OF_FRAMES = 5
-
+MOVEMENT_RADIUS = 200
+RESIZE_WINDOW_FACTOR = 0.2
 
 def center(box):
     '''
@@ -36,13 +38,25 @@ def track_object(detection_results, fruit):
                 min = detection_results.centers[i]
                 min_dis = dis(r_cent, min)
                 index = i
-        detection_results.conts.pop(index)  ##removes the contour so we won't look for it again.
-        fruit.track_window = box2window(detection_results.rects.pop(index))
-        detection_results.centers.pop(index)
-        ## at the end, we add another center.
-        fruit.centers.append(min)
-        update_falling(fruit)
+        if min_dis > MOVEMENT_RADIUS:
+            print("min dis: " + str(min_dis))
+            return False
+        else:
+            detection_results.conts.pop(index)  ##removes the contour so we won't look for it again.
+            old_track_window = box2window(detection_results.rects.pop(index))
+            new_track_window = resize_track_window(old_track_window)
+            fruit.track_window = new_track_window
+            detection_results.centers.pop(index)
+            ## at the end, we add another center.
+            fruit.centers.append(min)
+            update_falling(fruit)
+            return True
 
+def resize_track_window(track_window):
+    x, y, w, h = track_window
+    factor = RESIZE_WINDOW_FACTOR
+    inner_window = (int(x + factor*w), int(factor*h + y), int((1-2*factor)*w), int((1-2*factor)*h))
+    return inner_window
 
 def box2window(box):
     return (box[0][0], box[0][1],

@@ -1,6 +1,7 @@
 import numpy as np
 import cv2
 import time
+import DetectionResults
 
 UP_LEFT = 1
 BOTTOM_RIGHT = 2
@@ -18,7 +19,6 @@ def fruit_detection(frame, background, contour_area_thresh):
     # split hvs of frame
     real_hsv = cv2.cvtColor(real, cv2.COLOR_BGR2HSV)
     real_h, real_s, real_v = cv2.split(real_hsv)
-    cv2.imshow("real_h", real_h)
     real_h = cv2.convertScaleAbs(real_h, alpha=255/179)
     real_h = cv2.morphologyEx(real_h, cv2.MORPH_OPEN, np.ones((5,5), np.uint8))
 
@@ -77,7 +77,10 @@ def fruit_detection(frame, background, contour_area_thresh):
     cont = [c for c in cont if cv2.contourArea(c) > contour_area_thresh]
 
     # calculate coordinates of surrounding rect of cont
-    conts_and_rects = [[],[],[]]
+    conts = []
+    rects = []
+    centers = []
+    conts_and_rects = DetectionResults.DetectionResults(conts, rects, centers)
     for i in range(len(cont)):
         c = cont[i]
         x_min = c[c[:, :, 0].argmin()][0][0]
@@ -90,9 +93,9 @@ def fruit_detection(frame, background, contour_area_thresh):
         up_right = (x_max, y_max)
         rect = [bot_left, up_right]
         center = center_of_contour(c)
-        conts_and_rects[CONT].append(c)
-        conts_and_rects[RECT].append(rect)
-        conts_and_rects[CENTER].append(center)
+        conts_and_rects.conts.append(c)
+        conts_and_rects.rects.append(rect)
+        conts_and_rects.centers.append(center)
 
     print("time for detection: " + str(time.perf_counter()-t))
 
@@ -103,7 +106,7 @@ def center_of_contour(c):
     M = cv2.moments(c)
     cX = int(M["m10"] / M["m00"])
     cY = int(M["m01"] / M["m00"])
-    return (cX,cY)
+    return (cX, cY)
 
 if __name__ == "__main__":
     frame = cv2.imread("pic1.jpg")
@@ -112,8 +115,8 @@ if __name__ == "__main__":
     back = cv2.imread("pic2.jpg")
     back = cv2.resize(back, None, fx=0.3, fy=0.3)
 
-    cont_and_rects = fruit_detection(frame, back, 1000)
-    cv2.drawContours(frame, cont_and_rects[CONT], -1, (0, 255, 0), 2)
+    cont, rects = fruit_detection(frame, back, 1000)
+    cv2.drawContours(frame, cont, -1, (0, 255, 0), 2)
     # for i in range(len(rects)):
     #     frame = cv2.rectangle(frame, rects[i][UP_LEFT], rects[i][BOTTOM_RIGHT],
     #                       (255, 0, 0), 2)

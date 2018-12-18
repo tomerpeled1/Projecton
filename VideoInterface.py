@@ -32,10 +32,10 @@ def video_reader(name):
     return
 
 def crop_image(frame):
-    # (height, width, depth) = frame.shape
-    # new_h = int(height/4)
-    # new_w = int(width/7)
-    # frame = frame[new_h:height, 2*new_w:6*new_w]
+    (height, width, depth) = frame.shape
+    new_h = int(height/3)
+    new_w = int(width/7)
+    frame = frame[2*new_h:height, new_w:6*new_w]
     frame = cv2.resize(frame,(0,0),fx = 0.5, fy = 0.5)
     return frame
 
