@@ -1,4 +1,6 @@
 import math
+import SliceTypes
+import time
 from scipy.optimize import curve_fit
 
 RELATIVE_ACC = 1
@@ -6,6 +8,8 @@ ARM_DELAY = 1
 CROP_SIZE = (200, 600)
 FRAME_SIZE = (720, 1080)
 SCREEN_SIZE = (26, 18)
+
+CHOSEN_SLICE_TYPE = SliceTypes.stupid_slice()
 
 class Trajectory:
     def __init__(self, x0, v, theta):
@@ -20,10 +24,10 @@ class Trajectory:
         t = self.v * math.sin(self.theta) / RELATIVE_ACC
         return t,  self.calc_trajectory()(t)
 
-def create_slice(fruit_pix_locs):
-    fruits_locs = [[pixel2cm(pix_loc) for pix_loc in fruit] for fruit in fruit_pix_locs]
+def create_slice(fruits):
+    fruits_locs = [[pixel2cm(pix_loc) for pix_loc in fruit.centers] for fruit in fruits]
     fruit_trajectories = [get_trajectory(fruit_locs) for fruit_locs in fruits_locs]
-    slice_path = calc_slice(fruit_trajectories)
+    slice_path = calc_slice([[fruit_trajectories[i], fruits[i].time_created] for i in range(len(fruits))])
     return slice_path
 
 def pixel2cm(pix_loc):
@@ -51,14 +55,15 @@ def x_trajectory(t, x0, v, theta):
 def y_trajectory(t, v, theta):
     return v * math.sin(theta) * t - 0.5 * RELATIVE_ACC * t ** 2
 
-def calc_slice(fruit_trajectories):
-    x_arm_loc, y_arm_loc = get_arm_loc()
-    chosen_trajectory = fruit_trajectories[0]
-    t_peak, (x_peak, y_peak) = chosen_trajectory.calc_peak()
-    return lambda t : (t * x_peak, t * y_peak) + ((1 - t) * x_arm_loc, (1 - t) * y_arm_loc)
+def calc_slice(fruit_trajectories_and_starting_times):
+    # time.sleep(time_until_slice())
+    return CHOSEN_SLICE_TYPE(get_arm_loc(), fruit_trajectories_and_starting_times)
 
 def get_arm_loc():
     return 0, 90
+
+def time_until_slice():
+    return 2
 
 def init_info(crop_size, frame_size, screen_size):
     global CROP_SIZE, FRAME_SIZE, SCREEN_SIZE

@@ -9,7 +9,6 @@ import sys
 import math
 import numpy as np
 from Fruit import Fruit
-from matplotlib import pyplot as plt
 
 ## parameters for meanshift
 MINIMUM_NUM_OF_CENTERS_TO_EXTRACT = 4
@@ -78,7 +77,7 @@ def calculate_hist_window(window, img_hsv):
 def calc_meanshift_all_fruits(fruits_info, img_hsv):
     # does the proccess of calculating the new meanshift every frame.
     # compares the hist to the known one to see if the fruit has left the screen.
-    list_of_centers_to_extract = []
+    fruits_to_extract = []
     for fruit in fruits_info:
         x, y, w, h = fruit.track_window
         if len(fruit.centers) > 1:
@@ -103,14 +102,14 @@ def calc_meanshift_all_fruits(fruits_info, img_hsv):
             print("dis: " + str(dis))
             fruits_info.remove(fruit)
             if not fruit.is_falling and len(fruit.centers) > MINIMUM_NUM_OF_CENTERS_TO_EXTRACT:
-                list_of_centers_to_extract.append([fruit.centers])
-    print_and_extract_centers(list_of_centers_to_extract)
+                fruits_to_extract.append(fruit)
+    print_and_extract_centers(fruits_to_extract)
 
 
-def print_and_extract_centers(list_of_centers_to_extract):
-    if list_of_centers_to_extract:
-        sc.create_slice(list_of_centers_to_extract)
-        print("centers of:" + str(list_of_centers_to_extract))
+def print_and_extract_centers(fruits_to_extract):
+    if fruits_to_extract:
+        sc.create_slice(fruits_to_extract)
+        print("centers of:" + str([fruit.centers for fruit in fruits_to_extract]))
 
 
 def get_hists(detection_results, frame):
@@ -133,7 +132,7 @@ def get_hists(detection_results, frame):
                         boxes[0][1][1] - boxes[0][0][1])
         crop_hist = calculate_hist_window(track_window, hsv_frame)
         # after calculating the histrogram of the fruit, we add it to the big array and the window to the big array.
-        fruits_info.append(Fruit(track_window, crop_hist, 0, [detection_results.centers[0]]))
+        fruits_info.append(Fruit(track_window, crop_hist, 0, [detection_results.centers[0]], detection_results.time_created))
         # finished dealing with box, now free it.
         detection_results.pop_element(0)
     return fruits_info
@@ -171,12 +170,12 @@ def track_known_fruits(fruits_info, current_frame, detection_results):
                     fruit.hist = calculate_hist_window(fruit.track_window, img_hsv)
             else:
                 toDelete.append(fruit)
-        list_of_centers_to_extract = []
+        fruits_to_extract = []
         for deleted_fruit in toDelete:
             if len(deleted_fruit.centers) > MINIMUM_NUM_OF_CENTERS_TO_EXTRACT and not deleted_fruit.is_falling:
-                list_of_centers_to_extract.append([deleted_fruit.centers])
+                fruits_to_extract.append(deleted_fruit)
             fruits_info.remove(deleted_fruit)
-        print_and_extract_centers(list_of_centers_to_extract)
+        print_and_extract_centers(fruits_to_extract)
 
 
 def insert_new_fruits(detection_results, fruits_info, current):

@@ -13,7 +13,7 @@ def video_reader(name):
     cropped = False
     cap = cv2.VideoCapture(name) #creates a video reading object.
     counter = 0
-    wait(0.1, cap)
+    wait(0, cap)
     original = get_background(cap)
     while True:
         if cap.grab() and counter%1 == 0:#grabs a frame. tempo can be controlled.
@@ -57,4 +57,4 @@ def get_background(cap):
 
 
 if __name__ == "__main__":
-    video_reader("2018-12-17 17-54-34.flv")
+    video_reader("SmallFruit2.flv")
