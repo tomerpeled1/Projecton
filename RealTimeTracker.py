@@ -20,11 +20,21 @@ def dis(x, y):
     return pow(x[0] - y[0], 2) + pow(x[1] - y[1], 2)
 
 def update_falling(fruit):
+    '''
+    updates the is_falling parameter of fruit if it is falling.
+    '''
     assert len(fruit.centers) > 1
     if fruit.centers[0][1] < fruit.centers[1][1]:
         fruit.is_falling = True
 
 def track_object(detection_results, fruit):
+    '''
+    responsible for tracking the fruits. it suppose to be smart - which means to set some thresholds for
+    wether we found the fruit.
+    :param detection_results: the data from DETECTION
+    :param fruit: the fruit object we know from previous frames.
+    :return: true if found the fruit in the next frame, false otherwise.
+    '''
     if len(detection_results.centers) > 0:
         x, y, w, h = fruit.track_window
         r = [(x, y), (x+w, y+h)]
@@ -33,11 +43,13 @@ def track_object(detection_results, fruit):
         min = detection_results.centers[0]
         min_dis = dis(r_cent, min)
         index = 0
+        # finds the contour with minimal distance to tracker results.
         for i in range(1,n):
             if dis(detection_results.centers[i], r_cent) < min_dis:
                 min = detection_results.centers[i]
                 min_dis = dis(r_cent, min)
                 index = i
+        # threshold - if the fruit found is too far from original fruit.
         if min_dis > MOVEMENT_RADIUS:
             print("min dis: " + str(min_dis))
             return False
@@ -53,6 +65,9 @@ def track_object(detection_results, fruit):
             return True
 
 def resize_track_window(track_window):
+    '''
+    for tracking with inner histogram.
+    '''
     x, y, w, h = track_window
     factor = RESIZE_WINDOW_FACTOR
     inner_window = (int(x + factor*w), int(factor*h + y), int((1-2*factor)*w), int((1-2*factor)*h))

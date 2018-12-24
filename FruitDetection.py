@@ -21,7 +21,7 @@ def fruit_detection(frame, background, contour_area_thresh):
     real_h, real_s, real_v = cv2.split(real_hsv)
     real_h = cv2.convertScaleAbs(real_h, alpha=255/179)
     real_h = cv2.morphologyEx(real_h, cv2.MORPH_OPEN, np.ones((5,5), np.uint8))
-    cv2.imshow("real_h_mod", real_h)
+    # cv2.imshow("real_h_mod", real_h)
 
     # split hvs of background
     back_hsv = cv2.cvtColor(back, cv2.COLOR_BGR2HSV)
@@ -32,19 +32,19 @@ def fruit_detection(frame, background, contour_area_thresh):
     # find value change
     # print(real_v.shape, back_v.shape)
     subtract_v = cv2.absdiff(real_v, back_v)
-    cv2.imshow("sub_v", subtract_v)
+    # cv2.imshow("sub_v", subtract_v)
     # find hue change, amplify hue
     subtract_h = cv2.absdiff(real_h, back_h)
-    cv2.imshow("sub_h_bef", subtract_h)
+    # cv2.imshow("sub_h_bef", subtract_h)
     white_img = 255*np.ones(real_h.shape, np.uint8)
     complement_substract_h = cv2.subtract(white_img, subtract_h)
     final_sub_h = cv2.min(subtract_h, complement_substract_h)
     subtract_h_mod = cv2.convertScaleAbs(final_sub_h, alpha=1.3)
-    cv2.imshow("sub_h", subtract_h_mod)
+    # cv2.imshow("sub_h", subtract_h_mod)
 
     # calc total change (value + hue) and remove noise
     sub_add = cv2.add(subtract_v, subtract_h_mod)
-    cv2.imshow("sub_add", sub_add)
+    # cv2.imshow("sub_add", sub_add)
     ret3, add_thresh = cv2.threshold(sub_add, 55, 255, cv2.THRESH_BINARY)
     add_thresh = cv2.morphologyEx(add_thresh, cv2.MORPH_OPEN, np.ones((5,5), np.uint8))
 

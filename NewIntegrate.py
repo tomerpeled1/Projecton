@@ -11,13 +11,13 @@ import numpy as np
 from Fruit import Fruit
 
 ## parameters for meanshift
-MINIMUM_NUM_OF_CENTERS_TO_EXTRACT = 4
 s_lower = 60
 s_upper = 255
 v_lower = 32
 v_upper = 255
 
 ##consts
+MINIMUM_NUM_OF_CENTERS_TO_EXTRACT = 4
 CONTOUR_AREA_THRESH = 1000
 NUM_OF_FRAMES = 5
 MAX_NUM_OF_FRAMES_ON_SCREEN = 13
@@ -65,7 +65,7 @@ def calculate_hist_window(window, img_hsv):
     '''
     x, y, w, h = window
     cropped = img_hsv[y:y + h, x:x + w].copy()
-    cv2.imshow("histogram", cropped)
+    # cv2.imshow("histogram", cropped)
     mask = cv2.inRange(cropped, np.array((0., float(s_lower), float(v_lower))),
                        np.array((180., float(s_upper), float(v_upper))))  # TODO understand parameters.
     crop_hist = cv2.calcHist([cropped], [0, 1], mask, [180, 255],
@@ -81,6 +81,7 @@ def calc_meanshift_all_fruits(fruits_info, img_hsv):
     for fruit in fruits_info:
         x, y, w, h = fruit.track_window
         if len(fruit.centers) > 1:
+            # cut the image - search only above the fruit if it is rising and below it if it is falling.
             if not fruit.is_falling:
                 img_bproject = cv2.calcBackProject([img_hsv[:y + h, :]], [0, 1], fruit.hist, [0, 180, 0, 255], 1)
             else:
@@ -88,18 +89,13 @@ def calc_meanshift_all_fruits(fruits_info, img_hsv):
         else:
             img_bproject = cv2.calcBackProject([img_hsv], [0, 1], fruit.hist, [0, 180, 0, 255], 1)
 
-        # x, y, w, h = fruit.track_window
-        # factor = 0.2
-        # inner_window = (int(x + factor*w), int(factor*h + y), int((1-2*factor)*w), int((1-2*factor)*h))
         ret, track_window = cv2.meanShift(img_bproject, fruit.track_window, term_crit)  ##credit for eisner
         new_hist = calculate_hist_window(track_window, img_hsv)
         dis = cv2.compareHist(new_hist, fruit.hist, HISTS_COMPARE_METHOD)
-        # cv2.imshow("ggg", cropped_window)
         if (abs(dis) > HISTS_THRESH) and fruit.counter < MAX_NUM_OF_FRAMES_ON_SCREEN:  # threshold for hist resemblance.
             fruit.track_window = track_window
             fruit.counter += 1
         else:
-            print("dis: " + str(dis))
             fruits_info.remove(fruit)
             if not fruit.is_falling and len(fruit.centers) > MINIMUM_NUM_OF_CENTERS_TO_EXTRACT:
                 fruits_to_extract.append(fruit)
@@ -107,8 +103,12 @@ def calc_meanshift_all_fruits(fruits_info, img_hsv):
 
 
 def print_and_extract_centers(fruits_to_extract):
+    '''
+    :param fruits_to_extract: a list of friuts that we want to move to algorithms - to calculate their routes.
+    the connection to algorithms module.
+    '''
     if fruits_to_extract:
-        sc.create_slice(fruits_to_extract)
+        # sc.create_slice(fruits_to_extract)
         print("centers of:" + str([fruit.centers for fruit in fruits_to_extract]))
 
 
@@ -164,14 +164,15 @@ def track_known_fruits(fruits_info, current_frame, detection_results):
     if (len(detection_results.conts) > 0):
         toDelete = []
         for fruit in fruits_info:
-            if rtt.track_object(detection_results, fruit):  # update tracker using the detection results.
-                if (fruit.counter <= 3):
+            if rtt.track_object(detection_results, fruit): #if we decided that we found the right contour
+                if (fruit.counter <= 3): #update the histogram for tracker, when fruit enters the screen
+                                        #  (when the fruit enters we find a part of it and it is harder to track).
                     cv2.imshow("hsv new", img_hsv)
                     fruit.hist = calculate_hist_window(fruit.track_window, img_hsv)
-            else:
+            else: # didnt find the fruit so delete it
                 toDelete.append(fruit)
         fruits_to_extract = []
-        for deleted_fruit in toDelete:
+        for deleted_fruit in toDelete: # decide if deleted fruit is good to move to algorithms.
             if len(deleted_fruit.centers) > MINIMUM_NUM_OF_CENTERS_TO_EXTRACT and not deleted_fruit.is_falling:
                 fruits_to_extract.append(deleted_fruit)
             fruits_info.remove(deleted_fruit)
@@ -217,4 +218,4 @@ def draw(fruit, frame):
 
 
 if __name__ == '__main__':
-    run_detection("SmallFruit2.flv")
+    run_detection("SmallFruitSilver1.flv")
