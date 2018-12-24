@@ -1,6 +1,6 @@
 import FruitDetection as fd
 import RealTimeTracker as rtt
-import CameraInterface as ci
+from CameraInterface import Camera
 import SliceCreator as sc
 import cv2
 
@@ -28,6 +28,8 @@ term_crit = (cv2.TERM_CRITERIA_EPS | cv2.TERM_CRITERIA_COUNT, 10, 1)
 HISTS_THRESH = 0.4
 HISTS_COMPARE_METHOD = cv2.HISTCMP_CORREL
 
+#Magic numbers for camera
+SECONDS_FOR_BG = 3
 
 def center(box):
     '''
@@ -107,7 +109,7 @@ def calc_meanshift_all_fruits(fruits_info, img_hsv):
 
 def print_and_extract_centers(fruits_to_extract):
     if fruits_to_extract:
-        sc.create_slice(fruits_to_extract)
+        # sc.create_slice(fruits_to_extract)
         print("centers of:" + str([fruit.centers for fruit in fruits_to_extract]))
 
 
@@ -137,16 +139,16 @@ def get_hists(detection_results, frame):
     return fruits_info
 
 
-def background_and_wait(stream):
-    '''
-    returns a frame of the background without fruits. change the numbers to use other videos.
-    :param cap: the stream of the video.
-    :return: the background.
-    '''
-    ci.wait(0.0, stream)
-    bg = ci.get_background(stream)
-    ci.wait(0, stream)
-    return bg
+# def background_and_wait(stream):
+#     '''
+#     returns a frame of the background without fruits. change the numbers to use other videos.
+#     :param cap: the stream of the video.
+#     :return: the background.
+#     '''
+#     ci.wait(0.0, stream)
+#     bg = ci.get_background(stream)
+#     ci.wait(0, stream)
+#     return bg
 
 
 def track_known_fruits(fruits_info, current_frame, detection_results):
@@ -187,12 +189,16 @@ def insert_new_fruits(detection_results, fruits_info, current):
     fruits_info += get_hists(detection_results, current)
 
 
-def run_detection(video_name):
+def run_detection(src):
     fruits_info = []
-    stream = cv2.VideoCapture(video_name)
-    bg = background_and_wait(cap)
-    while cap.isOpened():
-        current = ci.get_background(cap)
+    camera = Camera(src)
+    camera.set_camera_settings()
+    print("choose background")
+    bg = camera.background_and_wait()
+    cv2.waitKey(0) ##wait to start game after background retrieval
+    current = bg
+    while camera.is_opened():
+        current = camera.next_frame(current)
         detection_results = fd.fruit_detection(current, bg, CONTOUR_AREA_THRESH)
         cv2.drawContours(current, detection_results.conts, -1, (0, 255, 0), 2)
         track_known_fruits(fruits_info, current,
@@ -203,8 +209,9 @@ def run_detection(video_name):
             if not fruit.is_falling:
                 draw(fruit, current)
         cv2.imshow("frame", current)
+        if cv2.waitKey(1) == 27:
+            break
         print("len of fruits: " + str(len(fruits_info)))
-        cv2.waitKey(0)
 
 
 def draw(fruit, frame):
@@ -216,4 +223,4 @@ def draw(fruit, frame):
 
 
 if __name__ == '__main__':
-    run_detection("SmallFruit2.flv")
+    run_detection(0)

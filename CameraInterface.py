@@ -2,17 +2,25 @@ import cv2
 from imutils.video import WebcamVideoStream
 import time
 
-class CameraInterface:
-
+class Camera:
 
     def __init__(self, src=0):
         self.src = src
         self.stream = WebcamVideoStream(src).start()
 
     def is_opened(self):
-        pass
+        return True #TODO change function.
 
     def next_frame(self, current):
+        while True:
+            to_return = self.stream.read()
+            to_return = self.crop_image(to_return)
+            dif = cv2.subtract(to_return, current)
+            dif = cv2.cvtColor(dif, cv2.COLOR_BGR2GRAY)
+            if (cv2.countNonZero(dif) > 0):
+                return to_return
+
+    def next_frame_for_bg(self, current):
         while True:
             to_return = self.stream.read()
             dif = cv2.subtract(to_return, current)
@@ -22,24 +30,21 @@ class CameraInterface:
 
     @staticmethod
     def crop_image(frame):
-        (height, width, depth) = frame.shape
-        new_h = int(height/3)
-        new_w = int(width/7)
-        frame = frame[2*new_h:height, new_w:6*new_w]
-        frame = cv2.resize(frame,(0,0),fx = 0.5, fy = 0.5)
+        # (height, width, depth) = frame.shape
+        # new_h = int(height/3)
+        # new_w = int(width/7)
+        # frame = frame[2*new_h:height, new_w:6*new_w]
+        #frame = cv2.resize(frame,(0,0),fx = 0.5, fy = 0.5)
         return frame
 
 
     def get_frame(self):
         frame = self.stream.read()
-        frame = CameraInterface.crop_image(frame)
+        frame = Camera.crop_image(frame)
         return frame
 
-    def background_and_wait(self, seconds_to_wait_for_background):
-
-        self.wait(seconds_to_wait_for_background)
-        bg = self.get_background()
-        return bg
+    def background_and_wait(self):
+        return self.wait_for_click()
 
     def stream_cam(self):
         ##set_camera_settings(stream.stream)
@@ -84,9 +89,22 @@ class CameraInterface:
         cur = self.stream.read()
         counter = 0
         while counter < 30 * x:
-            cur = self.next_frame(cur)
+            cur = self.next_frame_for_bg(cur)
             counter += 1
+        return cur
+
+    def wait_for_click(self):
+        cur = self.stream.read()
+        counter = 0
+        while True:
+            cur = self.next_frame_for_bg(cur)
+            cv2.imshow("until background", cur)
+            counter += 1
+            if cv2.waitKey(1) == 32:
+                cv2.imshow("until background", cur)
+                cv2.waitKey(0)
+                return cur
 
 if __name__ == '__main__':
-    camera = CameraInterface(0)
+    camera = Camera(0)
     camera.stream_cam()
