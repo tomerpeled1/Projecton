@@ -1,7 +1,7 @@
 import cv2
 import numpy as np
 from Fruit import Fruit
-import NewIntegrate as ni
+import SavedVideoRun as ni
 
 NUM_OF_FRAMES = 5
 MOVEMENT_RADIUS = 200
