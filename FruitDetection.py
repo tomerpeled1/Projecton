@@ -61,7 +61,9 @@ def fruit_detection(frame, background, contour_area_thresh):
 
     # apply mask
     masked = cv2.bitwise_and(real, real, mask=mask)
-    cv2.imshow("masked", masked)
+    # cv2.imshow("masked", masked)
+
+
     # find lapping fruit - not ready!!!
     #masked_hsv = cv2.cvtColor(masked, cv2.COLOR_BGR2HSV)
     #masked_h = masked_hsv[:, :, 0]

@@ -2,6 +2,12 @@ import cv2
 from imutils.video import WebcamVideoStream
 import time
 
+to_crop = True
+
+LIGHT_LAB_SETTINGS = (215,75,-7,12) #order is (saturation, gain, exposure, focus)
+TABLE_ABOVE_SETTINGS = (255,100,-6,12) #order is (saturation, gain, exposure, focus)
+
+
 class Camera:
 
     def __init__(self, src=0):
@@ -9,7 +15,7 @@ class Camera:
         self.stream = WebcamVideoStream(src).start()
 
     def is_opened(self):
-        return True #TODO change function.
+        return self.stream.stream.isOpened()
 
     def next_frame(self, current):
         while True:
@@ -30,11 +36,11 @@ class Camera:
 
     @staticmethod
     def crop_image(frame):
-        # (height, width, depth) = frame.shape
-        # new_h = int(height/3)
-        # new_w = int(width/7)
-        # frame = frame[2*new_h:height, new_w:6*new_w]
-        #frame = cv2.resize(frame,(0,0),fx = 0.5, fy = 0.5)
+        if to_crop:
+            (height, width, depth) = frame.shape
+            new_h = int(height/3)
+            new_w = int(width/7)
+            frame = frame[2*new_h:height, new_w:6*new_w]
         return frame
 
 
@@ -44,17 +50,16 @@ class Camera:
         return frame
 
     def background_and_wait(self):
-        return self.wait_for_click()
+        return self.crop_image(self.wait_for_click())
 
     def stream_cam(self):
         ##set_camera_settings(stream.stream)
         counter = 0
         current = self.stream.read()
         frames = [current]
-
         while counter < 1000:
             t1 = time.perf_counter()
-            next = self.next_frame(current)
+            next = self.next_frame_for_bg(current)
             frames.append(next)
             current = next
             cv2.imshow("LIVE", current)
@@ -70,8 +75,8 @@ class Camera:
         self.stream.stop()
 
 
-    def set_camera_settings(self):
-        pass
+    def set_camera_settings(self, settings):
+        self.stream.set(settings)
         # #       key value
         # # cam.set(3, 1920)  # width
         # # cam.set(4, 1080)  # height
