@@ -2,6 +2,7 @@ import cv2
 from imutils.video import WebcamVideoStream
 import time
 
+
 def stream_cam(src):
     stream = WebcamVideoStream(src).start()
     ##set_camera_settings(stream.stream)
