@@ -4,6 +4,7 @@ import time
 
 class CameraInterface:
 
+
     def __init__(self, src=0):
         self.src = src
         self.stream = WebcamVideoStream(src).start()
