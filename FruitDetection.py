@@ -49,7 +49,7 @@ def fruit_detection(frame, background, contour_area_thresh):
     add_thresh = cv2.morphologyEx(add_thresh, cv2.MORPH_OPEN, np.ones((5,5), np.uint8))
 
     # mask that removes very bright noises (blade)
-    ret, mask_s = cv2.threshold(real_s, 31, 255, cv2.THRESH_BINARY)
+    # ret, mask_s = cv2.threshold(real_s, 31, 255, cv2.THRESH_BINARY)
 
     # combine masks
     # mask = cv2.bitwise_and(add_thresh, mask_s)
@@ -65,11 +65,11 @@ def fruit_detection(frame, background, contour_area_thresh):
 
 
     # find lapping fruit - not ready!!!
-    #masked_hsv = cv2.cvtColor(masked, cv2.COLOR_BGR2HSV)
-    #masked_h = masked_hsv[:, :, 0]
-    #cv2.imshow("masked_h", masked_h)
-    #blurred_masked_h = cv2.blur(masked_h, (5, 5))
-    #cv2.imshow("b_masked_h", blurred_masked_h)
+    # masked_hsv = cv2.cvtColor(masked, cv2.COLOR_BGR2HSV)
+    # masked_h = masked_hsv[:, :, 0]
+    # cv2.imshow("masked_h", masked_h)
+    # blurred_masked_h = cv2.blur(masked_h, (5, 5))
+    # cv2.imshow("b_masked_h", blurred_masked_h)
     #normalized_masked_h = cv2.normalize(blurred_masked_h, None, 0, 255, norm_type=cv2.NORM_MINMAX)
     #cv2.imshow("norm", normalized_masked_h)
     #gradient_hue = cv2.morphologyEx(normalized_masked_h, cv2.MORPH_GRADIENT, None)
