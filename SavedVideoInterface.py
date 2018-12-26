@@ -23,7 +23,7 @@ def video_reader(name):
             else:
                 frame = crop_image(frame)
                 conts_and_rects = FruitDetection.fruit_detection(frame, original, 2000)
-                cv2.drawContours(frame, conts_and_rects[CONT], -1, (0, 255, 0), 2)
+                cv2.drawContours(frame, conts_and_rects.conts, -1, (0, 255, 0), 2)
                 cv2.imshow("video", frame)
                 cv2.waitKey(0)
             if cv2.waitKey(10) == 27:

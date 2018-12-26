@@ -9,7 +9,7 @@ CROP_SIZE = (200, 600)
 FRAME_SIZE = (720, 1080)
 SCREEN_SIZE = (26, 18)
 
-CHOSEN_SLICE_TYPE = SliceTypes.stupid_slice
+CHOSEN_SLICE_TYPE = SliceTypes.slice_to_peak
 
 class Trajectory:
     def __init__(self, x0, v, theta):
@@ -60,7 +60,7 @@ def calc_slice(fruit_trajectories_and_starting_times):
     return CHOSEN_SLICE_TYPE(get_arm_loc(), fruit_trajectories_and_starting_times)
 
 def get_arm_loc():
-    return 0, 90
+    return 0, 5
 
 def time_until_slice():
     return 2
