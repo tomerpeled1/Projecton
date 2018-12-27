@@ -1,6 +1,7 @@
 import FruitDetection as fd
 import RealTimeTracker as rtt
 from CameraInterface import Camera
+import CameraInterface as ci
 import SliceCreator as sc
 import cv2
 
@@ -66,7 +67,7 @@ def calculate_hist_window(window, img_hsv):
     '''
     x, y, w, h = window
     cropped = img_hsv[y:y + h, x:x + w].copy()
-    cv2.imshow("histogram", cropped)
+    # cv2.imshow("histogram", cropped)
     mask = cv2.inRange(cropped, np.array((0., float(s_lower), float(v_lower))),
                        np.array((180., float(s_upper), float(v_upper))))  # TODO understand parameters.
     crop_hist = cv2.calcHist([cropped], [0, 1], mask, [180, 255],
@@ -109,7 +110,7 @@ def calc_meanshift_all_fruits(fruits_info, img_hsv):
 
 def print_and_extract_centers(fruits_to_extract):
     if fruits_to_extract:
-        # sc.create_slice(fruits_to_extract)
+        sc.create_slice(fruits_to_extract)
         print("centers of:" + str([fruit.centers for fruit in fruits_to_extract]))
 
 
@@ -167,7 +168,7 @@ def track_known_fruits(fruits_info, current_frame, detection_results):
         for fruit in fruits_info:
             if rtt.track_object(detection_results, fruit):  # update tracker using the detection results.
                 if (fruit.counter <= 3):
-                    cv2.imshow("hsv new", img_hsv)
+                    # cv2.imshow("hsv new", img_hsv)
                     fruit.hist = calculate_hist_window(fruit.track_window, img_hsv)
             else:
                 toDelete.append(fruit)
@@ -189,16 +190,17 @@ def insert_new_fruits(detection_results, fruits_info, current):
     fruits_info += get_hists(detection_results, current)
 
 
-def run_detection(src):
+def run_detection(src, settings):
     fruits_info = []
     camera = Camera(src)
-    camera.set_camera_settings()
+    camera.set_camera_settings(settings)
     print("choose background")
     bg = camera.background_and_wait()
     cv2.waitKey(0) ##wait to start game after background retrieval
     current = bg
     while camera.is_opened():
         current = camera.next_frame(current)
+        t1 = time.perf_counter()
         detection_results = fd.fruit_detection(current, bg, CONTOUR_AREA_THRESH)
         cv2.drawContours(current, detection_results.conts, -1, (0, 255, 0), 2)
         track_known_fruits(fruits_info, current,
@@ -208,6 +210,8 @@ def run_detection(src):
         for fruit in fruits_info:
             if not fruit.is_falling:
                 draw(fruit, current)
+        t2 = time.perf_counter()
+        print("time for everything" , abs(t1-t2))
         cv2.imshow("frame", current)
         if cv2.waitKey(1) == 27:
             break
@@ -223,4 +227,4 @@ def draw(fruit, frame):
 
 
 if __name__ == '__main__':
-    run_detection(0)
+    run_detection(0, ci.LIGHT_LAB_SETTINGS)
