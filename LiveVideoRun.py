@@ -110,7 +110,7 @@ def calc_meanshift_all_fruits(fruits_info, img_hsv):
 
 def print_and_extract_centers(fruits_to_extract):
     if fruits_to_extract:
-        # sc.create_slice(fruits_to_extract)
+        sc.create_slice(fruits_to_extract)
         print("centers of:" + str([fruit.centers for fruit in fruits_to_extract]))
 
 
