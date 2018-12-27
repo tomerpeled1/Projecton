@@ -28,6 +28,7 @@ def get_xy_by_t(t):  # gets time in sec
     return x, y
 
 
+
 def get_xy_by_t_simple(t):  # gets time in sec
     x_0 = -SCREEN[0] / 2
     y_0 = 0.5 * SCREEN[1]

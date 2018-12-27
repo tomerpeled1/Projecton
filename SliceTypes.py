@@ -1,4 +1,5 @@
 import math
+
 import SliceCreator
 def tuple_add(tup1, tup2):
     return (tup1[0] + tup2[0], tup1[1] + tup2[1])
