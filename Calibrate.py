@@ -17,6 +17,7 @@ def get_bounding_rect(c):
 
 
 def calibrate(frame):
+
     '''
     :param frame: a frame of white image on the tablet and everything else is normal
     :return: a rectangle in the regular format, where the boundries of the screens are.
