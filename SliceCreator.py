@@ -17,6 +17,7 @@ CROP_SIZE = (160, 480)
 FRAME_SIZE = (480, 640)
 SCREEN_SIZE = (12, 16)
 ACC = RELATIVE_ACC * SCREEN_SIZE[1]
+INTEGRATE_WITH_MECHANICS = False
 
 # for hakab
 oops = 0
@@ -216,9 +217,12 @@ def simulation_thread_run():
 
 
 def init_everything():
-    global simulation_thread
-    simulation_thread = Thread(target=simulation_thread_run)
-    simulation_thread.start()
+    if INTEGRATE_WITH_MECHANICS:
+        global simulation_thread
+        simulation_thread = Thread(target=simulation_thread_run)
+        simulation_thread.start()
+    else:
+        pass
 
 
 if __name__ == "__main__":
