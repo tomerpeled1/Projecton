@@ -1,7 +1,6 @@
-import SavedVideoInterface as vi
+import VideoInterface as vi
 import FruitDetection as fd
 import RealTimeTracker as rtt
-import CameraInterface as ci
 import SliceCreator as sc
 import cv2
 import argparse
@@ -168,7 +167,7 @@ def track_known_fruits(fruits_info, current_frame, detection_results):
             if rtt.track_object(detection_results, fruit): #if we decided that we found the right contour
                 if (fruit.counter <= 3): #update the histogram for tracker, when fruit enters the screen
                                         #  (when the fruit enters we find a part of it and it is harder to track).
-                    cv2.imshow("hsv new", img_hsv)
+                    # cv2.imshow("hsv new", img_hsv)
                     fruit.hist = calculate_hist_window(fruit.track_window, img_hsv)
             else: # didnt find the fruit so delete it
                 toDelete.append(fruit)
@@ -194,7 +193,11 @@ def run_detection(video_name):
     fruits_info = []
     cap = cv2.VideoCapture(video_name)
     bg = background_and_wait(cap)
+    current = 0
+    cv2.imshow("aaaa", bg)
+    times = []
     while cap.isOpened():
+        t2 = time.perf_counter()
         current = vi.get_background(cap)
         detection_results = fd.fruit_detection(current, bg, CONTOUR_AREA_THRESH)
         cv2.drawContours(current, detection_results.conts, -1, (0, 255, 0), 2)
@@ -205,9 +208,16 @@ def run_detection(video_name):
         for fruit in fruits_info:
             if not fruit.is_falling:
                 draw(fruit, current)
+        print("len of fruits: " + str(len(fruits_info)))
+        t1 = time.perf_counter()
+        times.append(abs(t2 - t1))
         cv2.imshow("frame", current)
-        print("len of fruits: " +  str(len(fruits_info)))
+        if len(times) == 200:
+            break
+        print("time for thing we check now: " + str(abs(t2 - t1)))
         cv2.waitKey(0)
+    print("avg : " + str(sum(times)/len(times)))
+    print("max : " + str(max(times)))
 
 
 def draw(fruit, frame):
@@ -219,4 +229,4 @@ def draw(fruit, frame):
 
 
 if __name__ == '__main__':
-    run_detection("SmallFruitSilver1.flv")
+    run_detection("SmallFruit2.flv")
