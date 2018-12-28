@@ -31,7 +31,7 @@ HISTS_COMPARE_METHOD = cv2.HISTCMP_CORREL
 # Magic numbers for camera
 SECONDS_FOR_BG = 3
 
-INTEGRATE_WITH_MECHANICS = True
+INTEGRATE_WITH_MECHANICS = False
 
 def center(box):
     """

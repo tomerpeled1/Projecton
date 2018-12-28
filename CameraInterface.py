@@ -25,9 +25,12 @@ class Camera:
             self.stream = SavedVideoWrapper.SavedVideoWrapper(src)
         self.x_crop_dimentions = []
         self.y_crop_dimentions = []
+        self.current = None
+        self.buffer = []
 
     def read(self):
         frame = self.stream.read()
+        self.current = frame.copy()
         if CALIBRATE:
             frame = self.crop_to_screen_size(frame)
         if (self.CROP):
@@ -65,7 +68,8 @@ class Camera:
             #     return to_return
             dif = cv2.subtract(to_return, current)
             dif = cv2.cvtColor(dif, cv2.COLOR_BGR2GRAY)
-            if (cv2.countNonZero(dif) > 0):  # TODO maybe change this 0, if we see problems
+            if (cv2.countNonZero(dif) > 0):
+                self.buffer.append(self.current)
                 return to_return
 
     def next_frame_for_bg(self, current):
@@ -93,10 +97,7 @@ class Camera:
 
         # and for generic video:
         # frame = cv2.resize(frame, None, fx=0.5, fy=0.5)
-        frame = frame[2 * new_h:height, new_w:6 * new_w]
-        frame = cv2.resize(frame, (480,160))
-
-
+        frame = frame[:new_h, new_w:7 * new_w]
         return frame
 
     def background_and_wait(self):
