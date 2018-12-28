@@ -5,7 +5,7 @@ from scipy.optimize import curve_fit
 import ArduinoCommunication
 import simulation_like_motor_commands as slm
 from threading import Thread
-from multiprocessing import Process
+from multiprocessing import Process  # TODO delete if isn't used
 import threading
 
 RELATIVE_ACC = 2.34
@@ -22,10 +22,9 @@ SIMULATE = True
 LOCKED = False
 lock = threading.Lock()
 gui_lock = threading.Lock()
-simulation_queue_lock =  threading.Condition()
+simulation_queue_lock = threading.Condition()
 simulation_thread = None
 simulation_queue = []
-
 
 
 class Trajectory:
@@ -55,18 +54,16 @@ def update_fruits(fruits):
 
 
 def create_slice():
-    slice = calc_slice(on_screen_fruits)
-    return slice
+    return calc_slice(on_screen_fruits)
 
 
 def do_slice(slice):
-    parametization, timer, t_peak = slice
+    parametrization, timer, t_peak = slice
     # time.sleep(time_until_slice(slice))
     if SIMULATE:
-        slm.run_simulation(parametization)
+        slm.run_simulation(parametrization)
     else:
-        ArduinoCommunication.make_slice_by_trajectory(parametization)
-
+        ArduinoCommunication.make_slice_by_trajectory(parametrization)
 
 
 # def create_and_do_slice():
@@ -93,7 +90,6 @@ def update_and_slice(fruits):
                 print("x")
         simulation_queue_lock.notify()
         simulation_queue_lock.release()
-
 
 
 def pixel2cm(pix_loc):
@@ -154,15 +150,16 @@ def remove_sliced_fruits(fruits):
         on_screen_fruits.remove(fruit)
     for fruit in on_screen_fruits:
         traj, timer = fruit
-        if (time.clock() > timer + traj.calc_life_time()):
+        if time.clock() > timer + traj.calc_life_time():
             on_screen_fruits.remove(fruit)
+
 
 def simulation_thread_run():
     global simulation_queue_lock
     global simulation_queue
-    while (True):
+    while True:
         simulation_queue_lock.acquire()
-        while (len(simulation_queue) == 0):
+        while len(simulation_queue) == 0:
             simulation_queue_lock.wait()
         slice = simulation_queue[0]
         simulation_queue.remove(slice)
@@ -173,12 +170,11 @@ def simulation_thread_run():
         simulation_queue_lock.release()
 
 
-
-
 def init_everything():
     global simulation_thread
     simulation_thread = Thread(target=simulation_thread_run)
     simulation_thread.start()
+
 
 if __name__ == "__main__":
     for _ in range(10):
