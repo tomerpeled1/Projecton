@@ -188,7 +188,7 @@ def run_detection(src, settings, live):
     # Lock = False
     Sc.init_everything()
     fruits_info = []
-    camera = Camera(src, FLIP=False, CROP=True, LIVE=live)
+    camera = Camera(src, FLIP=True, CROP=True, LIVE=live)
     if camera.LIVE:
         camera.set_camera_settings(settings)
     print("choose background")
@@ -242,4 +242,4 @@ def draw(fruit, frame):
 
 
 if __name__ == '__main__':
-    run_detection("SmallFruit2.flv", Ci.DARK_101_SETTINGS_BEESITO, live=False)
+    run_detection(0, Ci.DARK_101_SETTINGS_BEESITO,live=True)

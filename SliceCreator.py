@@ -56,7 +56,8 @@ def update_fruits(fruits):
     fruits_locs = [[pixel2cm(pix_loc) for pix_loc in fruit.centers] for fruit in fruits]
     # fruit_trajectories = [get_trajectory(fruit_locs) for fruit_locs in fruits_locs]
     # on_screen_fruits.extend([[fruit_trajectories[i], fruits[i].time_created] for i in range(len(fruits))])
-    fruits = []
+    on_screen_fruits.extend(fruits)
+    fruits[:] = []
 
     fruit_trajectories = [get_trajectory(fruit_locs) for fruit_locs in fruits_locs]
     on_screen_fruits.extend([[fruit_trajectories[i], fruits[i].time_created] for i in range(len(fruits))])
@@ -89,9 +90,13 @@ def update_and_slice(fruits):
     global simulation_queue
     global simulation_queue_lock
     update_fruits(fruits)
-    if simulation_queue_lock.acquire(False) and len(on_screen_fruits) > 0:
-        slice = create_slice()
-        simulation_queue.append(slice)
+    if  simulation_queue_lock.acquire(False):
+        if len(on_screen_fruits) > 0:
+            slice = create_slice()
+            simulation_queue.append(slice)
+            print("Length of queue : " + str(len(simulation_queue)))
+            if(len(simulation_queue) == 2):
+                print("x")
         simulation_queue_lock.notify()
         simulation_queue_lock.release()
 
@@ -184,6 +189,8 @@ def init_info(crop_size, frame_size, screen_size):
 
 
 def remove_sliced_fruits(fruits):
+    if len(fruits) != len(on_screen_fruits):
+        print("FUCK")
     for fruit in fruits:
         on_screen_fruits.remove(fruit)
     for fruit in on_screen_fruits:
