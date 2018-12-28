@@ -221,6 +221,7 @@ def run_detection(video_name):
 
 
 def draw(fruit, frame):
+
     '''
     auto generated function, does some things and displays shit.
     '''

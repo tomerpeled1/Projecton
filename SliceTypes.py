@@ -18,8 +18,8 @@ def slice_to_peak(arm_loc, fruit_trajectories_and_starting_times):
     return slice, timer, t_peak
 
 def stupid_slice(arm_loc, fruit_trajectories):
-    SliceCreator.remove_sliced_fruits(SliceCreator.on_screen_fruits)
-    return (lambda t : tuple_add(arm_loc, tuple_mul(t % 1, (50, 0)) if (t % 1) < 0.5 else tuple_mul((1-t) % 1, (50, 0)))), None, None
+    SliceCreator.on_screen_fruits = []
+    return (lambda t : tuple_add(arm_loc, tuple_mul(t % 1, (16, 0)) if (t % 1) < 0.5 else tuple_mul((1-t) % 1, (16, 0)))), None, None
 
 
 def complex_slice(arm_loc, fruit_trajectories):
