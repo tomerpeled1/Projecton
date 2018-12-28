@@ -180,7 +180,7 @@ def move_2_motors(steps_theta, steps_phi, ser):  # WRITE MAXIMUM 41 STEPS PER SL
     print("time for writing: ", t2-t1)
     ser.write(str.encode(END_WRITING))
     print("ended writing")
-    time.sleep(1)
+    time.sleep(2)
     print("CUT THEM!!!")
     ser.write(str.encode(START_SLICE))
 
