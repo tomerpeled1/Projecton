@@ -11,9 +11,14 @@ import SliceCreator
 # Initiate arm at MAXIMAL theta
 
 
-# ------------- SETUP THE SERIAL -------------
-ser = serial.Serial('com3', 9600)  # Create Serial port object
-time.sleep(2)  # wait for 2 seconds for the communication to get established
+def initiate_serial():
+    """
+    Creates the Serial object (connection to Arduino).
+    :return: the Serial object
+    """
+    ser = serial.Serial('com6', 9600)  # Create Serial port object
+    time.sleep(2)  # wait for 2 seconds for the communication to get established
+    return ser
 
 
 # inpt = input("Enter 1 for stupid slice")
@@ -85,7 +90,7 @@ def modulo(a, n):
         return a % n - 1
 
 
-def make_slice_by_trajectory(get_xy_by_t):
+def make_slice_by_trajectory(get_xy_by_t, ser):
     """
     Sends commands to Arduino according to the given route from the algorithmic module.
     :param get_xy_by_t: function given form algorithmic module
@@ -98,7 +103,7 @@ def make_slice_by_trajectory(get_xy_by_t):
         steps_phi_decimal[i+1] += modulo(steps_phi_decimal[i], 1)
     steps_theta = steps_theta_decimal.astype(int)
     steps_phi = steps_phi_decimal.astype(int)
-    move_2_motors(steps_theta, steps_phi)
+    move_2_motors(steps_theta, steps_phi, ser)
 
 
 def get_angles_by_xy_and_dt(get_xy_by_t, dt):
@@ -144,7 +149,7 @@ def wait(t):
 
 
 # theta - small motor.    phi - big motor
-def move_2_motors(steps_theta, steps_phi):  # WRITE MAXIMUM 41 STEPS PER SLICE
+def move_2_motors(steps_theta, steps_phi, ser):  # WRITE MAXIMUM 41 STEPS PER SLICE
     """
     Sends commands to Arduino given the lists of steps.
     :param steps_theta: list of steps in theta
@@ -172,7 +177,8 @@ def move_2_motors(steps_theta, steps_phi):  # WRITE MAXIMUM 41 STEPS PER SLICE
     print("time for writing: ", t2-t1)
     ser.write(str.encode(END_WRITING))
     print("ended writing")
-    # time.sleep(3)
+    time.sleep(3)
+    print("CUT THEM!!!")
     ser.write(str.encode(START_SLICE))
 
     print("Theta steps:")
