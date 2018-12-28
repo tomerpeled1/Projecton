@@ -194,6 +194,7 @@ def insert_new_fruits(detection_results, fruits_info, current):
 def run_detection(src, settings):
     # global Lock
     # Lock = False
+    sc.init_everything()
     fruits_info = []
     camera = Camera(src, FLIP=True, CROP=True)
     camera.set_camera_settings(settings)
