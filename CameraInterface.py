@@ -5,6 +5,7 @@ from Calibrate import calibrate
 
 
 
+
 LIGHT_LAB_SETTINGS = (215, 75, -7, 12)  # order is (saturation, gain, exposure, focus)
 TABLE_ABOVE_SETTINGS = (255, 100, -6, 12)  # order is (saturation, gain, exposure, focus)
 MORNING_101_SETTINGS = (220, 40, -7, 5)  # order is (saturation, gain, exposure, focus)
