@@ -3,7 +3,8 @@ import numpy as np
 import time
 import math
 import matplotlib.pyplot as plt
-# import SliceCreator
+import SliceCreator
+
 
 #plot constants.
 WHITE = (255, 255, 255)
@@ -43,8 +44,8 @@ def get_xy_by_t_simple(t):  # gets time in sec
 
     return x, y
 
-# def algorithmic_parametrization():
-#     return SliceCreator.create_slice([])
+def algorithmic_parametrization():
+    return SliceCreator.create_slice()
 
 # ----------- PLOTS AND GRAPHS FUNCTIONS -----------
 def plot_screen(screen):
@@ -192,7 +193,7 @@ d = 10               # distance from screen in cm
 # MOTOR_SPEED = 50    # angular speed of motor in rpm
 STEPS_ROUND = 200   # steps of the motor for full round
 MINIMAL_ANGLE = 2 * np.pi / STEPS_ROUND
-T = 1                # time of one slice in sec
+T = 1               # time of one slice in sec
 dt_serial = 0.005    # time between 2 readings from serial in sec
 dt_motor = 0.0025    # time of writing to the serial in sec
 times_ideal = int(T / dt_motor)  # the size of the vectors for the simulation
@@ -202,10 +203,10 @@ times_serial = int(T / dt_serial)     # the amount of different values for the
 # ------------- CALCULATE LOCATIONS -------------
 def run_simulation(func, SCREEN = SCREEN):
     # the ideal angles like in the function of the algorithmic
-    theta_ideal, phi_ideal = make_ideal_slice_by_trajectory(func)
+    theta_ideal, phi_ideal = make_ideal_slice_by_trajectory(algorithmic_parametrization())
 
     # the practical angles
-    theta_practical, phi_practical = make_slice_by_trajectory(func)
+    theta_practical, phi_practical = make_slice_by_trajectory(algorithmic_parametrization())
 
     # ------------- PLOT -------------------
 
@@ -260,3 +261,5 @@ def run_simulation(func, SCREEN = SCREEN):
     # plots error graph
     # draw_graph(time_vector, errors, "errors to time", "time", "error")
 
+if __name__ == '__main__':
+    run_simulation(algorithmic_parametrization())

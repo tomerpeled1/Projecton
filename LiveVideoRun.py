@@ -9,11 +9,6 @@ import time
 import numpy as np
 from Fruit import Fruit
 
-
-
-
-
-
 ## parameters for meanshift
 MINIMUM_NUM_OF_CENTERS_TO_EXTRACT = 4
 s_lower = 60
@@ -34,8 +29,10 @@ FRUIT_TO_EXTRACT = []
 HISTS_THRESH = 0.2
 HISTS_COMPARE_METHOD = cv2.HISTCMP_CORREL
 
-#Magic numbers for camera
+# Magic numbers for camera
 SECONDS_FOR_BG = 3
+
+
 def center(box):
     '''
     returns center of a box.
@@ -123,7 +120,6 @@ def print_and_extract_centers(fruits_to_extract):
         print("centers of:" + str([fruit.centers for fruit in fruits_to_extract]))
 
 
-
 def get_hists(detection_results, frame):
     '''
     returns the data known about the detected fruits.
@@ -144,12 +140,11 @@ def get_hists(detection_results, frame):
                         boxes[0][1][1] - boxes[0][0][1])
         crop_hist = calculate_hist_window(track_window, hsv_frame)
         # after calculating the histrogram of the fruit, we add it to the big array and the window to the big array.
-        fruits_info.append(Fruit(track_window, crop_hist, 0, [detection_results.centers[0]], detection_results.time_created))
+        fruits_info.append(
+            Fruit(track_window, crop_hist, 0, [detection_results.centers[0]], detection_results.time_created))
         # finished dealing with box, now free it.
         detection_results.pop_element(0)
     return fruits_info
-
-
 
 
 def track_known_fruits(fruits_info, current_frame, detection_results):
@@ -162,7 +157,7 @@ def track_known_fruits(fruits_info, current_frame, detection_results):
     img_hsv = cv2.cvtColor(current_frame, cv2.COLOR_BGR2HSV)  # turn image to hsv.
     calc_meanshift_all_fruits(fruits_info, img_hsv)  # calculate the meanshift for all fruits.
     for fruit in fruits_info:
-        current_frame = draw_rectangles(fruit, current_frame, (255,20,147), 5)
+        current_frame = draw_rectangles(fruit, current_frame, (255, 20, 147), 5)
     if (len(detection_results.conts) > 0):
         toDelete = []
         for fruit in fruits_info:
@@ -190,16 +185,17 @@ def insert_new_fruits(detection_results, fruits_info, current):
     fruits_info += get_hists(detection_results, current)
 
 
-def run_detection(src, settings):
+def run_detection(src, settings, live):
     # global Lock
     # Lock = False
     sc.init_everything()
     fruits_info = []
-    camera = Camera(src, FLIP=True, CROP=True)
-    camera.set_camera_settings(settings)
+    camera = Camera(src, FLIP=False, CROP=True, LIVE=live)
+    if camera.LIVE:
+        camera.set_camera_settings(settings)
     print("choose background")
     bg = camera.background_and_wait()
-    cv2.waitKey(0) ##wait to start game after background retrieval
+    cv2.waitKey(0)  ##wait to start game after background retrieval
     current = bg
     counter = 0
     buffer = []
@@ -227,15 +223,17 @@ def run_detection(src, settings):
         print("len of fruits: " + str(len(fruits_info)))
     debug_with_buffer(buffer, bg)
 
+
 def debug_with_buffer(buffer, background):
     i = 0
     while True:
         cv2.imshow("debug", buffer[i])
         x = cv2.waitKey(1)
-        if x == 49: # '1' key
-            i -=1
-        elif x == 50: # '2' key
+        if x == 49:  # '1' key
+            i -= 1
+        elif x == 50:  # '2' key
             i += 1
+
 
 def draw(fruit, frame):
     '''
@@ -244,5 +242,6 @@ def draw(fruit, frame):
     draw_rectangles(fruit, frame, (255, 0, 0))
     draw_center(fruit, frame)  # conts_and_rects holds all the centers of all fruits - it has a list of lists.
 
+
 if __name__ == '__main__':
-    run_detection(0, ci.DARK_101_SETTINGS_BEESITO)
+    run_detection("SmallFruit2.flv", ci.DARK_101_SETTINGS_BEESITO,live=False)
