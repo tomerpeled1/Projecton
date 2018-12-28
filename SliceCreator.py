@@ -4,6 +4,9 @@ import time
 from scipy.optimize import curve_fit
 import middle_show
 import simulation_like_motor_commands as slm
+from threading import Thread
+from multiprocessing import Process
+import threading
 
 RELATIVE_ACC = 2.34
 ARM_DELAY = 1
@@ -16,6 +19,13 @@ ACC = RELATIVE_ACC * SCREEN_SIZE[1]
 
 on_screen_fruits = []
 SIMULATE = True
+LOCKED = False
+lock = threading.Lock()
+gui_lock = threading.Lock()
+simulation_queue_lock =  threading.Condition()
+simulation_thread = None
+simulation_queue = []
+
 
 class Trajectory:
     def __init__(self, x0, v, theta):
@@ -38,6 +48,7 @@ def update_fruits(fruits):
     fruits_locs = [[pixel2cm(pix_loc) for pix_loc in fruit.centers] for fruit in fruits]
     # fruit_trajectories = [get_trajectory(fruit_locs) for fruit_locs in fruits_locs]
     # on_screen_fruits.extend([[fruit_trajectories[i], fruits[i].time_created] for i in range(len(fruits))])
+    fruits = []
 
 def create_slice():
     slice = calc_slice(on_screen_fruits)
@@ -51,9 +62,28 @@ def do_slice(slice):
     else:
         middle_show.make_slice_by_trajectory(parametization)
 
-def create_and_do_slice():
-    slice = create_slice()
-    do_slice(slice)
+
+# def create_and_do_slice():
+#     global lock
+#     #lock.acquire()
+#     print(3333333333333333333)
+#     gui_lock.acquire()
+#     slice = create_slice()
+#     p = Process(target=do_slice, args=(slice,))
+#     p.start()
+#     lock.release()
+
+
+def update_and_slice(fruits):
+    global simulation_queue
+    global simulation_queue_lock
+    update_fruits(fruits)
+    if simulation_queue_lock.acquire(False) and len(on_screen_fruits) > 0:
+        slice = create_slice()
+        simulation_queue.append(slice)
+        simulation_queue_lock.notify()
+        simulation_queue_lock.release()
+
 
 def pixel2cm(pix_loc):
     (i_coord_crop, j_coord_crop) = pix_loc
@@ -106,9 +136,30 @@ def remove_sliced_fruits(fruits):
         if (time.clock() > timer + traj.calc_life_time()):
             on_screen_fruits.remove(fruit)
 
+def simulation_thread_run():
+    global simulation_queue_lock
+    global simulation_queue
+    while (True):
+        simulation_queue_lock.acquire()
+        while (len(simulation_queue) == 0):
+            simulation_queue_lock.wait()
+        slice = simulation_queue[0]
+        simulation_queue.remove(slice)
+        if SIMULATE:
+            do_slice(slice)
+        else:
+            middle_show.make_slice_by_trajectory(slice)
+        simulation_queue_lock.release()
+
+
+
+
 def init_everything():
     if not SIMULATE:
         middle_show.initiate_serial()
+    global simulation_thread
+    simulation_thread = Thread(target=simulation_thread_run)
+    simulation_thread.start()
 
 if __name__ == "__main__":
     ser = middle_show.initiate_serial()

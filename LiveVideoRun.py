@@ -27,6 +27,7 @@ NUM_OF_FRAMES = 5
 MAX_NUM_OF_FRAMES_ON_SCREEN = 13
 WINDOW_NAME = "Fruit tracker"
 term_crit = (cv2.TERM_CRITERIA_EPS | cv2.TERM_CRITERIA_COUNT, 10, 1)
+FRUIT_TO_EXTRACT = []
 ##init window
 # cv2.namedWindow(WINDOW_NAME, cv2.WINDOW_NORMAL)  # the window to show22
 
@@ -35,7 +36,6 @@ HISTS_COMPARE_METHOD = cv2.HISTCMP_CORREL
 
 #Magic numbers for camera
 SECONDS_FOR_BG = 3
-
 def center(box):
     '''
     returns center of a box.
@@ -83,7 +83,7 @@ def calculate_hist_window(window, img_hsv):
 def calc_meanshift_all_fruits(fruits_info, img_hsv):
     # does the proccess of calculating the new meanshift every frame.
     # compares the hist to the known one to see if the fruit has left the screen.
-    fruits_to_extract = []
+    global FRUIT_TO_EXTRACT
     for fruit in fruits_info:
         x, y, w, h = fruit.track_window
         if len(fruit.centers) > 1:
@@ -109,14 +109,13 @@ def calc_meanshift_all_fruits(fruits_info, img_hsv):
             print("dis: " + str(dis))
             fruits_info.remove(fruit)
             if not fruit.is_falling and len(fruit.centers) > MINIMUM_NUM_OF_CENTERS_TO_EXTRACT:
-                fruits_to_extract.append(fruit)
-    print_and_extract_centers(fruits_to_extract)
+                FRUIT_TO_EXTRACT.append(fruit)
+    print_and_extract_centers(FRUIT_TO_EXTRACT)
 
 
 def print_and_extract_centers(fruits_to_extract):
     if fruits_to_extract:
-        sc.update_fruits(fruits_to_extract)
-        sc.create_and_do_slice()
+        sc.update_and_slice(fruits_to_extract)
         # thread = Thread(target=sc.create_and_do_slice)
         # thread.start()
         # slm.run_simulation(slice)
@@ -173,12 +172,12 @@ def track_known_fruits(fruits_info, current_frame, detection_results):
                     fruit.hist = calculate_hist_window(fruit.track_window, img_hsv)
             else:
                 toDelete.append(fruit)
-        fruits_to_extract = []
+        global FRUIT_TO_EXTRACT
         for deleted_fruit in toDelete:
             if len(deleted_fruit.centers) > MINIMUM_NUM_OF_CENTERS_TO_EXTRACT and not deleted_fruit.is_falling:
-                fruits_to_extract.append(deleted_fruit)
+                FRUIT_TO_EXTRACT.append(deleted_fruit)
             fruits_info.remove(deleted_fruit)
-        print_and_extract_centers(fruits_to_extract)
+        print_and_extract_centers(FRUIT_TO_EXTRACT)
 
 
 def insert_new_fruits(detection_results, fruits_info, current):
