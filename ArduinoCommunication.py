@@ -15,12 +15,6 @@ except SerialException:
     print("Didn't create serial.")
 
 
-# inpt = input("Enter 1 for stupid slice")
-# while inpt != "1":
-#     inpt = input()
-# SliceCreator.make_slice()
-
-
 # ------------- CONSTANTS --------------
 # board constants
 RADIUS = 15
@@ -42,6 +36,9 @@ TRAJECTORY_DIVISION_NUMBER = 40
 DT_DIVIDE_TRAJECTORY = float(T) / TRAJECTORY_DIVISION_NUMBER
 END_WRITING = 'e'
 START_SLICE = 'd'
+WANTED_RPS = 0.5
+ONE_STEP_DELAY = 0.005 / WANTED_RPS / STEPS_FRACTION # in sec
+SLICE_END_SIGNAL = 'z'
 
 
 # ---------- ALGORITHMIC FUNCTION ---------------
@@ -149,6 +146,7 @@ def move_2_motors(steps_theta, steps_phi):  # WRITE MAXIMUM 41 STEPS PER SLICE
     :param steps_theta: list of steps in theta
     :param steps_phi: list of steps in phi
     """
+
     t1 = time.time()
     print("Divide trajectory to " + str(len(steps_theta)) + " parts")
     for i in range(len(steps_theta)):
@@ -171,14 +169,41 @@ def move_2_motors(steps_theta, steps_phi):  # WRITE MAXIMUM 41 STEPS PER SLICE
     print("time for writing: ", t2-t1)
     ser.write(str.encode(END_WRITING))
     print("ended writing")
-    time.sleep(2)
+    # time.sleep(2)
     print("CUT THEM!!!")
     ser.write(str.encode(START_SLICE))
+
+    time_of_slice = calc_time_of_slice(steps_theta,steps_phi)
+    time_in_slice_start = time.time()
+    while time.time() < time_in_slice_start + time_of_slice:  # make sure the arm isn't
+        # moving
+        pass
+
+    # read_from_serial = (ser.readline()).decode("utf-8")
+    # print(read_from_serial)
+    # while SLICE_END_SIGNAL not in read_from_serial:
+    #     read_from_serial = (ser.readline()).decode("utf-8")
+    #     print(read_from_serial)
 
     print("Theta steps:")
     print(steps_theta)
     print("Phi steps:")
     print(steps_phi)
+
+
+def calc_time_of_slice(steps_theta, steps_phi):
+    """
+
+    :param steps_theta:
+    :param steps_phi:
+    :return:
+    """
+    steps_counter = 0
+    for i in range(len(steps_theta)):
+        steps_counter += abs(steps_theta[i]) + abs(steps_phi[i])
+    time_of_slice = steps_counter * ONE_STEP_DELAY
+    print("time of slice is supposed to be " + str(time_of_slice) + " seconds")
+    return time_of_slice
 
 
 # if __name__ == "__main__":
