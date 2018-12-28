@@ -162,20 +162,18 @@ def simulation_thread_run():
         if SIMULATE:
             do_slice(slice)
         else:
-            middle_show.make_slice_by_trajectory(slice)
+            ArduinoCommunication.make_slice_by_trajectory(slice)
         simulation_queue_lock.release()
 
 
 
 
 def init_everything():
-    if not SIMULATE:
-        middle_show.initiate_serial()
     global simulation_thread
     simulation_thread = Thread(target=simulation_thread_run)
     simulation_thread.start()
 
 if __name__ == "__main__":
     for _ in range(10):
-        create_and_do_slice()
+        # create_and_do_slice()
         time.sleep(1)
