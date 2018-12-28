@@ -34,7 +34,7 @@ class Camera:
         if CALIBRATE:
             frame = self.crop_to_screen_size(frame)
         if (self.CROP):
-            frame = Camera.crop_image(frame)
+            frame = self.crop_image(frame)
         if (self.FLIP):
             frame = Camera.flip(frame)
             # prev = Camera.flip(flipped)
@@ -87,17 +87,19 @@ class Camera:
                 self.x_crop_dimentions[0]:self.y_crop_dimentions]
         return frame
 
-    @staticmethod
-    def crop_image(frame):
+    def crop_image(self, frame):
         (height, width, depth) = frame.shape
         new_h = int(height / 3)
         new_w = int(width / 8)
-        # this is exactly for beesito
-        # frame = frame[int(height / 5)-10:int(new_h + height / 5)-10, new_w:7 * new_w]
+        if self.FLIP:
+            # this is exactly for beesito
+            # frame = frame[int(height / 5)-10:int(new_h + height / 5)-10, new_w:7 * new_w]
 
-        # and for generic video:
-        # frame = cv2.resize(frame, None, fx=0.5, fy=0.5)
-        frame = frame[:new_h, new_w:7 * new_w]
+            # and for generic video:
+            # frame = cv2.resize(frame, None, fx=0.5, fy=0.5)
+            frame = frame[:new_h, new_w:7 * new_w]
+        elif not self.FLIP:
+            frame = frame[2 * new_h:height, new_w: 7 * new_w]
         return frame
 
     def background_and_wait(self):
