@@ -5,6 +5,7 @@ import math
 import matplotlib.pyplot as plt
 import SliceCreator
 
+
 #plot constants.
 WHITE = (255, 255, 255)
 BLACK = (0, 0, 0)

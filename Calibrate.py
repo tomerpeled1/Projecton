@@ -33,6 +33,7 @@ def calibrate(frame):
 
 
 
+
 if __name__ == '__main__':
     cal = cv2.imread("calibrate_image.jpg")
     cal = cv2.resize(cal,(0,0),fx = 0.5, fy = 0.5)

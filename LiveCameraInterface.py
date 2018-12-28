@@ -3,6 +3,7 @@ import time
 import FruitDetection
 
 def show_webcam(mirror=False):
+
     cam = cv2.VideoCapture(0)
     # set_camera_settings(cam)
     ret_val,back = cam.read()

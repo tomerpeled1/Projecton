@@ -121,6 +121,7 @@ def print_and_extract_centers(fruits_to_extract):
         print("centers of:" + str([fruit.centers for fruit in fruits_to_extract]))
 
 
+
 def get_hists(detection_results, frame):
     '''
     returns the data known about the detected fruits.
