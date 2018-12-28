@@ -3,6 +3,7 @@ import SliceTypes
 import time
 from scipy.optimize import curve_fit
 import ArduinoCommunication
+import simulation_like_motor_commands as slm
 
 RELATIVE_ACC = 2.34
 ARM_DELAY = 1
@@ -15,6 +16,7 @@ ACC = RELATIVE_ACC * SCREEN_SIZE[1]
 
 on_screen_fruits = []
 SIMULATE = True
+
 
 class Trajectory:
     def __init__(self, x0, v, theta):
@@ -33,14 +35,17 @@ class Trajectory:
         t = 2 * self.v * math.sin(self.theta) / ACC
         return t
 
+
 def update_fruits(fruits):
     fruits_locs = [[pixel2cm(pix_loc) for pix_loc in fruit.centers] for fruit in fruits]
     # fruit_trajectories = [get_trajectory(fruit_locs) for fruit_locs in fruits_locs]
     # on_screen_fruits.extend([[fruit_trajectories[i], fruits[i].time_created] for i in range(len(fruits))])
 
+
 def create_slice():
     slice = calc_slice(on_screen_fruits)
     return slice
+
 
 def do_slice(slice):
     parametization, timer, t_peak = slice
@@ -48,20 +53,13 @@ def do_slice(slice):
     if SIMULATE:
         slm.run_simulation(parametization)
     else:
-        middle_show.make_slice_by_trajectory(parametization)
+        ArduinoCommunication.make_slice_by_trajectory(parametization)
+
 
 def create_and_do_slice():
     slice = create_slice()
     do_slice(slice)
-def make_slice(fruits, ser):
-    """
-    calls create slice and than calling the slicing method of the communication module
-    :param fruits: #TODO
-    :param ser: Serial object
-    :return: None
-    """
-    slice = create_slice(fruits)
-    ArduinoCommunication.make_slice_by_trajectory(slice, ser)
+
 
 def pixel2cm(pix_loc):
     (i_coord_crop, j_coord_crop) = pix_loc
@@ -71,6 +69,7 @@ def pixel2cm(pix_loc):
     j_coord_screen =  j_coord_frame / FRAME_SIZE[1] * SCREEN_SIZE[1]
     return j_coord_screen, i_coord_screen
 
+
 def get_trajectory(fruit_locs):
     x_coords = [fruit_loc[0] for fruit_loc in fruit_locs]
     y_coords = [fruit_loc[1] for fruit_loc in fruit_locs]
@@ -79,14 +78,18 @@ def get_trajectory(fruit_locs):
     trajectory = Trajectory(x0_par, v_par, theta_par)
     return trajectory
 
+
 def trajectory_physics(x, x0, v, theta):
     return (x - x0) * math.tan(theta) - ACC * (x - x0) ** 2 / (2 * v ** 2 * math.cos(theta) ** 2)
+
 
 def x_trajectory(t, x0, v, theta):
     return x0 + v * math.cos(theta) * t
 
+
 def y_trajectory(t, v, theta):
     return v * math.sin(theta) * t - 0.5 * ACC * t ** 2
+
 
 def calc_slice(fruit_trajectories_and_starting_times):
     # time.sleep(time_until_slice())
@@ -96,15 +99,18 @@ def calc_slice(fruit_trajectories_and_starting_times):
 def get_arm_loc():
     return -5, 5
 
+
 def time_until_slice(fruit):
     _, timer, t_peak = fruit
     return timer + t_peak - time.clock()
+
 
 def init_info(crop_size, frame_size, screen_size):
     global CROP_SIZE, FRAME_SIZE, SCREEN_SIZE
     CROP_SIZE = crop_size
     FRAME_SIZE = frame_size
     SCREEN_SIZE = screen_size
+
 
 def remove_sliced_fruits(fruits):
     for fruit in fruits:
@@ -114,13 +120,8 @@ def remove_sliced_fruits(fruits):
         if (time.clock() > timer + traj.calc_life_time()):
             on_screen_fruits.remove(fruit)
 
-def init_everything():
-    if not SIMULATE:
-        middle_show.initiate_serial()
 
 if __name__ == "__main__":
-    # ser = ArduinoCommunication.initiate_serial()
-    ser = 0
     for _ in range(10):
-        make_slice([], ser)
+        create_and_do_slice()
         time.sleep(1)
