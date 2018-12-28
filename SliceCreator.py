@@ -43,7 +43,7 @@ def pixel2cm(pix_loc):
     (i_coord_crop, j_coord_crop) = pix_loc
     i_coord_frame = i_coord_crop + FRAME_SIZE[0] - CROP_SIZE[0]
     j_coord_frame = FRAME_SIZE[1] / 2 - CROP_SIZE[1] / 2 + j_coord_crop
-    i_coord_screen =  (1 - i_coord_frame / FRAME_SIZE[0]) * SCREEN_SIZE[0]
+    i_coord_screen =  (i_coord_frame / FRAME_SIZE[0]) * SCREEN_SIZE[0]
     j_coord_screen =  j_coord_frame / FRAME_SIZE[1] * SCREEN_SIZE[1]
     return j_coord_screen, i_coord_screen
 
