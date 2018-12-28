@@ -25,7 +25,7 @@ success = 0
 # CHOSEN_SLICE_TYPE = SliceTypes.stupid_slice
 
 on_screen_fruits = []
-SIMULATE = True
+SIMULATE = False
 LOCKED = False
 lock = threading.Lock()
 gui_lock = threading.Lock()
@@ -223,5 +223,5 @@ def init_everything():
 
 if __name__ == "__main__":
     for _ in range(10):
-        # create_and_do_slice()
-        time.sleep(1)
+        slice, timer, time_to_peak = create_slice()
+        ArduinoCommunication.make_slice_by_trajectory(slice)

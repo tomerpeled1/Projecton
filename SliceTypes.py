@@ -1,6 +1,7 @@
 import math
 import SliceCreator
 
+LINE_LENGTH = 10
 
 def tuple_add(tup1, tup2):
     return tup1[0] + tup2[0], tup1[1] + tup2[1]
@@ -23,8 +24,9 @@ def slice_to_peak(arm_loc, fruit_trajectories_and_starting_times):
 
 def stupid_slice(arm_loc, fruit_trajectories):
     SliceCreator.remove_sliced_fruits(SliceCreator.on_screen_fruits)
-    return (lambda t: tuple_add(arm_loc, tuple_mul(t % 1, (50, 0)) if (t % 1) < 0.5 else
-            tuple_mul((1-t) % 1, (50, 0)))), None, None
+    return (lambda t: tuple_add(arm_loc, tuple_mul(t % 1, (2 * LINE_LENGTH,
+            0)) if (t % 1) < 0.5 else tuple_mul((1-t) % 1, (2 * LINE_LENGTH,
+            0)))), None, None
 
 
 def complex_slice(arm_loc, fruit_trajectories):
