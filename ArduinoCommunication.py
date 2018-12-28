@@ -135,7 +135,8 @@ def wait(t):
     Creates a delay in the code.
     :param t: time to wait in ms.
     """
-    for i in range(int(25000*t)):
+    start = time.perf_counter()
+    while time.perf_counter() < start + t/1000.0:
         pass
 
 
