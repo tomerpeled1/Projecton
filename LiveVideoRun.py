@@ -4,11 +4,7 @@ from CameraInterface import Camera
 import CameraInterface as ci
 import SliceCreator as sc
 import cv2
-import simulation_like_motor_commands as slm
 from threading import Thread
-import copy
-
-
 import time
 import numpy as np
 from Fruit import Fruit
@@ -114,11 +110,12 @@ def calc_meanshift_all_fruits(fruits_info, img_hsv):
 
 def print_and_extract_centers(fruits_to_extract):
     if fruits_to_extract:
-        slice = sc.create_slice(fruits_to_extract)
-        # thread = Thread(target=slm.run_simulation, args=(slice,))
+        sc.update_fruits(fruits_to_extract)
+        sc.create_and_do_slice()
+        # thread = Thread(target=sc.create_and_do_slice)
         # thread.start()
         # slm.run_simulation(slice)
-
+        # sc.create_slice([])
         print("centers of:" + str([fruit.centers for fruit in fruits_to_extract]))
 
 
@@ -190,6 +187,8 @@ def insert_new_fruits(detection_results, fruits_info, current):
 
 
 def run_detection(src, settings):
+    # global Lock
+    # Lock = False
     fruits_info = []
     camera = Camera(src, FLIP=True, CROP=True)
     camera.set_camera_settings(settings)
@@ -232,7 +231,6 @@ def debug_with_buffer(buffer, background):
             i -=1
         elif x == 50: # '2' key
             i += 1
-
 
 def draw(fruit, frame):
     '''

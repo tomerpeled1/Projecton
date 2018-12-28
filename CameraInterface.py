@@ -12,11 +12,12 @@ DARK_101_SETTINGS_BEESITO = (255, 127, -7, 5)
 CALIBRATE = False
 
 class Camera:
-    def __init__(self, src=0, FLIP=True, CROP=False):
+    def __init__(self, src=0, FLIP=True, CROP=False, LIVE = True):
         self.src = src
-        self.stream = WebcamVideoStream(src).start()
+        self.stream = WebcamVideoStream(src = src, name = "Live Video").start()
         self.FLIP = FLIP
         self.CROP = CROP
+        self.LIVE = LIVE
         self.x_crop_dimentions = []
         self.y_crop_dimentions = []
 
@@ -147,7 +148,7 @@ class Camera:
             counter += 1
             if cv2.waitKey(1) == 32:
                 cv2.imshow("until background", cur)
-                # cv2.waitKey(0)
+                cv2.waitKey(0)
                 return cur
 
     def calibrate_camera(self, frame):
