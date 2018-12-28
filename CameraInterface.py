@@ -116,8 +116,20 @@ class Camera:
         cv2.destroyAllWindows()
         self.stream.stop()
 
+    def set(self, settings):
+        cam = self.stream.stream
+        # cam.set(3, 1920)  # width
+        # cam.set(4, 1080)  # height
+        # cam.set(10, 128)  # brightness     min: 0   , max: 255 , increment:1
+        # cam.set(11, 128)  # contrast       min: 0   , max: 255 , increment:1
+        cam.set(12, settings[0])  # saturation     min: 0   , max: 255 , increment:1
+        cam.set(14, settings[1])  # gain           min: 0   , max: 127 , increment:1
+        cam.set(15, settings[2])  # exposure       min: -7  , max: -1  , increment:1
+        # cam.set(17, 4000)  # white_balance  min: 4000, max: 7000, increment:1
+        cam.set(28, settings[3])
+
     def set_camera_settings(self, settings):
-        self.stream.set(settings)
+        self.set(settings)
         if CALIBRATE:
             frame = self.stream.read()
             (y, x) = calibrate(frame)
