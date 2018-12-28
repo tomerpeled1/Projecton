@@ -8,6 +8,7 @@ from threading import Thread
 from multiprocessing import Process  # TODO delete if isn't used
 import threading
 
+
 RELATIVE_ACC = 2.34
 ARM_DELAY = 1
 CROP_SIZE = (160, 480)
