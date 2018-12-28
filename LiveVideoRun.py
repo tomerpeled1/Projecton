@@ -10,6 +10,7 @@ import numpy as np
 from Fruit import Fruit
 
 
+
 ## parameters for meanshift
 MINIMUM_NUM_OF_CENTERS_TO_EXTRACT = 4
 s_lower = 60
