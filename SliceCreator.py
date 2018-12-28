@@ -2,7 +2,6 @@ import math
 import matplotlib.pyplot as plt
 import cv2
 
-
 import SliceTypes
 import time
 from scipy.optimize import curve_fit
@@ -19,7 +18,7 @@ FRAME_SIZE = (480, 640)
 SCREEN_SIZE = (12, 16)
 ACC = RELATIVE_ACC * SCREEN_SIZE[1]
 
-#for hakab
+# for hakab
 oops = 0
 success = 0
 
@@ -46,7 +45,7 @@ class Trajectory:
 
     def calc_peak(self):
         t = self.v * math.sin(self.theta) / ACC
-        return t,  self.calc_trajectory()(t)
+        return t, self.calc_trajectory()(t)
 
     def calc_life_time(self):
         t = 2 * self.v * math.sin(self.theta) / ACC
@@ -62,6 +61,7 @@ def update_fruits(fruits):
 
     fruit_trajectories = [get_trajectory(fruit_locs) for fruit_locs in fruits_locs]
     on_screen_fruits.extend([[fruit_trajectories[i], fruits[i].time_created] for i in range(len(fruits))])
+
 
 def create_slice():
     return calc_slice(on_screen_fruits)
@@ -91,12 +91,12 @@ def update_and_slice(fruits):
     global simulation_queue
     global simulation_queue_lock
     update_fruits(fruits)
-    if  simulation_queue_lock.acquire(False):
+    if simulation_queue_lock.acquire(False):
         if len(on_screen_fruits) > 0:
             slice = create_slice()
             simulation_queue.append(slice)
             print("Length of queue : " + str(len(simulation_queue)))
-            if(len(simulation_queue) == 2):
+            if (len(simulation_queue) == 2):
                 print("x")
         simulation_queue_lock.notify()
         simulation_queue_lock.release()
@@ -113,17 +113,16 @@ def pixel2cm(pix_loc):
     i_coord_frame = FRAME_SIZE[0] - CROP_SIZE[0] + i_coord_crop
     j_coord_frame = FRAME_SIZE[1] / 2 - CROP_SIZE[1] / 2 + j_coord_crop
     i_coord_screen = (float(i_coord_frame / FRAME_SIZE[0])) * SCREEN_SIZE[0]
-    j_coord_screen = (1-float(j_coord_frame / FRAME_SIZE[1])) * SCREEN_SIZE[1]
-    return j_coord_screen, i_coord_screen # (x,y)
+    j_coord_screen = (1 - float(j_coord_frame / FRAME_SIZE[1])) * SCREEN_SIZE[1]
+    return j_coord_screen, i_coord_screen  # (x,y)
 
 
 def get_trajectory(fruit_locs):
-    x_coords = [fruit_loc[0] for fruit_loc in fruit_locs] # TODO this is a bug. need to make in a loop
+    x_coords = [fruit_loc[0] for fruit_loc in fruit_locs]  # TODO this is a bug. need to make in a loop
     y_coords = [fruit_loc[1] for fruit_loc in fruit_locs]
 
-    plt.plot(x_coords, y_coords)
-    plt.show()
-
+    # plt.plot(x_coords, y_coords)
+    # plt.show()
 
     global success
     global oops
@@ -131,11 +130,11 @@ def get_trajectory(fruit_locs):
         popt, pcov = curve_fit(trajectory_physics, x_coords, y_coords)
         print(popt[0], popt[1], popt[2])
         print("success")
-        success +=1
+        success += 1
     except:
-        popt = (0,0,0)
+        popt = (0, 0, 0)
         print("oops")
-        oops+=1
+        oops += 1
     print("fitted: ", success, "didn't fit: ", oops)
     x0_par, v_par, theta_par = popt
     trajectory = Trajectory(x0_par, v_par, theta_par)
@@ -143,16 +142,16 @@ def get_trajectory(fruit_locs):
     # ----------draw trajectory-------------- #
     T = 2
     dt = 0.05
-    times = range(int(T/dt))
+    times = range(int(T / dt))
     xy = [[0 for _ in times], [0 for _ in times]]
     route = trajectory.calc_trajectory()
     for i in times:
         xy[0][i], xy[1][i] = route(dt * i)
 
-    print(xy)
-    plt.plot(xy[0],xy[1])
-    plt.show()
-    cv2.waitKey(0)
+    # print(xy)
+    # plt.plot(xy[0], xy[1])
+    # plt.show()
+    # cv2.waitKey(0)
     return trajectory
 
 
