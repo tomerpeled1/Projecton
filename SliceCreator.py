@@ -38,8 +38,18 @@ def create_slice(fruits):
     # on_screen_fruits.extend([[fruit_trajectories[i], fruits[i].time_created] for i in range(len(fruits))])
     slice = calc_slice(on_screen_fruits)
     # time.sleep(time_until_slice(slice))
-    middle_show.make_slice_by_trajectory(slice)
     return slice
+
+
+def make_slice(fruits, ser):
+    """
+    calls create slice and than calling the slicing method of the communication module
+    :param fruits: #TODO
+    :param ser: Serial object
+    :return: None
+    """
+    slice = create_slice(fruits)
+    middle_show.make_slice_by_trajectory(slice, ser)
 
 def pixel2cm(pix_loc):
     (i_coord_crop, j_coord_crop) = pix_loc
@@ -92,6 +102,8 @@ def remove_sliced_fruits(fruits):
         if (time.clock() > timer + traj.calc_life_time()):
             on_screen_fruits.remove(fruit)
 
+
 if __name__ == "__main__":
-    create_slice([])
-    pass
+    ser = middle_show.initiate_serial()
+    for _ in range(10):
+        create_slice([], ser)

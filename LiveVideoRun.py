@@ -112,9 +112,9 @@ def calc_meanshift_all_fruits(fruits_info, img_hsv):
     print_and_extract_centers(fruits_to_extract)
 
 
-def print_and_extract_centers(fruits_to_extract):
+def print_and_extract_centers(fruits_to_extract, ser):
     if fruits_to_extract:
-        slice = sc.create_slice(fruits_to_extract)
+        slice = sc.make_slice(fruits_to_extract, ser)
         # thread = Thread(target=slm.run_simulation, args=(slice,))
         # thread.start()
         # slm.run_simulation(slice)
@@ -242,4 +242,5 @@ def draw(fruit, frame):
     draw_center(fruit, frame)  # conts_and_rects holds all the centers of all fruits - it has a list of lists.
 
 if __name__ == '__main__':
+    #TODO set initialization of serial object for communication mudule
     run_detection(0, ci.DARK_101_SETTINGS_BEESITO)
