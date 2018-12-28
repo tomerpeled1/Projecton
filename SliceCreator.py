@@ -1,6 +1,6 @@
 import math
 import matplotlib.pyplot as plt
-import cv2
+# import cv2
 
 import SliceTypes
 import time
@@ -15,7 +15,7 @@ RELATIVE_ACC = 2.34
 ARM_DELAY = 1
 CROP_SIZE = (160, 480)
 FRAME_SIZE = (480, 640)
-SCREEN_SIZE = (12, 16)
+SCREEN_SIZE = (21.7, 13.6)
 ACC = RELATIVE_ACC * SCREEN_SIZE[1]
 INTEGRATE_WITH_MECHANICS = False
 
@@ -174,7 +174,7 @@ def calc_slice(fruit_trajectories_and_starting_times):
 
 
 def get_arm_loc():
-    return -5, 5
+    return -SCREEN_SIZE[0]/2, 0
 
 
 def time_until_slice(fruit):

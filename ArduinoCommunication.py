@@ -36,7 +36,7 @@ TRAJECTORY_DIVISION_NUMBER = 40
 DT_DIVIDE_TRAJECTORY = float(T) / TRAJECTORY_DIVISION_NUMBER
 END_WRITING = 'e'
 START_SLICE = 'd'
-WANTED_RPS = 0.5
+WANTED_RPS = 0.05
 ONE_STEP_DELAY = 0.005 / WANTED_RPS / STEPS_FRACTION # in sec
 SLICE_END_SIGNAL = 'z'
 
@@ -175,8 +175,7 @@ def move_2_motors(steps_theta, steps_phi):  # WRITE MAXIMUM 41 STEPS PER SLICE
 
     time_of_slice = calc_time_of_slice(steps_theta,steps_phi)
     time_in_slice_start = time.time()
-    while time.time() < time_in_slice_start + time_of_slice:  # make sure the arm isn't
-        # moving
+    while time.time() < time_in_slice_start + time_of_slice:  # make sure the arm isn't moving
         pass
 
     # read_from_serial = (ser.readline()).decode("utf-8")
@@ -198,7 +197,7 @@ def calc_time_of_slice(steps_theta, steps_phi):
     :param steps_phi:
     :return:
     """
-    steps_counter = 0
+    steps_counter = 20
     for i in range(len(steps_theta)):
         steps_counter += abs(steps_theta[i]) + abs(steps_phi[i])
     time_of_slice = steps_counter * ONE_STEP_DELAY
