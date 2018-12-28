@@ -4,6 +4,9 @@ from CameraInterface import Camera
 import CameraInterface as ci
 import SliceCreator as sc
 import cv2
+import simulation_like_motor_commands as slm
+from threading import Thread
+import copy
 
 
 import time
@@ -24,9 +27,9 @@ MAX_NUM_OF_FRAMES_ON_SCREEN = 13
 WINDOW_NAME = "Fruit tracker"
 term_crit = (cv2.TERM_CRITERIA_EPS | cv2.TERM_CRITERIA_COUNT, 10, 1)
 ##init window
-# cv2.namedWindow(WINDOW_NAME, cv2.WINDOW_NORMAL)  # the window to show
+# cv2.namedWindow(WINDOW_NAME, cv2.WINDOW_NORMAL)  # the window to show22
 
-HISTS_THRESH = 0.4
+HISTS_THRESH = 0.2
 HISTS_COMPARE_METHOD = cv2.HISTCMP_CORREL
 
 #Magic numbers for camera
@@ -100,6 +103,7 @@ def calc_meanshift_all_fruits(fruits_info, img_hsv):
         if (abs(dis) > HISTS_THRESH) and fruit.counter < MAX_NUM_OF_FRAMES_ON_SCREEN:  # threshold for hist resemblance.
             fruit.track_window = track_window
             fruit.counter += 1
+
         else:
             print("dis: " + str(dis))
             fruits_info.remove(fruit)
@@ -110,7 +114,10 @@ def calc_meanshift_all_fruits(fruits_info, img_hsv):
 
 def print_and_extract_centers(fruits_to_extract):
     if fruits_to_extract:
-        sc.create_slice(fruits_to_extract)
+        slice = sc.create_slice(fruits_to_extract)
+        # thread = Thread(target=slm.run_simulation, args=(slice,))
+        # thread.start()
+        slm.run_simulation(slice)
         print("centers of:" + str([fruit.centers for fruit in fruits_to_extract]))
 
 
@@ -140,16 +147,6 @@ def get_hists(detection_results, frame):
     return fruits_info
 
 
-# def background_and_wait(stream):
-#     '''
-#     returns a frame of the background without fruits. change the numbers to use other videos.
-#     :param cap: the stream of the video.
-#     :return: the background.
-#     '''
-#     ci.wait(0.0, stream)
-#     bg = ci.get_background(stream)
-#     ci.wait(0, stream)
-#     return bg
 
 
 def track_known_fruits(fruits_info, current_frame, detection_results):
@@ -162,7 +159,7 @@ def track_known_fruits(fruits_info, current_frame, detection_results):
     img_hsv = cv2.cvtColor(current_frame, cv2.COLOR_BGR2HSV)  # turn image to hsv.
     calc_meanshift_all_fruits(fruits_info, img_hsv)  # calculate the meanshift for all fruits.
     for fruit in fruits_info:
-        current_frame = draw_rectangles(fruit, current_frame, (255, 192, 203), 5)
+        current_frame = draw_rectangles(fruit, current_frame, (255,20,147), 5)
     if (len(detection_results.conts) > 0):
         toDelete = []
         for fruit in fruits_info:
@@ -192,30 +189,47 @@ def insert_new_fruits(detection_results, fruits_info, current):
 
 def run_detection(src, settings):
     fruits_info = []
-    camera = Camera(src)
+    camera = Camera(src, FLIP=True, CROP=True)
     camera.set_camera_settings(settings)
     print("choose background")
     bg = camera.background_and_wait()
     cv2.waitKey(0) ##wait to start game after background retrieval
     current = bg
-    while camera.is_opened():
-        current = camera.next_frame(current)
+    counter = 0
+    buffer = []
+    while camera.is_opened() and counter < 2000000000:
         t1 = time.perf_counter()
-        detection_results = fd.fruit_detection(current, bg, CONTOUR_AREA_THRESH)
-        cv2.drawContours(current, detection_results.conts, -1, (0, 255, 0), 2)
-        track_known_fruits(fruits_info, current,
-                           detection_results)  # calculates meanshift for fruits known. removes fruits which left frame.
+        counter += 1
+        current = camera.next_frame(current)
+        temp_frame = current.copy()
+        detection_results = fd.fruit_detection(temp_frame, bg, CONTOUR_AREA_THRESH)
+        # cv2.drawContours(temp_frame, detection_results.conts, -1, (0, 255, 0), 2)
+        track_known_fruits(fruits_info, temp_frame,
+                           detection_results)  # calculates meanshift for fruits known. removes fruits which left temp_frame.
         if len(detection_results.conts) > 0:
-            insert_new_fruits(detection_results, fruits_info, current)
+            insert_new_fruits(detection_results, fruits_info, temp_frame)
         for fruit in fruits_info:
             if not fruit.is_falling:
-                draw(fruit, current)
+                draw(fruit, temp_frame)
+        cv2.drawContours(temp_frame, detection_results.conts, -1, (0, 255, 0), 2)
+        cv2.imshow("temp_frame", temp_frame)
+        buffer.append(temp_frame)
         t2 = time.perf_counter()
-        print("time for everything" , abs(t1-t2))
-        cv2.imshow("frame", current)
+        print("time for everything", abs(t1 - t2))
         if cv2.waitKey(1) == 27:
             break
         print("len of fruits: " + str(len(fruits_info)))
+    debug_with_buffer(buffer, bg)
+
+def debug_with_buffer(buffer, background):
+    i = 0
+    while True:
+        cv2.imshow("debug", buffer[i])
+        x = cv2.waitKey(1)
+        if x == 49: # '1' key
+            i -=1
+        elif x == 50: # '2' key
+            i += 1
 
 
 def draw(fruit, frame):
@@ -225,6 +239,5 @@ def draw(fruit, frame):
     draw_rectangles(fruit, frame, (255, 0, 0))
     draw_center(fruit, frame)  # conts_and_rects holds all the centers of all fruits - it has a list of lists.
 
-
 if __name__ == '__main__':
-    run_detection(0, ci.LIGHT_LAB_SETTINGS)
+    run_detection(0, ci.DARK_101_SETTINGS_BEESITO)

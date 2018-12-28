@@ -1,7 +1,5 @@
 import cv2
 import numpy as np
-from LiveVideoRun import draw_rectangles
-
 
 def get_bounding_rect(c):
     x_min = c[c[:, :, 0].argmin()][0][0]

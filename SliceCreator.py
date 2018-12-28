@@ -33,8 +33,8 @@ class Trajectory:
 
 def create_slice(fruits):
     fruits_locs = [[pixel2cm(pix_loc) for pix_loc in fruit.centers] for fruit in fruits]
-    fruit_trajectories = [get_trajectory(fruit_locs) for fruit_locs in fruits_locs]
-    on_screen_fruits.extend([[fruit_trajectories[i], fruits[i].time_created] for i in range(len(fruits))])
+    # fruit_trajectories = [get_trajectory(fruit_locs) for fruit_locs in fruits_locs]
+    # on_screen_fruits.extend([[fruit_trajectories[i], fruits[i].time_created] for i in range(len(fruits))])
     slice = calc_slice(on_screen_fruits)
     # time.sleep(time_until_slice(slice))
     return slice

@@ -5,6 +5,11 @@ import math
 import matplotlib.pyplot as plt
 import SliceCreator
 
+#plot constants.
+WHITE = (255, 255, 255)
+BLACK = (0, 0, 0)
+BLUE = (0, 0, 255)
+RED = (255, 0, 0)
 
 # ---------- ALGORITHMIC FUNCTION ---------------
 def get_xy_by_t(t):  # gets time in sec
@@ -42,21 +47,21 @@ def algorithmic_parametrization():
     return SliceCreator.create_slice([])
 
 # ----------- PLOTS AND GRAPHS FUNCTIONS -----------
-def plot_screen():
-    draw_line([SCREEN[0] / 2, d], [SCREEN[0] * 3 / 2, d])
-    draw_line([SCREEN[0] / 2, d + SCREEN[1]], [SCREEN[0] * 3 / 2, d + SCREEN[1]])
-    draw_line([SCREEN[0] / 2, d], [SCREEN[0] / 2, d + SCREEN[1]])
-    draw_line([SCREEN[0] * 3 / 2, d], [SCREEN[0] * 3 / 2, d + SCREEN[1]])
-    draw_circle([SCREEN[0], 0], 2)
+def plot_screen(screen):
+    draw_line([SCREEN[0] / 2, d], [SCREEN[0] * 3 / 2, d], screen)
+    draw_line([SCREEN[0] / 2, d + SCREEN[1]], [SCREEN[0] * 3 / 2, d + SCREEN[1]], screen)
+    draw_line([SCREEN[0] / 2, d], [SCREEN[0] / 2, d + SCREEN[1]], screen)
+    draw_line([SCREEN[0] * 3 / 2, d], [SCREEN[0] * 3 / 2, d + SCREEN[1]], screen)
+    draw_circle([SCREEN[0], 0], 2, screen)
 
 
-def draw_line(start_pos, end_pos):
+def draw_line(start_pos, end_pos, screen):
     pygame.draw.line(screen, BLUE, [to_pixels(start_pos[0]), to_pixels(
         start_pos[1])], [to_pixels(end_pos[0]), to_pixels(end_pos[1])], 1)
     return
 
 
-def draw_circle(pos, radius):
+def draw_circle(pos, radius, screen):
     pygame.draw.circle(screen, RED, [to_pixels(pos[0]), to_pixels(pos[1])],
                        radius, 1)
 
@@ -166,6 +171,16 @@ def make_ideal_slice_by_trajectory(get_xy_by_t):
     theta, phi = get_angles_by_xy_and_dt(get_xy_by_t, dt_motor)
     return theta, phi
 
+def xy_by_theta_phi(theta, phi, x_0):
+    x = x_0 + ARMS[0] * np.cos(theta) + ARMS[1] * np.cos(phi)
+    y = ARMS[0] * np.sin(theta) + ARMS[1] * np.sin(phi)
+    return x, y
+
+
+def xy_by_theta(theta, x_0):
+    x = x_0 + ARMS[0] * np.cos(theta)
+    y = ARMS[0] * np.sin(theta)
+    return x, y
 
 # ---------- CONSTANTS -------------
 SCREEN = [16, 12]   # dimensions of 10'' screen
@@ -185,78 +200,65 @@ times_serial = int(T / dt_serial)     # the amount of different values for the
 # real solution
 
 # ------------- CALCULATE LOCATIONS -------------
-# the ideal angles like in the function of the algorithmic
-theta_ideal, phi_ideal = make_ideal_slice_by_trajectory(algorithmic_parametrization())
+def run_simulation(func, SCREEN = SCREEN):
+    # the ideal angles like in the function of the algorithmic
+    theta_ideal, phi_ideal = make_ideal_slice_by_trajectory(algorithmic_parametrization())
 
-# the practical angles
-theta_practical, phi_practical = make_slice_by_trajectory(algorithmic_parametrization())
+    # the practical angles
+    theta_practical, phi_practical = make_slice_by_trajectory(algorithmic_parametrization())
 
+    # ------------- PLOT -------------------
 
-def xy_by_theta_phi(theta, phi):
-    x = x_0 + ARMS[0] * np.cos(theta) + ARMS[1] * np.cos(phi)
-    y = ARMS[0] * np.sin(theta) + ARMS[1] * np.sin(phi)
-    return x, y
+    WIDTH = to_pixels(2 * SCREEN[0])
+    HEIGHT = to_pixels(2 * (SCREEN[1] + d))
 
+    screen = pygame.display.set_mode((WIDTH, HEIGHT))
+    x_0, y_0 = SCREEN[0], 0
 
-def xy_by_theta(theta):
-    x = x_0 + ARMS[0] * np.cos(theta)
-    y = ARMS[0] * np.sin(theta)
-    return x, y
+    errors = [0 for i in range(times_ideal)]
+    x_ideal_vector = [0 for i in range(times_ideal)]
+    y_ideal_vector = [0 for i in range(times_ideal)]
+    x_practical_vector = [0 for i in range(times_ideal)]
+    y_practical_vector = [0 for i in range(times_ideal)]
+    time_vector = [dt_motor * i for i in range(times_ideal)]
 
+    # loop of plot
+    for i in range(times_ideal):
+        event = pygame.event.poll()
+        if event.type == pygame.QUIT:
+            running = 0
 
-# ------------- PLOT -------------------
-WHITE = (255, 255, 255)
-BLACK = (0, 0, 0)
-BLUE = (0, 0, 255)
-RED = (255, 0, 0)
+        screen.fill(WHITE)
+        plot_screen(screen)
+        # ideal locations
+        x_ideal, y_ideal = xy_by_theta_phi(theta_ideal[i], phi_ideal[i], x_0)
+        x_ideal_vector[i], y_ideal_vector[i] = x_ideal, y_ideal
+        x_link_ideal, y_link_ideal = xy_by_theta(theta_ideal[i], x_0)
+        draw_circle([x_ideal, y_ideal], 2, screen)
+        draw_line([x_link_ideal, y_link_ideal], [x_0, y_0], screen)
+        draw_line([x_link_ideal, y_link_ideal], [x_ideal, y_ideal], screen)
 
-WIDTH = to_pixels(2 * SCREEN[0])
-HEIGHT = to_pixels(2 * (SCREEN[1] + d))
+        # real locations
+        x_practical, y_practical = xy_by_theta_phi(theta_practical[i],
+                                                   phi_practical[i], x_0)
+        x_practical_vector[i], y_practical_vector[i] = x_practical, y_practical
+        x_link_practical, y_link_practical = xy_by_theta(theta_practical[i], x_0)
+        draw_circle([x_practical, y_practical], 2, screen)
+        draw_line([x_link_practical, y_link_practical], [x_0, y_0], screen)
+        draw_line([x_link_practical, y_link_practical], [x_practical, y_practical], screen)
 
-screen = pygame.display.set_mode((WIDTH, HEIGHT))
-x_0, y_0 = SCREEN[0], 0
+        errors[i] = math.sqrt(math.pow(x_practical - x_ideal, 2) + math.pow(y_practical -
+                                                                            y_ideal, 2))
 
-errors = [0 for i in range(times_ideal)]
-x_ideal_vector = [0 for i in range(times_ideal)]
-y_ideal_vector = [0 for i in range(times_ideal)]
-x_practical_vector = [0 for i in range(times_ideal)]
-y_practical_vector = [0 for i in range(times_ideal)]
-time_vector = [dt_motor * i for i in range(times_ideal)]
+        pygame.display.flip()
 
-# loop of plot
-for i in range(times_ideal):
-    event = pygame.event.poll()
-    if event.type == pygame.QUIT:
-        running = 0
+        time.sleep(dt_motor)
 
-    screen.fill(WHITE)
-    plot_screen()
-    # ideal locations
-    x_ideal, y_ideal = xy_by_theta_phi(theta_ideal[i], phi_ideal[i])
-    x_ideal_vector[i], y_ideal_vector[i] = x_ideal, y_ideal
-    x_link_ideal, y_link_ideal = xy_by_theta(theta_ideal[i])
-    draw_circle([x_ideal, y_ideal], 2)
-    draw_line([x_link_ideal, y_link_ideal], [x_0, y_0])
-    draw_line([x_link_ideal, y_link_ideal], [x_ideal, y_ideal])
+    # draw_graph(x_ideal_vector, y_ideal_vector, "ideal", "x", "y")
+    # draw_graph(x_practical_vector, y_practical_vector, "practical", "x", "y")
 
-    # real locations
-    x_practical, y_practical = xy_by_theta_phi(theta_practical[i],
-                                               phi_practical[i])
-    x_practical_vector[i], y_practical_vector[i] = x_practical, y_practical
-    x_link_practical, y_link_practical = xy_by_theta(theta_practical[i])
-    draw_circle([x_practical, y_practical], 2)
-    draw_line([x_link_practical, y_link_practical], [x_0, y_0])
-    draw_line([x_link_practical, y_link_practical], [x_practical, y_practical])
+    # plots error graph
+    # draw_graph(time_vector, errors, "errors to time", "time", "error")
 
-    errors[i] = math.sqrt(math.pow(x_practical - x_ideal, 2) + math.pow(y_practical -
-                                                                        y_ideal, 2))
-
-    pygame.display.flip()
-
-    time.sleep(dt_motor)
-
-# draw_graph(x_ideal_vector, y_ideal_vector, "ideal", "x", "y")
-# draw_graph(x_practical_vector, y_practical_vector, "practical", "x", "y")
-
-# plots error graph
-# draw_graph(time_vector, errors, "errors to time", "time", "error")
+if __name__ == '__main__':
+    run_simulation(algorithmic_parametrization())
