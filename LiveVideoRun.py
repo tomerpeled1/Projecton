@@ -183,12 +183,12 @@ def insert_new_fruits(detection_results, fruits_info, current):
     fruits_info += get_hists(detection_results, current)
 
 
-def run_detection(src, settings, live):
+def run_detection(src, settings, live,crop,flip):
     # global Lock
     # Lock = False
     Sc.init_everything()
     fruits_info = []
-    camera = Camera(src, FLIP=True, CROP=True, LIVE=live)
+    camera = Camera(src, FLIP=flip, CROP=crop, LIVE=live)
     if camera.LIVE:
         camera.set_camera_settings(settings)
     print("choose background")
@@ -242,4 +242,4 @@ def draw(fruit, frame):
 
 
 if __name__ == '__main__':
-    run_detection(0, Ci.DARK_101_SETTINGS_BEESITO,live=True)
+    run_detection("SmallFruit2.flv", Ci.DARK_101_SETTINGS_BEESITO, live=False, crop=True, flip=False)

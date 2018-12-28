@@ -2,6 +2,7 @@ import math
 import matplotlib.pyplot as plt
 import cv2
 
+
 import SliceTypes
 import time
 from scipy.optimize import curve_fit
