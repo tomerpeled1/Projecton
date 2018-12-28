@@ -31,6 +31,7 @@ HISTS_COMPARE_METHOD = cv2.HISTCMP_CORREL
 # Magic numbers for camera
 SECONDS_FOR_BG = 3
 
+INTEGRATE_WITH_MECHANICS = True
 
 def center(box):
     """
@@ -110,7 +111,8 @@ def calc_meanshift_all_fruits(fruits_info, img_hsv):
 
 def print_and_extract_centers(fruits_to_extract):
     if fruits_to_extract:
-        Sc.update_and_slice(fruits_to_extract)
+        if(INTEGRATE_WITH_MECHANICS):
+            Sc.update_and_slice(fruits_to_extract)
         # thread = Thread(target=sc.create_and_do_slice)
         # thread.start()
         # slm.run_simulation(slice)
@@ -183,12 +185,13 @@ def insert_new_fruits(detection_results, fruits_info, current):
     fruits_info += get_hists(detection_results, current)
 
 
-def run_detection(src, settings, live,crop,flip):
+def run_detection(src, settings, live):
     # global Lock
     # Lock = False
-    Sc.init_everything()
+    if INTEGRATE_WITH_MECHANICS:
+        Sc.init_everything()
     fruits_info = []
-    camera = Camera(src, FLIP=flip, CROP=crop, LIVE=live)
+    camera = Camera(src, FLIP=True, CROP=True, LIVE=live)
     if camera.LIVE:
         camera.set_camera_settings(settings)
     print("choose background")
@@ -197,7 +200,7 @@ def run_detection(src, settings, live,crop,flip):
     current = bg
     counter = 0
     buffer = []
-    while camera.is_opened() and counter < 2000000000:
+    while camera.is_opened() and counter < 200:
         t1 = time.perf_counter()
         counter += 1
         current = camera.next_frame(current)
@@ -219,10 +222,11 @@ def run_detection(src, settings, live,crop,flip):
         if cv2.waitKey(1) == 27:
             break
         print("len of fruits: " + str(len(fruits_info)))
-    debug_with_buffer(buffer, bg)
+    # debug_with_buffer(buffer)
+    show_original(camera)
 
 
-def debug_with_buffer(buffer, background):  # TODO what is background? delete if isn't used.
+def debug_with_buffer(buffer):
     i = 0
     while True:
         cv2.imshow("debug", buffer[i])
@@ -232,6 +236,8 @@ def debug_with_buffer(buffer, background):  # TODO what is background? delete if
         elif x == 50:  # '2' key
             i += 1
 
+def show_original(camera):
+    debug_with_buffer(camera.buffer)
 
 def draw(fruit, frame):
     """
@@ -242,4 +248,4 @@ def draw(fruit, frame):
 
 
 if __name__ == '__main__':
-    run_detection("SmallFruit2.flv", Ci.DARK_101_SETTINGS_BEESITO, live=False, crop=True, flip=False)
+    run_detection(0, Ci.DARK_101_SETTINGS_BEESITO,live=True)
