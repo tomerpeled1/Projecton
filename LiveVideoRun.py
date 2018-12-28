@@ -117,7 +117,8 @@ def print_and_extract_centers(fruits_to_extract):
         slice = sc.create_slice(fruits_to_extract)
         # thread = Thread(target=slm.run_simulation, args=(slice,))
         # thread.start()
-        slm.run_simulation(slice)
+        # slm.run_simulation(slice)
+
         print("centers of:" + str([fruit.centers for fruit in fruits_to_extract]))
 
 

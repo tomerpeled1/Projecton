@@ -2,6 +2,7 @@ import math
 import SliceTypes
 import time
 from scipy.optimize import curve_fit
+import middle_show
 
 RELATIVE_ACC = 2.34
 ARM_DELAY = 1
@@ -37,6 +38,7 @@ def create_slice(fruits):
     # on_screen_fruits.extend([[fruit_trajectories[i], fruits[i].time_created] for i in range(len(fruits))])
     slice = calc_slice(on_screen_fruits)
     # time.sleep(time_until_slice(slice))
+    middle_show.make_slice_by_trajectory(slice)
     return slice
 
 def pixel2cm(pix_loc):
@@ -91,4 +93,5 @@ def remove_sliced_fruits(fruits):
             on_screen_fruits.remove(fruit)
 
 if __name__ == "__main__":
+    create_slice([])
     pass
