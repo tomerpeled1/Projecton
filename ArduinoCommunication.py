@@ -29,10 +29,10 @@ ARMS = [15, 10]     # length of arm links in cm
 d = 18
 # time constants
 T = 1          # total time of slice - it is not real time but parametrization
-WRITE_DELAY = 1  # delay in ms after writing to prevent buffer overload
+WRITE_DELAY = 0.1  # delay in ms after writing to prevent buffer overload
 # dt = 0.003      # the basic period of time of the simulation in sec
 # times = int(T / dt)  # the size of the vectors for the simulation
-TRAJECTORY_DIVISION_NUMBER = 40
+TRAJECTORY_DIVISION_NUMBER = 20
 DT_DIVIDE_TRAJECTORY = float(T) / TRAJECTORY_DIVISION_NUMBER
 END_WRITING = 'e'
 START_SLICE = 'd'
@@ -163,7 +163,7 @@ def move_2_motors(steps_theta, steps_phi):  # WRITE MAXIMUM 41 STEPS PER SLICE
             message = "0" + message
 
         ser.write(str.encode(message))
-        wait(WRITE_DELAY)
+        # wait(WRITE_DELAY)
         # print(str(message))
 
     t2 = time.time()
@@ -173,6 +173,8 @@ def move_2_motors(steps_theta, steps_phi):  # WRITE MAXIMUM 41 STEPS PER SLICE
     # time.sleep(2)
     print("CUT THEM!!!")
     ser.write(str.encode(START_SLICE))
+
+    print("END: " + str(time.time()))
 
     time_of_slice = calc_time_of_slice(steps_theta,steps_phi)
     time_in_slice_start = time.time()
