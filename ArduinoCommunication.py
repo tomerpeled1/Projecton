@@ -5,10 +5,13 @@ import numpy as np
 import matplotlib.pyplot as plt
 import SliceCreator
 
-SERIAL = None
+
 # all lengths are in cm, all angles are in degrees
 # (0,0) is in the middle of bottom side of screen
 # Initiate arm at MAXIMAL theta
+
+seri = serial.Serial('com5', 9600)  # Create Serial port object
+time.sleep(2)  # wait for 2 seconds for the communication to get established
 
 
 def initiate_serial():
@@ -16,10 +19,8 @@ def initiate_serial():
     Creates the Serial object (connection to Arduino).
     :return: the Serial object
     """
-    global SERIAL
-    ser = serial.Serial('com6', 9600)  # Create Serial port object
+    ser = serial.Serial('com5', 9600)  # Create Serial port object
     time.sleep(2)  # wait for 2 seconds for the communication to get established
-    SERIAL = ser
     return ser
 
 
@@ -92,11 +93,10 @@ def modulo(a, n):
         return a % n - 1
 
 
-def make_slice_by_trajectory(get_xy_by_t, ser = SERIAL):
+def make_slice_by_trajectory(get_xy_by_t, ser):
     """
     Sends commands to Arduino according to the given route from the algorithmic module.
     :param get_xy_by_t: function given form algorithmic module
-    :param ser: fuck you stupid asshole
     """
     theta, phi = get_angles_by_xy_and_dt(get_xy_by_t, DT_DIVIDE_TRAJECTORY)
     d_theta, d_phi = np.diff(theta), np.diff(phi)
@@ -106,7 +106,7 @@ def make_slice_by_trajectory(get_xy_by_t, ser = SERIAL):
         steps_phi_decimal[i+1] += modulo(steps_phi_decimal[i], 1)
     steps_theta = steps_theta_decimal.astype(int)
     steps_phi = steps_phi_decimal.astype(int)
-    move_2_motors(steps_theta, steps_phi, ser)
+    move_2_motors(steps_theta, steps_phi, seri)
 
 
 def get_angles_by_xy_and_dt(get_xy_by_t, dt):
@@ -180,7 +180,7 @@ def move_2_motors(steps_theta, steps_phi, ser):  # WRITE MAXIMUM 41 STEPS PER SL
     print("time for writing: ", t2-t1)
     ser.write(str.encode(END_WRITING))
     print("ended writing")
-    time.sleep(3)
+    time.sleep(1)
     print("CUT THEM!!!")
     ser.write(str.encode(START_SLICE))
 

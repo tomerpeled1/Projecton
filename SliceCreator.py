@@ -2,8 +2,7 @@ import math
 import SliceTypes
 import time
 from scipy.optimize import curve_fit
-import middle_show
-import simulation_like_motor_commands as slm
+import ArduinoCommunication
 
 RELATIVE_ACC = 2.34
 ARM_DELAY = 1
@@ -54,6 +53,15 @@ def do_slice(slice):
 def create_and_do_slice():
     slice = create_slice()
     do_slice(slice)
+def make_slice(fruits, ser):
+    """
+    calls create slice and than calling the slicing method of the communication module
+    :param fruits: #TODO
+    :param ser: Serial object
+    :return: None
+    """
+    slice = create_slice(fruits)
+    ArduinoCommunication.make_slice_by_trajectory(slice, ser)
 
 def pixel2cm(pix_loc):
     (i_coord_crop, j_coord_crop) = pix_loc
@@ -111,6 +119,8 @@ def init_everything():
         middle_show.initiate_serial()
 
 if __name__ == "__main__":
-    ser = middle_show.initiate_serial()
+    # ser = ArduinoCommunication.initiate_serial()
+    ser = 0
     for _ in range(10):
-        create_slice([], ser)
+        make_slice([], ser)
+        time.sleep(1)
