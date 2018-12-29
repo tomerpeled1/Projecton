@@ -204,7 +204,7 @@ def y_trajectory(t, y0, v, theta):
 
 def calc_slice(fruit_trajectories_and_starting_times):
     # time.sleep(time_until_slice())
-    return SliceTypes.stupid_slice(get_arm_loc(), fruit_trajectories_and_starting_times)
+    return SliceTypes.theta_slice(get_arm_loc(), fruit_trajectories_and_starting_times)
 
 
 def get_arm_loc():
