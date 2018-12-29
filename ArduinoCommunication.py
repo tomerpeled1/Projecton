@@ -13,7 +13,7 @@ import matplotlib.pyplot as plt
 # ------------- CONSTANTS --------------
 # board constants
 RADIUS = 15
-DIMS = (21.7, 13.6)  # (X,Y)
+DIMS = (16, 12)  # (X,Y)
 ALPHA_MIN = (180/math.pi)*math.acos(DIMS[0]/(2.0*RADIUS))
 ALPHA_MAX = 180 - ALPHA_MIN
 STEPS_PER_REVOLUTION = 200
@@ -34,9 +34,9 @@ TRAJECTORY_DIVISION_NUMBER = 40
 DT_DIVIDE_TRAJECTORY = float(T) / TRAJECTORY_DIVISION_NUMBER
 END_WRITING = 'e'
 START_SLICE = 'd'
-WANTED_RPS = 0.05
+WANTED_RPS = 0.1
 ONE_STEP_DELAY = 0.005 / WANTED_RPS / STEPS_FRACTION # in sec
-SLICE_END_SIGNAL = 'z'
+# SLICE_END_SIGNAL = 'z'
 
 
 try:
@@ -109,14 +109,14 @@ def get_angles_by_xy_and_dt(get_xy_by_t, dt):
     :param dt: discretization of time
     :return: {theta, phi), tuple of lists
     """
-    times = range(int(T / dt))
+    times = range(int(T / dt) + 1)
     # get xy by dt
     xy = [[0 for _ in times], [0 for _ in times]]
     for i in times:
         xy[0][i], xy[1][i] = get_xy_by_t(dt * i)
 
-    # plt.plot(xy[0], xy[1])
-    # plt.show()
+    plt.plot(xy[0], xy[1])
+    plt.show()
 
     # calc angles by xy
     r = np.sqrt(np.power(xy[0], 2) + np.power(np.add(d, xy[1]), 2))
