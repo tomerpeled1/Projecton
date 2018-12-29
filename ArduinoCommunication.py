@@ -22,6 +22,7 @@ MINIMAL_ANGLE = 2 * np.pi / (STEPS_PER_REVOLUTION * STEPS_FRACTION)
 STEPS_IN_CUT = STEPS_PER_REVOLUTION / 360.0 * (ALPHA_MAX - ALPHA_MIN)
 ARMS = [15, 10]     # length of arm links in cm
 d = 18
+
 # time constants
 T = 1          # total time of slice - it is not real time but parametrization
 SERIAL_BPS = 19200
