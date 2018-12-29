@@ -14,10 +14,10 @@ import threading
 
 RELATIVE_ACC = 2.34
 ARM_DELAY = 1
-CROP_SIZE = (160, 480)
-FRAME_SIZE = (480, 640)
-SCREEN_SIZE = (12, 16)  # (y,x)
-ACC = RELATIVE_ACC * SCREEN_SIZE[1]
+CROP_SIZE = (160, 480)  #(y,x)
+FRAME_SIZE = (480, 640)   #(y,x)
+SCREEN_SIZE = (12, 16)  #(y,x)
+ACC = RELATIVE_ACC * SCREEN_SIZE[0]
 INTEGRATE_WITH_MECHANICS = False
 
 # for hakab
@@ -181,7 +181,7 @@ def y_trajectory(t, v, theta):
 
 def calc_slice(fruit_trajectories_and_starting_times):
     # time.sleep(time_until_slice())
-    return SliceTypes.line_trajectory(get_arm_loc(), fruit_trajectories_and_starting_times)
+    return SliceTypes.theta_slice(get_arm_loc(), fruit_trajectories_and_starting_times)
 
 
 def get_arm_loc():

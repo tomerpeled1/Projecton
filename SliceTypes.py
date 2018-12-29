@@ -25,7 +25,7 @@ def slice_to_peak(arm_loc, fruit_trajectories_and_starting_times):
 
 def stupid_slice(arm_loc, fruit_trajectories):
     SliceCreator.remove_sliced_fruits(SliceCreator.on_screen_fruits)
-    return (lambda t: tuple_add(arm_loc, tuple_mul(t % 1, (2 * LINE_LENGTH, 0)))), None, None
+    return (lambda t: tuple_add(arm_loc, tuple_mul(t % 1, (LINE_LENGTH, 0)))), None, None
 
 
 def line_trajectory(arm_loc, fruit_trajectories):  # gets time in sec
@@ -76,9 +76,17 @@ def complex_slice(arm_loc, fruit_trajectories):
 
 
 def theta_slice(arm_loc, fruit_trajectories):
-    r = 10
-    R = 15
-    d = 18
-    return (lambda t: (R*math.cos(math.pi / 3 + 2 * math.pi * t/6), R*math.sin(math.pi / 3 + 2 * math.pi * t/6) +
-                                                                                 r - d)),\
-           None, None
+    r = 10  # length of short arm
+    R = 15  # length of long arm
+    d = 18  # distance from screen
+
+
+    def output(t):
+        theta_0 =
+        theta = theta_0 + (math.pi - 2 * theta_0) * t
+        x = R*math.cos(theta)
+        y = R*math.sin(theta) + r - d - 0.01
+        return x, y
+    return output
+    # return (lambda t: (R*math.cos(math.pi / 3 + 2 * math.pi * t/6), R*math.sin(math.pi / 3 + 2 * math.pi * t/6) + r -
+    #                    d - 0.01)), None, None
