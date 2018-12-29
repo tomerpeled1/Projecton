@@ -1,6 +1,6 @@
 import math
 import matplotlib.pyplot as plt
-# import cv2
+import cv2
 
 import SliceTypes
 import time
@@ -13,10 +13,10 @@ import threading
 
 RELATIVE_ACC = 2.34
 ARM_DELAY = 1
-CROP_SIZE = (160, 480)
-FRAME_SIZE = (480, 640)
-SCREEN_SIZE = (21.7, 13.6)
-ACC = RELATIVE_ACC * SCREEN_SIZE[1]
+CROP_SIZE = (160, 480)  #(y,x)
+FRAME_SIZE = (480, 640)   #(y,x)
+SCREEN_SIZE = (13.6, 21.7)  #(y,x)
+ACC = RELATIVE_ACC * SCREEN_SIZE[0]
 INTEGRATE_WITH_MECHANICS = False
 
 # for hakab
@@ -55,6 +55,8 @@ class Trajectory:
 
 def update_fruits(fruits):
     fruits_locs = [[pixel2cm(pix_loc) for pix_loc in fruit.centers] for fruit in fruits]
+    # centers = [[center for center in fruit.centers] for fruit in fruits]
+    # centers2 = [[cm2pixel(loc) for loc in fruit_locs] for fruit_locs in fruits_locs]
     # fruit_trajectories = [get_trajectory(fruit_locs) for fruit_locs in fruits_locs]
     # on_screen_fruits.extend([[fruit_trajectories[i], fruits[i].time_created] for i in range(len(fruits))])
     on_screen_fruits.extend(fruits)
@@ -117,6 +119,13 @@ def pixel2cm(pix_loc):
     j_coord_screen = (1 - float(j_coord_frame / FRAME_SIZE[1])) * SCREEN_SIZE[1]
     return j_coord_screen, i_coord_screen  # (x,y)
 
+def cm2pixel(cm_loc):
+    j_coord_screen, i_coord_screen = cm_loc
+    j_coord_frame = int(j_coord_screen * float(FRAME_SIZE[1]) / SCREEN_SIZE[1])
+    i_coord_frame = int((1 - i_coord_screen / SCREEN_SIZE[0]) * FRAME_SIZE[0])
+    return i_coord_frame, j_coord_frame
+
+
 
 def get_trajectory(fruit_locs):
     x_coords = [fruit_loc[0] for fruit_loc in fruit_locs]  # TODO this is a bug. need to make in a loop
@@ -149,15 +158,14 @@ def get_trajectory(fruit_locs):
     for i in times:
         xy[0][i], xy[1][i] = route(dt * i)
 
-    # print(xy)
-    # plt.plot(xy[0], xy[1])
-    # plt.show()
-    # cv2.waitKey(0)
+    plt.plot(xy[0], xy[1])
+    plt.show()
+    time.sleep(3)
     return trajectory
 
 
 def trajectory_physics(x, x0, v, theta):
-    return SCREEN_SIZE[1] - (x - x0) * math.tan(theta) + ACC * (x - x0) ** 2 / (2 * v ** 2 * math.cos(theta) ** 2)
+    return SCREEN_SIZE[0] - (x - x0) * math.tan(theta) + ACC * (x - x0) ** 2 / (2 * v ** 2 * math.cos(theta) ** 2)
 
 
 def x_trajectory(t, x0, v, theta):
@@ -165,7 +173,7 @@ def x_trajectory(t, x0, v, theta):
 
 
 def y_trajectory(t, v, theta):
-    return SCREEN_SIZE[1] - v * math.sin(theta) * t + 0.5 * ACC * t ** 2
+    return SCREEN_SIZE[0] - v * math.sin(theta) * t + 0.5 * ACC * t ** 2
 
 
 def calc_slice(fruit_trajectories_and_starting_times):
@@ -174,7 +182,7 @@ def calc_slice(fruit_trajectories_and_starting_times):
 
 
 def get_arm_loc():
-    return -SCREEN_SIZE[0]/2, 0
+    return -SCREEN_SIZE[1]/2, 0  #(x,y)
 
 
 def time_until_slice(fruit):
@@ -190,8 +198,8 @@ def init_info(crop_size, frame_size, screen_size):
 
 
 def remove_sliced_fruits(fruits):
-    if len(fruits) != len(on_screen_fruits):
-        print("FUCK")
+    # if len(fruits) != len(on_screen_fruits):
+    #     print("FUCK")
     for fruit in fruits:
         on_screen_fruits.remove(fruit)
     for fruit in on_screen_fruits:
