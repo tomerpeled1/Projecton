@@ -49,7 +49,7 @@ def line_trajectory(arm_loc, fruit_trajectories):  # gets time in sec
 
         x = x_0
         y = y_0
-        # y = t / T * d_a
+        y = t / T * d_a
         if t < t_a:
             x = x_0 + 0.5 * acc * t**2
         elif t_a < t < T - t_a:
