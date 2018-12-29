@@ -192,12 +192,12 @@ def move_2_motors(steps_theta, steps_phi):  # WRITE MAXIMUM 41 STEPS PER SLICE
             message += encode_message(steps_theta[index], steps_phi[index])
 
         ser.write(str.encode(message))
-        wait(COMMAND_PACKAGE_SIZE*WRITE_DELAY)
+        time.sleep(0.001*COMMAND_PACKAGE_SIZE*WRITE_DELAY)
     message = ""
-    for i in range(len(steps_theta) - COMMAND_PACKAGE_SIZE%len(steps_theta), len(steps_theta)):
+    for i in range(len(steps_theta) - len(steps_theta)%COMMAND_PACKAGE_SIZE, len(steps_theta)):
         message += encode_message(steps_theta[i], steps_phi[i])
     ser.write(str.encode(message))
-    wait(COMMAND_PACKAGE_SIZE*(COMMAND_PACKAGE_SIZE%len(steps_theta)))
+    time.sleep(0.001*COMMAND_PACKAGE_SIZE*(COMMAND_PACKAGE_SIZE%len(steps_theta)))
     t2 = time.perf_counter()
     print("time for writing: ", t2-t1)
     ser.write(str.encode(END_WRITING))
@@ -297,8 +297,8 @@ def calc_time_of_slice(steps_theta, steps_phi):
 
 if __name__ == '__main__':
     pass
-    steps_theta = 18*[-10]
-    steps_phi = 18*[0]
+    steps_theta = 36*[-5]
+    steps_phi = 36*[0]
     move_2_motors(steps_theta, steps_phi)
     start = time.perf_counter()
     i_steps_theta, i_steps_phi = invert_slice(steps_theta, steps_phi)
