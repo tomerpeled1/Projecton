@@ -25,9 +25,7 @@ oops = 0
 success = 0
 
 on_screen_fruits = []
-SIMULATE = False
-lock = threading.Lock()
-gui_lock = threading.Lock()
+SIMULATE = True
 simulation_queue_lock = threading.Condition()
 simulation_thread = None
 simulation_queue = []
@@ -132,37 +130,52 @@ def cm2pixel(cm_loc):
 def get_trajectory(fruit_locs):
     x_coords = [fruit_loc[0] for fruit_loc in fruit_locs]  # TODO this is a bug. need to make in a loop
     y_coords = [fruit_loc[1] for fruit_loc in fruit_locs]
+    t_coords = [fruit_loc[2] for fruit_loc in fruit_locs]
+
+    x_total = x_coords[-1] - x_coords[0]
+    y_total = y_coords[-1] - y_coords[0]
+    t_total = t_coords[-1] - t_coords[0]
+
+    r_total = math.sqrt(x_total**2 + y_total**2)
+
+    x0 = x_coords[0]
+    v0 = r_total / t_total
+    theta = math.atan(y_total / x_total)
+
+    trajectory = Trajectory(x0, v0, theta)
 
     # plt.plot(x_coords, y_coords)
     # plt.show()
 
-    global success
-    global oops
-    try:
-        popt, pcov = curve_fit(trajectory_physics, x_coords, y_coords)
-        print(popt[0], popt[1], popt[2])
-        print("success")
-        success += 1
-    except:
-        popt = (0, 0, 0)
-        print("oops")
-        oops += 1
-    print("fitted: ", success, "didn't fit: ", oops)
-    x0_par, v_par, theta_par = popt
-    trajectory = Trajectory(x0_par, v_par, theta_par)
+    # global success
+    # global oops
+    # try:
+    #     popt, pcov = curve_fit(trajectory_physics, x_coords, y_coords)
+    #     print(popt[0], popt[1], popt[2])
+    #     print("success")
+    #     success += 1
+    # except:
+    #     popt = (0, 0, 0)
+    #     print("oops")
+    #     oops += 1
+    # print("fitted: ", success, "didn't fit: ", oops)
+    # x0_par, v_par, theta_par = popt
+    # trajectory = Trajectory(x0_par, v_par, theta_par)
 
     # ----------draw trajectory-------------- #
-    T = 2
+    T = 1
     dt = 0.05
-    times = range(int(T / dt))
+    times = range(-int(T / dt), int(T / dt))
     xy = [[0 for _ in times], [0 for _ in times]]
     route = trajectory.calc_trajectory()
     for i in times:
         xy[0][i], xy[1][i] = route(dt * i)
 
+    # plt.plot.xlim(left, right)
+
     # plt.plot(xy[0], xy[1])
+    # plt.plot(x_coords, y_coords)
     # plt.show()
-    # time.sleep(3)
     return trajectory
 
 
