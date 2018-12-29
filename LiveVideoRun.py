@@ -31,7 +31,7 @@ HISTS_COMPARE_METHOD = cv2.HISTCMP_CORREL
 # Magic numbers for camera
 SECONDS_FOR_BG = 3
 
-INTEGRATE_WITH_MECHANICS = False
+INTEGRATE_WITH_ALGORITHMICS = True
 
 def center(box):
     """
@@ -69,7 +69,7 @@ def calculate_hist_window(window, img_hsv):
     cropped = img_hsv[y:y + h, x:x + w].copy()
     # cv2.imshow("histogram", cropped)
     mask = cv2.inRange(cropped, np.array((0., float(s_lower), float(v_lower))),
-                       np.array((180., float(s_upper), float(v_upper))))  # TODO understand parameters.
+                       np.array((180., float(s_upper), float(v_upper))))
     crop_hist = cv2.calcHist([cropped], [0, 1], mask, [180, 255],
                              [0, 180, 0, 255])
     cv2.normalize(crop_hist, crop_hist, 0, 255, cv2.NORM_MINMAX)
@@ -111,7 +111,7 @@ def calc_meanshift_all_fruits(fruits_info, img_hsv):
 
 def print_and_extract_centers(fruits_to_extract):
     if fruits_to_extract:
-        if(INTEGRATE_WITH_MECHANICS):
+        if(INTEGRATE_WITH_ALGORITHMICS):
             Sc.update_and_slice(fruits_to_extract)
         # thread = Thread(target=sc.create_and_do_slice)
         # thread.start()
@@ -188,7 +188,7 @@ def insert_new_fruits(detection_results, fruits_info, current):
 def run_detection(src, settings, live, crop, flip):
     # global Lock
     # Lock = False
-    if INTEGRATE_WITH_MECHANICS:
+    if INTEGRATE_WITH_ALGORITHMICS:
         Sc.init_everything()
     fruits_info = []
     camera = Camera(src, FLIP=flip, CROP=crop, LIVE=live)
@@ -248,4 +248,4 @@ def draw(fruit, frame):
 
 
 if __name__ == '__main__':
-    run_detection("SmallFruit2.flv", Ci.DARK_101_SETTINGS_BEESITO,live=False, crop=True, flip=False)
+    run_detection(0, Ci.DARK_101_SETTINGS_BEESITO, live=True, crop=True, flip=True)
