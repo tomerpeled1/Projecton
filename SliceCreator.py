@@ -1,6 +1,6 @@
 import math
 import matplotlib.pyplot as plt
-import cv2
+# import cv2
 
 import SliceTypes
 import time
@@ -234,6 +234,10 @@ def init_everything():
 
 
 if __name__ == "__main__":
+    # inpt = input("enter 1 to start slice")
+    # while inpt != '1':
+    #     inpt = input()
     for _ in range(10):
         slice, timer, time_to_peak = create_slice()
+        print("START: " + str(time.perf_counter()))
         ArduinoCommunication.make_slice_by_trajectory(slice)
