@@ -39,6 +39,7 @@ WANTED_RPS = 0.27
 ONE_STEP_DELAY = 5.0 / WANTED_RPS / STEPS_FRACTION  # in ms
 SLICE_END_SIGNAL = 'z'
 WAIT_FOR_STOP = 100  # ms
+COMMAND_PACKAGE_SIZE = 10  # number of commands to write at once
 
 
 try:
@@ -160,6 +161,20 @@ def wait(t):
         pass
 
 
+def encode_message(steps_theta, steps_phi):
+    message = abs(steps_theta) * 10000 + abs(steps_phi) * 100
+    if steps_theta < 0:
+        message += 10
+    if steps_phi < 0:
+        message += 1
+
+    message = str(message)
+    len_message = len(message)
+    for _ in range(6 - len_message):
+        message = "0" + message
+    return message
+
+
 # theta - small motor.    phi - big motor
 def move_2_motors(steps_theta, steps_phi):  # WRITE MAXIMUM 41 STEPS PER SLICE
     """
@@ -168,25 +183,22 @@ def move_2_motors(steps_theta, steps_phi):  # WRITE MAXIMUM 41 STEPS PER SLICE
     :param steps_phi: list of steps in phi
     """
 
-    t1 = time.time()
+    t1 = time.perf_counter()
     print("Divide trajectory to " + str(len(steps_theta)) + " parts")
-    for i in range(len(steps_theta)):
-        message = abs(steps_theta[i]) * 10000 + abs(steps_phi[i]) * 100
-        if steps_theta[i] < 0:
-            message += 10
-        if steps_phi[i] < 0:
-            message += 1
-
-        message = str(message)
-        len_message = len(message)
-        for _ in range(6-len_message):
-            message = "0" + message
+    for i in range(math.floor(len(steps_theta)/COMMAND_PACKAGE_SIZE)):
+        message = ""
+        for j in range(COMMAND_PACKAGE_SIZE):
+            index = i * COMMAND_PACKAGE_SIZE + j
+            message += encode_message(steps_theta[index], steps_phi[index])
 
         ser.write(str.encode(message))
-        wait(WRITE_DELAY)
-        # print(str(message))
-
-    t2 = time.time()
+        wait(COMMAND_PACKAGE_SIZE*WRITE_DELAY)
+    message = ""
+    for i in range(len(steps_theta) - COMMAND_PACKAGE_SIZE%len(steps_theta), len(steps_theta)):
+        message += encode_message(steps_theta[i], steps_phi[i])
+    ser.write(str.encode(message))
+    wait(COMMAND_PACKAGE_SIZE*(COMMAND_PACKAGE_SIZE%len(steps_theta)))
+    t2 = time.perf_counter()
     print("time for writing: ", t2-t1)
     ser.write(str.encode(END_WRITING))
     print("ended writing")
@@ -285,12 +297,12 @@ def calc_time_of_slice(steps_theta, steps_phi):
 
 if __name__ == '__main__':
     pass
-    # steps_theta = [-90, -90]
-    # steps_phi = [0, 0]
-    # move_2_motors(steps_theta, steps_phi)
-    # start = time.perf_counter()
-    # i_steps_theta, i_steps_phi = invert_slice(steps_theta, steps_phi)
-    # while 1000.0*(time.perf_counter() - start) < WAIT_FOR_STOP:
-    #     pass
-    # move_2_motors(i_steps_theta, i_steps_phi)
-    # wait(calc_time_of_slice(steps_theta, steps_phi))
+    steps_theta = 18*[-10]
+    steps_phi = 18*[0]
+    move_2_motors(steps_theta, steps_phi)
+    start = time.perf_counter()
+    i_steps_theta, i_steps_phi = invert_slice(steps_theta, steps_phi)
+    while 1000.0*(time.perf_counter() - start) < WAIT_FOR_STOP:
+        pass
+    move_2_motors(i_steps_theta, i_steps_phi)
+    wait(calc_time_of_slice(steps_theta, steps_phi))
