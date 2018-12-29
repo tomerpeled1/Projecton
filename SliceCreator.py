@@ -16,15 +16,13 @@ RELATIVE_ACC = 2.34
 ARM_DELAY = 1
 CROP_SIZE = (160, 480)  #(y,x)
 FRAME_SIZE = (480, 640)   #(y,x)
-SCREEN_SIZE = (13.6, 21.7)  #(y,x)
+SCREEN_SIZE = (12, 16)  #(y,x)
 ACC = RELATIVE_ACC * SCREEN_SIZE[0]
 INTEGRATE_WITH_MECHANICS = True
 
 # for hakab
 oops = 0
 success = 0
-
-# CHOSEN_SLICE_TYPE = SliceTypes.stupid_slice
 
 on_screen_fruits = []
 SIMULATE = False
@@ -119,6 +117,7 @@ def pixel2cm(pix_loc):
     j_coord_screen = (1 - float(j_coord_frame / FRAME_SIZE[1])) * SCREEN_SIZE[1]
     return j_coord_screen, i_coord_screen, t  # (x,y)
 
+
 def cm2pixel(cm_loc):
     """
     :param cm_loc: cm location in order (x,y)
@@ -128,7 +127,6 @@ def cm2pixel(cm_loc):
     j_coord_frame = int(j_coord_screen * float(FRAME_SIZE[1]) / SCREEN_SIZE[1])
     i_coord_frame = int((1.0 - float(i_coord_screen / SCREEN_SIZE[0])) * FRAME_SIZE[0])
     return i_coord_frame, j_coord_frame, t
-
 
 
 def get_trajectory(fruit_locs):
@@ -186,7 +184,7 @@ def calc_slice(fruit_trajectories_and_starting_times):
 
 
 def get_arm_loc():
-    return -SCREEN_SIZE[1]/2, 0  #(x,y)
+    return -SCREEN_SIZE[1]/2+3, 3
 
 
 def time_until_slice(fruit):

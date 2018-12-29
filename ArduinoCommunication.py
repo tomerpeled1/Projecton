@@ -13,7 +13,7 @@ import matplotlib.pyplot as plt
 # ------------- CONSTANTS --------------
 # board constants
 RADIUS = 15
-DIMS = (21.7, 13.6)  # (X,Y)
+DIMS = (16, 12)  # (X,Y)
 ALPHA_MIN = (180/math.pi)*math.acos(DIMS[0]/(2.0*RADIUS))
 ALPHA_MAX = 180 - ALPHA_MIN
 STEPS_PER_REVOLUTION = 200
@@ -22,7 +22,6 @@ MINIMAL_ANGLE = 2 * np.pi / (STEPS_PER_REVOLUTION * STEPS_FRACTION)
 STEPS_IN_CUT = STEPS_PER_REVOLUTION / 360.0 * (ALPHA_MAX - ALPHA_MIN)
 ARMS = [15, 10]     # length of arm links in cm
 d = 18
-
 # time constants
 T = 1          # total time of slice - it is not real time but parametrization
 SERIAL_BPS = 19200
@@ -114,7 +113,7 @@ def get_angles_by_xy_and_dt(get_xy_by_t, dt):
     :param dt: discretization of time
     :return: {theta, phi), tuple of lists
     """
-    times = range(int(T / dt))
+    times = range(int(T / dt) + 1)
     # get xy by dt
     xy = [[0 for _ in times], [0 for _ in times]]
     for i in times:
