@@ -101,7 +101,7 @@ def make_slice_by_trajectory(get_xy_by_t):
     steps_theta = steps_theta_decimal.astype(int)
     steps_phi = steps_phi_decimal.astype(int)
     move_2_motors(steps_theta, steps_phi)
-    wait(WAIT_FOR_STOP)
+    time.sleep(0.001 * WAIT_FOR_STOP)
     i_steps_theta, i_steps_phi = invert_slice(steps_theta, steps_phi)
     move_2_motors(i_steps_theta, i_steps_phi)
 
@@ -113,6 +113,16 @@ def get_angles_by_xy_and_dt(get_xy_by_t, dt):
     :param dt: discretization of time
     :return: {theta, phi), tuple of lists
     """
+    if get_xy_by_t is None:
+        delta_theta = math.degrees(math.pi - 2 * math.acos(DIMS[0]/(2*ARMS[0])))
+        steps_theta = list()
+        while delta_theta > 99:
+            steps_theta.append(-99)
+            delta_theta -= 99
+        steps_theta.append(-delta_theta)
+        steps_phi = len(steps_theta) * [0]
+        return steps_theta, steps_phi
+
     times = range(int(T / dt) + 1)
     # get xy by dt
     xy = [[0 for _ in times], [0 for _ in times]]
@@ -230,7 +240,7 @@ def invert_slice(steps_theta, steps_phi):
             delta_theta = 0
         if abs(delta_phi) > 99:
             i_steps_phi.append(-99*sign(delta_phi))
-            delta_phi -= 99 * sign(-delta_phi)
+            delta_phi -= 99 * sign(delta_phi)
         else:
             i_steps_phi.append(-delta_phi)
             delta_phi = 0
