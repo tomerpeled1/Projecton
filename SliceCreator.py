@@ -119,9 +119,13 @@ def pixel2cm(pix_loc):
     return j_coord_screen, i_coord_screen  # (x,y)
 
 def cm2pixel(cm_loc):
+    """
+    :param cm_loc: cm location in order (x,y)
+    :return: pixel location in order (y,x)
+    """
     j_coord_screen, i_coord_screen = cm_loc
     j_coord_frame = int(j_coord_screen * float(FRAME_SIZE[1]) / SCREEN_SIZE[1])
-    i_coord_frame = int((1 - i_coord_screen / SCREEN_SIZE[0]) * FRAME_SIZE[0])
+    i_coord_frame = int((1.0 - float(i_coord_screen / SCREEN_SIZE[0])) * FRAME_SIZE[0])
     return i_coord_frame, j_coord_frame
 
 
@@ -157,9 +161,9 @@ def get_trajectory(fruit_locs):
     for i in times:
         xy[0][i], xy[1][i] = route(dt * i)
 
-    plt.plot(xy[0], xy[1])
-    plt.show()
-    time.sleep(3)
+    # plt.plot(xy[0], xy[1])
+    # plt.show()
+    # time.sleep(3)
     return trajectory
 
 

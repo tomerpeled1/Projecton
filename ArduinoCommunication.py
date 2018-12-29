@@ -34,9 +34,10 @@ TRAJECTORY_DIVISION_NUMBER = 40
 DT_DIVIDE_TRAJECTORY = float(T) / TRAJECTORY_DIVISION_NUMBER
 END_WRITING = 'e'
 START_SLICE = 'd'
-WANTED_RPS = 0.1
-ONE_STEP_DELAY = 0.005 / WANTED_RPS / STEPS_FRACTION # in sec
-# SLICE_END_SIGNAL = 'z'
+WANTED_RPS = 0.27
+ONE_STEP_DELAY = 5.0 / WANTED_RPS / STEPS_FRACTION  # in ms
+SLICE_END_SIGNAL = 'z'
+WAIT_FOR_STOP = 100  # ms
 
 
 try:
@@ -100,6 +101,9 @@ def make_slice_by_trajectory(get_xy_by_t):
     steps_theta = steps_theta_decimal.astype(int)
     steps_phi = steps_phi_decimal.astype(int)
     move_2_motors(steps_theta, steps_phi)
+    wait(WAIT_FOR_STOP)
+    i_steps_theta, i_steps_phi = invert_slice(steps_theta, steps_phi)
+    move_2_motors(i_steps_theta, i_steps_phi)
 
 
 def get_angles_by_xy_and_dt(get_xy_by_t, dt):
@@ -115,8 +119,8 @@ def get_angles_by_xy_and_dt(get_xy_by_t, dt):
     for i in times:
         xy[0][i], xy[1][i] = get_xy_by_t(dt * i)
 
-    plt.plot(xy[0], xy[1])
-    plt.show()
+    # plt.plot(xy[0], xy[1])
+    # plt.show()
 
     # calc angles by xy
     r = np.sqrt(np.power(xy[0], 2) + np.power(np.add(d, xy[1]), 2))
@@ -180,9 +184,9 @@ def move_2_motors(steps_theta, steps_phi):  # WRITE MAXIMUM 41 STEPS PER SLICE
     print("CUT THEM!!!")
     ser.write(str.encode(START_SLICE))
 
-    time_of_slice = calc_time_of_slice(steps_theta,steps_phi)
-    time_in_slice_start = time.time()
-    while time.time() < time_in_slice_start + time_of_slice:  # make sure the arm isn't moving
+    time_of_slice = calc_time_of_slice(steps_theta, steps_phi)
+    time_in_slice_start = 1000.0 * time.time()
+    while 1000.0 * time.time() < time_in_slice_start + time_of_slice:  # make sure the arm isn't moving
         pass
 
     # read_from_serial = (ser.readline()).decode("utf-8")
@@ -197,18 +201,61 @@ def move_2_motors(steps_theta, steps_phi):  # WRITE MAXIMUM 41 STEPS PER SLICE
     print(steps_phi)
 
 
+def sign(x):
+    """
+    Calculates sign of input.
+    :param x: input number
+    :return: 1 if x>0, -1 if x<0, 0 if x==0
+    """
+    return int(x/abs(x)) if x != 0 else 0
+
+
+def invert_slice(steps_theta, steps_phi):
+    """
+    Calculates the slice for returning to start point.
+    :param steps_theta: list of steps in theta in first slice
+    :param steps_phi: list of steps in phi in first slice
+    :return: (i_steps_theta, i_steps_phi), steps of returning-to-start slice
+    """
+    print("INVERT SLICE")
+
+    delta_theta, delta_phi = sum(steps_theta), sum(steps_phi)
+    i_steps_theta, i_steps_phi = list(), list()
+    while abs(delta_theta) > 99 or abs(delta_phi) > 99:
+        if abs(delta_theta) > 99:
+            i_steps_theta.append(-99*sign(delta_theta))
+            delta_theta -= 99 * sign(delta_theta)
+        else:
+            i_steps_theta.append(-delta_theta)
+            delta_theta = 0
+        if abs(delta_phi) > 99:
+            i_steps_phi.append(-99*sign(delta_phi))
+            delta_phi -= 99 * sign(-delta_phi)
+        else:
+            i_steps_phi.append(-delta_phi)
+            delta_phi = 0
+    if delta_theta != 0 or delta_phi != 0:
+        i_steps_theta.append(-delta_theta)
+        i_steps_phi.append(-delta_phi)
+
+    return i_steps_theta, i_steps_phi
+
+
 def calc_time_of_slice(steps_theta, steps_phi):
     """
-
-    :param steps_theta:
-    :param steps_phi:
-    :return:
+    Calculates the duration of the given slice.
+    :param steps_theta: steps of slice in theta
+    :param steps_phi: steps of slice in phi
+    :return: duration of given slice in ms
     """
     steps_counter = 20
     for i in range(len(steps_theta)):
         steps_counter += abs(steps_theta[i]) + abs(steps_phi[i])
     time_of_slice = steps_counter * ONE_STEP_DELAY
-    print("time of slice is supposed to be " + str(time_of_slice) + " seconds")
+    for i in range(len(steps_theta)):
+        if steps_theta[i] == 0 and steps_phi[i] == 0:
+            time_of_slice += WAIT_FOR_STOP
+    print("time of slice is supposed to be " + str(time_of_slice/1000) + " seconds")
     return time_of_slice
 
 
@@ -225,5 +272,14 @@ def calc_time_of_slice(steps_theta, steps_phi):
 #     pass
 # print(time.time()-start)
 
-# if __name__ == '__main__':
-#     print(1)
+if __name__ == '__main__':
+    pass
+    # steps_theta = [-90, -90]
+    # steps_phi = [0, 0]
+    # move_2_motors(steps_theta, steps_phi)
+    # start = time.perf_counter()
+    # i_steps_theta, i_steps_phi = invert_slice(steps_theta, steps_phi)
+    # while 1000.0*(time.perf_counter() - start) < WAIT_FOR_STOP:
+    #     pass
+    # move_2_motors(i_steps_theta, i_steps_phi)
+    # wait(calc_time_of_slice(steps_theta, steps_phi))
