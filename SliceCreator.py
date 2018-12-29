@@ -193,7 +193,8 @@ def y_trajectory(t, v, theta):
 
 def calc_slice(fruit_trajectories_and_starting_times):
     # time.sleep(time_until_slice())
-    return SliceTypes.theta_slice(get_arm_loc(), fruit_trajectories_and_starting_times)
+    # return SliceTypes.theta_slice(get_arm_loc(), fruit_trajectories_and_starting_times)
+    return None, None, None
 
 
 def get_arm_loc():
