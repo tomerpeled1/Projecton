@@ -11,7 +11,7 @@ DARK_101_SETTINGS = (255, 144, -8, 16)  # order is (saturation, gain, exposure, 
 DARK_101_SETTINGS_BEESITO = (255, 127, -7, 5)
 MORNING_101_SETTINGS_BEESITO = (255, 127, -7, 12)
 
-CALIBRATE = False
+CALIBRATE = True
 
 
 class Camera:
@@ -24,17 +24,17 @@ class Camera:
             self.stream = WebcamVideoStream(src=src, name="Live Video").start()
         else:
             self.stream = SavedVideoWrapper.SavedVideoWrapper(src)
-        self.x_crop_dimentions = []
-        self.y_crop_dimentions = []
+        self.bl_crop_dimensions = []
+        self.tr_crop_dimensions = []
         self.current = None
         self.buffer = []
 
     def read(self):
         frame = self.stream.read()
-        frame = cv2.resize(frame, (640, 480))
-        self.current = frame.copy()
+        # frame = cv2.resize(frame, (640, 480))
         if CALIBRATE:
             frame = self.crop_to_screen_size(frame)
+        self.current = frame.copy()
         if (self.CROP):
             frame = self.crop_image(frame)
         if (self.FLIP):
@@ -85,8 +85,8 @@ class Camera:
                 return to_return
 
     def crop_to_screen_size(self, frame):
-        frame = frame[self.y_crop_dimentions[0]:self.y_crop_dimentions[1],
-                self.x_crop_dimentions[0]:self.y_crop_dimentions]
+        frame = frame[self.tr_crop_dimensions[1]:self.bl_crop_dimensions[1],
+                self.bl_crop_dimensions[0]:self.tr_crop_dimensions[0]]
         return frame
 
     def crop_image(self, frame):
@@ -144,10 +144,15 @@ class Camera:
     def set_camera_settings(self, settings):
         self.set(settings)
         if CALIBRATE:
-            frame = self.stream.read()
-            (y, x) = calibrate(frame)
-            self.x_crop_dimentions = x
-            self.y_crop_dimentions = y
+            frame = None
+            while True:
+                frame = self.stream.read()
+                cv2.imshow("calibrate", frame)
+                if cv2.waitKey(1) == 32:
+                    (bl, tr) = calibrate(frame)
+                    self.bl_crop_dimensions = bl
+                    self.tr_crop_dimensions = tr
+                    return
             # #       key value
             # # cam.set(3, 1920)  # width
             # # cam.set(4, 1080)  # height
