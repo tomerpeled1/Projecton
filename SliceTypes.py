@@ -25,11 +25,15 @@ def slice_to_peak(arm_loc, fruit_trajectories_and_starting_times):
 
 def stupid_slice(arm_loc, fruit_trajectories):
     SliceCreator.remove_sliced_fruits(SliceCreator.on_screen_fruits)
-    return (lambda t: tuple_add(arm_loc, tuple_mul(t % 1, (2 * LINE_LENGTH,
-            0)) if (t % 1) < 0.5 else tuple_mul((1-t) % 1, (2 * LINE_LENGTH,
-            0)))), None, None
+    return (lambda t: tuple_add(arm_loc, tuple_mul(t % 1, (2 * LINE_LENGTH, 0)))), None, None
 
 
 def complex_slice(arm_loc, fruit_trajectories):
     return (lambda t: tuple_add(tuple_add(arm_loc, (0, -2)),
                                 tuple_mul(2, (math.cos(2*math.pi*t*10), math.sin(2*math.pi*t*10))))), None, None
+
+def theta_slice(arm_loc, fruit_trajectories):
+    r = 10
+    R = 15
+    return (lambda t: (R*math.cos(math.pi / 3 + 2 * math.pi * t/6), R*math.sin(math.pi / 3 + 2 * math.pi * t/6 + r))),\
+           None, None
