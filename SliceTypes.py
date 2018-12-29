@@ -1,7 +1,7 @@
 import math
 import SliceCreator
 
-LINE_LENGTH = 20
+LINE_LENGTH = 15
 
 
 def tuple_add(tup1, tup2):

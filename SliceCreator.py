@@ -15,7 +15,7 @@ RELATIVE_ACC = 2.34
 ARM_DELAY = 1
 CROP_SIZE = (160, 480)
 FRAME_SIZE = (480, 640)
-SCREEN_SIZE = (21.7, 13.6)
+SCREEN_SIZE = (13.6, 21.7)
 ACC = RELATIVE_ACC * SCREEN_SIZE[1]
 INTEGRATE_WITH_MECHANICS = False
 
@@ -174,7 +174,7 @@ def calc_slice(fruit_trajectories_and_starting_times):
 
 
 def get_arm_loc():
-    return -SCREEN_SIZE[0]/2, 0
+    return -SCREEN_SIZE[1]/2, 2
 
 
 def time_until_slice(fruit):
@@ -226,6 +226,10 @@ def init_everything():
 
 
 if __name__ == "__main__":
+    # inpt = input("enter 1 to start slice")
+    # while inpt != '1':
+    #     inpt = input()
     for _ in range(10):
         slice, timer, time_to_peak = create_slice()
+        print("START: " + str(time.perf_counter()))
         ArduinoCommunication.make_slice_by_trajectory(slice)

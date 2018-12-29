@@ -8,11 +8,6 @@ import matplotlib.pyplot as plt
 
 # all lengths are in cm, all angles are in degrees
 # (0,0) is in the middle of bottom side of screen
-try:
-    ser = serial.Serial('com5', 9600)  # Create Serial port object
-    time.sleep(2)  # wait for 2 seconds for the communication to get established
-except SerialException:
-    print("Didn't create serial.")
 
 
 # ------------- CONSTANTS --------------
@@ -29,16 +24,26 @@ ARMS = [15, 10]     # length of arm links in cm
 d = 18
 # time constants
 T = 1          # total time of slice - it is not real time but parametrization
-WRITE_DELAY = 0.1  # delay in ms after writing to prevent buffer overload
+SERIAL_BPS = 19200
+BITS_PER_BYTE = 8
+LENGTH_OF_COMMAND = 6
+WRITE_DELAY = 1000/(SERIAL_BPS/BITS_PER_BYTE/LENGTH_OF_COMMAND)  # delay in ms after writing to prevent buffer overload
 # dt = 0.003      # the basic period of time of the simulation in sec
 # times = int(T / dt)  # the size of the vectors for the simulation
-TRAJECTORY_DIVISION_NUMBER = 20
+TRAJECTORY_DIVISION_NUMBER = 40
 DT_DIVIDE_TRAJECTORY = float(T) / TRAJECTORY_DIVISION_NUMBER
 END_WRITING = 'e'
 START_SLICE = 'd'
 WANTED_RPS = 0.05
 ONE_STEP_DELAY = 0.005 / WANTED_RPS / STEPS_FRACTION # in sec
 SLICE_END_SIGNAL = 'z'
+
+
+try:
+    ser = serial.Serial('com5', SERIAL_BPS)  # Create Serial port object
+    time.sleep(2)  # wait for 2 seconds for the communication to get established
+except SerialException:
+    print("Didn't create serial.")
 
 
 # ---------- ALGORITHMIC FUNCTION ---------------
@@ -110,7 +115,7 @@ def get_angles_by_xy_and_dt(get_xy_by_t, dt):
     for i in times:
         xy[0][i], xy[1][i] = get_xy_by_t(dt * i)
 
-    plt.plot(xy[0], xy[1])
+    # plt.plot(xy[0], xy[1])
     # plt.show()
 
     # calc angles by xy
@@ -163,18 +168,17 @@ def move_2_motors(steps_theta, steps_phi):  # WRITE MAXIMUM 41 STEPS PER SLICE
             message = "0" + message
 
         ser.write(str.encode(message))
-        # wait(WRITE_DELAY)
+        wait(WRITE_DELAY)
         # print(str(message))
 
     t2 = time.time()
     print("time for writing: ", t2-t1)
     ser.write(str.encode(END_WRITING))
     print("ended writing")
+    print("END: " + str(time.perf_counter()))
     # time.sleep(2)
     print("CUT THEM!!!")
     ser.write(str.encode(START_SLICE))
-
-    print("END: " + str(time.time()))
 
     time_of_slice = calc_time_of_slice(steps_theta,steps_phi)
     time_in_slice_start = time.time()
