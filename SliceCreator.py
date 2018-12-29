@@ -219,10 +219,7 @@ def simulation_thread_run():
             simulation_queue_lock.wait()
         slice = simulation_queue[0]
         simulation_queue.remove(slice)
-        if SIMULATE:
-            do_slice(slice)
-        else:
-            ArduinoCommunication.make_slice_by_trajectory(slice)
+        do_slice(slice)
         simulation_queue_lock.release()
 
 
