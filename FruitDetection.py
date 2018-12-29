@@ -84,7 +84,6 @@ def fruit_detection(frame, background, contour_area_thresh):
     conts = []
     rects = []
     centers = []
-    conts_and_rects = DetectionResults.DetectionResults(conts, rects, centers)
     for i in range(len(cont)):
         c = cont[i]
         x_min = c[c[:, :, 0].argmin()][0][0]
@@ -97,13 +96,15 @@ def fruit_detection(frame, background, contour_area_thresh):
         up_right = (x_max, y_max)
         rect = [bot_left, up_right]
         center = center_of_contour(c)
-        conts_and_rects.conts.append(c)
-        conts_and_rects.rects.append(rect)
-        conts_and_rects.centers.append(center)
+        conts.append(c)
+        rects.append(rect)
+        centers.append(center)
+
+
 
     print("time for detection: " + str(time.perf_counter()-t))
 
-    return conts_and_rects # a list of lists, representing all the fruits found.
+    return DetectionResults.DetectionResults(conts, rects, centers) # a list of lists, representing all the fruits found.
 
 
 def center_of_contour(c):

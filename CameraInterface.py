@@ -7,8 +7,9 @@ import SavedVideoWrapper
 LIGHT_LAB_SETTINGS = (215, 75, -7, 12)  # order is (saturation, gain, exposure, focus)
 TABLE_ABOVE_SETTINGS = (255, 100, -6, 12)  # order is (saturation, gain, exposure, focus)
 MORNING_101_SETTINGS = (220, 40, -7, 5)  # order is (saturation, gain, exposure, focus)
-DARK_101_SETTINGS = (225, 88, -5, 10)  # order is (saturation, gain, exposure, focus)
+DARK_101_SETTINGS = (255, 144, -8, 16)  # order is (saturation, gain, exposure, focus)
 DARK_101_SETTINGS_BEESITO = (255, 127, -7, 5)
+MORNING_101_SETTINGS_BEESITO = (255, 127, -7, 12)
 
 CALIBRATE = False
 
@@ -30,6 +31,7 @@ class Camera:
 
     def read(self):
         frame = self.stream.read()
+        frame = cv2.resize(frame, (640, 480))
         self.current = frame.copy()
         if CALIBRATE:
             frame = self.crop_to_screen_size(frame)

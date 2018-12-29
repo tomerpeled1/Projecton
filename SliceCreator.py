@@ -18,7 +18,7 @@ CROP_SIZE = (160, 480)  #(y,x)
 FRAME_SIZE = (480, 640)   #(y,x)
 SCREEN_SIZE = (13.6, 21.7)  #(y,x)
 ACC = RELATIVE_ACC * SCREEN_SIZE[0]
-INTEGRATE_WITH_MECHANICS = False
+INTEGRATE_WITH_MECHANICS = True
 
 # for hakab
 oops = 0
@@ -28,7 +28,6 @@ success = 0
 
 on_screen_fruits = []
 SIMULATE = False
-LOCKED = False
 lock = threading.Lock()
 gui_lock = threading.Lock()
 simulation_queue_lock = threading.Condition()
@@ -63,8 +62,8 @@ def update_fruits(fruits):
     on_screen_fruits.extend(fruits)
     fruits[:] = []
 
-    fruit_trajectories = [get_trajectory(fruit_locs) for fruit_locs in fruits_locs]
-    on_screen_fruits.extend([[fruit_trajectories[i], fruits[i].time_created] for i in range(len(fruits))])
+    # fruit_trajectories = [get_trajectory(fruit_locs) for fruit_locs in fruits_locs]
+    # on_screen_fruits.extend([[fruit_trajectories[i], fruits[i].time_created] for i in range(len(fruits))])
 
 
 def create_slice():
@@ -113,22 +112,22 @@ def pixel2cm(pix_loc):
             we look at the opposite side because the arm is looking at the screen from it's top
             and we look at it from the bottom
     '''
-    (j_coord_crop, i_coord_crop) = pix_loc
+    (j_coord_crop, i_coord_crop, t) = pix_loc
     i_coord_frame = FRAME_SIZE[0] - CROP_SIZE[0] + i_coord_crop
     j_coord_frame = FRAME_SIZE[1] / 2 - CROP_SIZE[1] / 2 + j_coord_crop
     i_coord_screen = (float(i_coord_frame / FRAME_SIZE[0])) * SCREEN_SIZE[0]
     j_coord_screen = (1 - float(j_coord_frame / FRAME_SIZE[1])) * SCREEN_SIZE[1]
-    return j_coord_screen, i_coord_screen  # (x,y)
+    return j_coord_screen, i_coord_screen, t  # (x,y)
 
 def cm2pixel(cm_loc):
     """
     :param cm_loc: cm location in order (x,y)
     :return: pixel location in order (y,x)
     """
-    j_coord_screen, i_coord_screen = cm_loc
+    j_coord_screen, i_coord_screen, t = cm_loc
     j_coord_frame = int(j_coord_screen * float(FRAME_SIZE[1]) / SCREEN_SIZE[1])
     i_coord_frame = int((1.0 - float(i_coord_screen / SCREEN_SIZE[0])) * FRAME_SIZE[0])
-    return i_coord_frame, j_coord_frame
+    return i_coord_frame, j_coord_frame, t
 
 
 
@@ -183,7 +182,7 @@ def y_trajectory(t, v, theta):
 
 def calc_slice(fruit_trajectories_and_starting_times):
     # time.sleep(time_until_slice())
-    return SliceTypes.stupid_slice(get_arm_loc(), fruit_trajectories_and_starting_times)
+    return SliceTypes.theta_slice(get_arm_loc(), fruit_trajectories_and_starting_times)
 
 
 def get_arm_loc():
@@ -243,6 +242,7 @@ if __name__ == "__main__":
     # while inpt != '1':
     #     inpt = input()
     for _ in range(10):
-        slice, timer, time_to_peak = create_slice()
+        slice_and_times = create_slice()
         print("START: " + str(time.perf_counter()))
-        ArduinoCommunication.make_slice_by_trajectory(slice)
+        # ArduinoCommunication.make_slice_by_trajectory(slice)
+        do_slice(slice_and_times)
