@@ -113,7 +113,7 @@ def get_angles_by_xy_and_dt(get_xy_by_t, dt):
     Converts continuous function of (x,y)(t) to discrete lists of angles.
     :param get_xy_by_t: function given form algorithmic module
     :param dt: discretization of time
-    :return: {theta, phi), tuple of lists
+    :return: (theta, phi), tuple of lists
     """
     if get_xy_by_t is None:  # make slice in theta only
         delta_theta = math.pi - 2 * math.acos(DIMS[0]/(2*ARMS[0]))

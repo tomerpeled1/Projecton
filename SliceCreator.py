@@ -15,9 +15,9 @@ import threading
 # RELATIVE_ACC = 2.34
 RELATIVE_ACC = 1.5
 ARM_DELAY = 1
-CROP_SIZE = (160, 480)  #(y,x)
-FRAME_SIZE = (480, 640)   #(y,x)
-SCREEN_SIZE = (12, 16)  #(y,x)
+CROP_SIZE = (160, 480)  # (y,x)
+FRAME_SIZE = (480, 640)   # (y,x)
+SCREEN_SIZE = (12, 16)  # (y,x)
 ACC = RELATIVE_ACC * SCREEN_SIZE[0]
 INTEGRATE_WITH_MECHANICS = False
 
