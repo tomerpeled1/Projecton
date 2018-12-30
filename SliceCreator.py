@@ -1,5 +1,6 @@
 import math
 import matplotlib.pyplot as plt
+import statistics as st
 # import cv2
 
 
@@ -12,8 +13,8 @@ from threading import Thread
 from multiprocessing import Process  # TODO delete if isn't used
 import threading
 
-RELATIVE_ACC = 1.7
-# RELATIVE_ACC = 1.8
+RELATIVE_ACC = 1.8
+CAMERA_FPS = 30
 ARM_DELAY = 1
 CROP_SIZE = (160, 480)  # (y,x)
 FRAME_SIZE = (480, 640)   # (y,x)
@@ -129,9 +130,22 @@ def cm2pixel(cm_loc):
     return y_coord_frame, x_coord_frame, t
 
 
+def rms(array):
+    """
+    calcs rms
+    :return: root mean square
+    """
+    sum_squares = 0
+    length = len(array)
+    for i in range(length):
+        sum_squares += array[i]**2
+    mean = sum_squares / length
+    return math.sqrt(mean)
+
+
 def get_trajectory(fruit_locs):
 
-    time_between_2_frames = 1.0 / 30
+    time_between_2_frames = 1.0 / CAMERA_FPS
 
     x_coords = [fruit_loc[0] for fruit_loc in fruit_locs]  # TODO this is a bug. need to make in a loop
     y_coords = [fruit_loc[1] for fruit_loc in fruit_locs]
@@ -147,25 +161,41 @@ def get_trajectory(fruit_locs):
 
     r_total = math.sqrt(x_total**2 + y_total**2)
 
-    x0 = x_coords[-1]
-    y0 = y_coords[-1]
-    if x_total == 0:
-        x_total = 0.011
-    theta = math.pi - math.atan(y_total / x_total)
+    x0 = st.mean(x_coords)
+    y0 = st.mean(y_coords)
+    if x_total == 0:  # to prevent division by zero
+        x_total = 0.001
+
+    theta_array = [0 for _ in range(len(x_coords)-1)]
+    for i in range(len(x_coords)-1):
+        if (x_coords[i+1] - x_coords[i]) != 0:  # to prevent division by zero
+            delta_x = (x_coords[i+1] - x_coords[i])
+        else:
+            delta_x = 0.001
+        theta_array[i] = math.pi - math.atan((y_coords[i+1] - y_coords[i]) / delta_x)
+    theta_median = st.median(theta_array)  # best theta
+    theta_mean = st.mean(theta_array)
+    theta_start_to_end = math.pi - math.atan(y_total / x_total)
+    theta = theta_median
 
     r_total_real = abs((SCREEN_SIZE[0] / 3 / math.sin(theta)))  # 3 is because the screen is croped to third
-    sum_v = 0
-    sum_vy = 0
+    v_array = [0 for _ in range(len(r_coords))]
+    vy_array = [0 for _ in range(len(r_coords))]
     for i in range(len(r_coords)):
-        sum_v += r_coords[i] / time_between_2_frames
-        sum_vy += (y_coords[i+1] - y_coords[i]) / time_between_2_frames
+        v_array[i] = r_coords[i] / time_between_2_frames
+        vy_array[i] = (y_coords[i+1] - y_coords[i]) / time_between_2_frames
 
-    v0_mean = sum_v / len(r_coords)
-    vy_mean = sum_vy / len(r_coords)
+    v0_median = st.median(v_array)
+    v0_mean = st.mean(v_array)
+    v0_rms = rms(v_array)
+    vy_median = st.median(vy_array)
+    vy_mean = st.mean(vy_array)
 
     v0_by_vy_end_to_end = y_total / t_total / math.sin(theta)
 
     v0_by_vy_mean = vy_mean / math.sin(theta)
+
+    v0_by_vy_median = vy_median / math.sin(theta)
 
     v0_stupid = r_total_real / (10 * time_between_2_frames)
 
