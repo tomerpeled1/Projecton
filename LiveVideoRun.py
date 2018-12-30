@@ -66,23 +66,32 @@ def draw_center(fruit, frame):
 
 
 def draw_trajectory(fruit, frame):
+    centers_cm = [Sc.pixel2cm(center) for center in fruit.centers]
+    x_coords = [fruit_loc[0] for fruit_loc in centers_cm]  # TODO this is a bug. need to make in a loop
+    y_coords = [fruit_loc[1] for fruit_loc in centers_cm]
+    t_coords = [fruit_loc[2] for fruit_loc in centers_cm]
+    times_centers = range(len(x_coords))
+
     # if fruit.trajectory:
-    cv2.putText(frame, 'Lamed Tet', (200, 100), cv2.FONT_HERSHEY_DUPLEX, 1, (255, 255, 255), 2, cv2.LINE_AA)
+    # cv2.putText(frame, 'Lamed Tet', (200, 100), cv2.FONT_HERSHEY_DUPLEX, 1, (255, 255, 255), 2, cv2.LINE_AA)
+
     T = 3
     dt = 0.02
-    times = range(-int(T / dt), int(T / dt))
-    xy_cm = [[0 for _ in times], [0 for _ in times]]
-    xy_pixels = [[0 for _ in times], [0 for _ in times]]
+    times_trajectory = range(-int(T / dt), int(T / dt))
+    xy_cm = [[0 for _ in times_trajectory], [0 for _ in times_trajectory]]
+    xy_pixels = [[0 for _ in times_trajectory], [0 for _ in times_trajectory]]
     route = fruit.trajectory.calc_trajectory()
-    for i in times:
+    # draw fitted trajectory
+    for i in times_trajectory:
         xy_cm[0][i], xy_cm[1][i] = route(dt * i)
         xy_pixels[1][i], xy_pixels[0][i],t = Sc.cm2pixel((xy_cm[0][i], xy_cm[1][i],dt*i))
+        cv2.circle(frame, (int(xy_pixels[0][i]),int(xy_pixels[1][i])), 2, (255, 0, 0), -1)
 
-        # xy[0][i], xy[1][i] = 10*i, i**2
-
-
-    for i in range(len(xy_pixels[0])):
-        cv2.circle(frame, (int(xy_pixels[0][i]),int(xy_pixels[1][i])), 2, (255, 0, 255), -1)
+    # draw the centers of the fruits
+    xy_centers = [[0 for _ in times_centers], [0 for _ in times_centers]]
+    for i in times_centers:
+        xy_centers[1][i], xy_centers[0][i],t = Sc.cm2pixel((x_coords[i], y_coords[i],dt*i))
+        cv2.circle(frame, (int(xy_centers[0][i]),int(xy_centers[1][i])), 5, (0, 0, 255), -1)
 
 
 def calculate_hist_window(window, img_hsv):
@@ -234,7 +243,7 @@ def run_detection(src, settings, live, crop, flip):
     current = bg
     counter = 0
     buffer = []
-    while camera.is_opened() and counter < 60000:
+    while camera.is_opened() and counter < 100:
         t1 = time.perf_counter()
         counter += 1
         current = camera.next_frame(current)
@@ -264,7 +273,7 @@ def debug_with_buffer(buffer):
     i = 0
     while True:
         for fruit in fruits_for_debug_trajectories:
-            # draw_center(fruit, buffer[i])
+            draw_center(fruit, buffer[i])
             draw_trajectory(fruit, buffer[i])
 
         cv2.imshow("debug", buffer[i])
