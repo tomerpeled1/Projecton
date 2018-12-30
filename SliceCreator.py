@@ -25,7 +25,7 @@ oops = 0
 success = 0
 
 on_screen_fruits = []
-SIMULATE = True
+SIMULATE = False
 simulation_queue_lock = threading.Condition()
 simulation_thread = None
 simulation_queue = []
@@ -193,8 +193,8 @@ def y_trajectory(t, v, theta):
 
 def calc_slice(fruit_trajectories_and_starting_times):
     # time.sleep(time_until_slice())
-    # return SliceTypes.theta_slice(get_arm_loc(), fruit_trajectories_and_starting_times)
-    return None, None, None
+    return SliceTypes.radius_slice(get_arm_loc(), fruit_trajectories_and_starting_times)
+    # return None, None, None
 
 
 def get_arm_loc():
@@ -250,8 +250,7 @@ if __name__ == "__main__":
     # inpt = input("enter 1 to start slice")
     # while inpt != '1':
     #     inpt = input()
-    for _ in range(10):
-        slice_and_times = create_slice()
-        print("START: " + str(time.perf_counter()))
-        # ArduinoCommunication.make_slice_by_trajectory(slice)
-        do_slice(slice_and_times)
+    slice_and_times = create_slice()
+    print("START: " + str(time.perf_counter()))
+    # ArduinoCommunication.make_slice_by_trajectory(slice)
+    do_slice(slice_and_times)

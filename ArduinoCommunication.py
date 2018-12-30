@@ -83,7 +83,7 @@ def modulo(a, n):
     :param n: second argument
     :return: fixed a % n
     """
-    if a > 0:
+    if a >= 0:
         return a % n
     else:
         return a % n - 1
@@ -115,13 +115,9 @@ def get_angles_by_xy_and_dt(get_xy_by_t, dt):
     :param dt: discretization of time
     :return: {theta, phi), tuple of lists
     """
-    if get_xy_by_t is None:
-        delta_theta = math.degrees(math.pi - 2 * math.acos(DIMS[0]/(2*ARMS[0])))
-        steps_theta = list()
-        while delta_theta > 99:
-            steps_theta.append(-99)
-            delta_theta -= 99
-        steps_theta.append(-delta_theta)
+    if get_xy_by_t is None:  # make slice in theta only
+        delta_theta = math.pi - 2 * math.acos(DIMS[0]/(2*ARMS[0]))
+        steps_theta = [math.pi - math.acos(DIMS[0]/(2*ARMS[0])) - i*(0.1*delta_theta) for i in range(11)]
         steps_phi = len(steps_theta) * [0]
         return steps_theta, steps_phi
 
