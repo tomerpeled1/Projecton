@@ -46,7 +46,7 @@ def fruit_detection(frame, background, contour_area_thresh):
     # calc total change (value + hue) and remove noise
     sub_add = cv2.add(subtract_v, subtract_h_mod)
     # cv2.imshow("sub_add", sub_add)
-    ret3, add_thresh = cv2.threshold(sub_add, 55, 255, cv2.THRESH_BINARY)
+    ret3, add_thresh = cv2.threshold(sub_add, 70, 255, cv2.THRESH_BINARY)
     add_thresh = cv2.morphologyEx(add_thresh, cv2.MORPH_OPEN, np.ones((5,5), np.uint8))
 
     # mask that removes very bright noises (blade)

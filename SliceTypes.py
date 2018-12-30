@@ -87,7 +87,7 @@ def theta_slice(arm_loc, fruit_trajectories):
 
 def radius_slice(arm_loc, fruit_trajectories):
     SliceCreator.on_screen_fruits = []
-    theta_0 = math.acos(SCREEN[0]/(2*(R+r)))
+    theta_0 = math.acos(SCREEN[0]/(2*(R+r))) + 0.07
 
     return (lambda t: tuple_mul((R+r),
                                 (math.cos(theta_0 + (math.pi - 2* theta_0) * (1 - t)),
