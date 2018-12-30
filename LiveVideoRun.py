@@ -16,6 +16,7 @@ v_lower = 32
 v_upper = 255
 
 # consts
+SAVED_VIDEO_NAME = "SmallFruit2.flv"
 CONTOUR_AREA_THRESH = 1000
 NUM_OF_FRAMES = 5
 MAX_NUM_OF_FRAMES_ON_SCREEN = 13
@@ -32,6 +33,9 @@ HISTS_COMPARE_METHOD = cv2.HISTCMP_CORREL
 SECONDS_FOR_BG = 3
 
 INTEGRATE_WITH_ALGORITHMICS = False
+
+fruits_for_debug_trajectories = []
+
 
 def center(box):
     """
@@ -58,7 +62,36 @@ def draw_center(fruit, frame):
     :param frame: the frame in which we want to draw.
     """
     for cen in fruit.centers:
-        cv2.circle(frame, cen, 2, (0, 0, 255), -1)
+        cv2.circle(frame, cen[:-1], 2, (0, 0, 255), -1)
+
+
+def draw_trajectory(fruit, frame):
+    centers_cm = [Sc.pixel2cm(center) for center in fruit.centers]
+    x_coords = [fruit_loc[0] for fruit_loc in centers_cm]  # TODO this is a bug. need to make in a loop
+    y_coords = [fruit_loc[1] for fruit_loc in centers_cm]
+    t_coords = [fruit_loc[2] for fruit_loc in centers_cm]
+    times_centers = range(len(x_coords))
+
+    # if fruit.trajectory:
+    # cv2.putText(frame, 'Lamed Tet', (200, 100), cv2.FONT_HERSHEY_DUPLEX, 1, (255, 255, 255), 2, cv2.LINE_AA)
+
+    T = 3
+    dt = 0.02
+    times_trajectory = range(-int(T / dt), int(T / dt))
+    xy_cm = [[0 for _ in times_trajectory], [0 for _ in times_trajectory]]
+    xy_pixels = [[0 for _ in times_trajectory], [0 for _ in times_trajectory]]
+    route = fruit.trajectory.calc_trajectory()
+    # draw fitted trajectory
+    for i in times_trajectory:
+        xy_cm[0][i], xy_cm[1][i] = route(dt * i)
+        xy_pixels[1][i], xy_pixels[0][i],t = Sc.cm2pixel((xy_cm[0][i], xy_cm[1][i],dt*i))
+        cv2.circle(frame, (int(xy_pixels[0][i]),int(xy_pixels[1][i])), 2, (255, 0, 0), -1)
+
+    # draw the centers of the fruits
+    xy_centers = [[0 for _ in times_centers], [0 for _ in times_centers]]
+    for i in times_centers:
+        xy_centers[1][i], xy_centers[0][i],t = Sc.cm2pixel((x_coords[i], y_coords[i],dt*i))
+        cv2.circle(frame, (int(xy_centers[0][i]),int(xy_centers[1][i])), 5, (0, 0, 255), -1)
 
 
 def calculate_hist_window(window, img_hsv):
@@ -67,7 +100,6 @@ def calculate_hist_window(window, img_hsv):
     """
     x, y, w, h = window
     cropped = img_hsv[y:y + h, x:x + w].copy()
-    # cv2.imshow("histogram", cropped)
     mask = cv2.inRange(cropped, np.array((0., float(s_lower), float(v_lower))),
                        np.array((180., float(s_upper), float(v_upper))))
     crop_hist = cv2.calcHist([cropped], [0, 1], mask, [180, 255],
@@ -110,13 +142,23 @@ def calc_meanshift_all_fruits(fruits_info, img_hsv):
 
 
 def print_and_extract_centers(fruits_to_extract):
+    for fruit in fruits_to_extract:
+        fruit.centers = fruit.centers[1:-1]
     if fruits_to_extract:
-        if(INTEGRATE_WITH_ALGORITHMICS):
+        # ---------Add trajectory to fruit object ------- #
+        global fruits_for_debug_trajectories
+        for fruit in fruits_to_extract:
+            centers_cm = [Sc.pixel2cm(center) for center in fruit.centers]
+            fruit.trajectory = Sc.get_trajectory(centers_cm)
+            # --- add first fruit to debug fruits buffer ---#
+            fruits_for_debug_trajectories.append(fruit)
+
+        if (INTEGRATE_WITH_ALGORITHMICS):
             Sc.update_and_slice(fruits_to_extract)
-        # thread = Thread(target=sc.create_and_do_slice)
-        # thread.start()
-        # slm.run_simulation(slice)
-        # sc.create_slice([])
+
+
+        global FRUIT_TO_EXTRACT
+        FRUIT_TO_EXTRACT[:] = []
         print("centers of:" + str([fruit.centers for fruit in fruits_to_extract]))
 
 
@@ -133,11 +175,12 @@ def get_hists(detection_results, frame):
         # crop = frame[boxes[0][0][1]:boxes[0][1][1], boxes[0][0][0]:boxes[0][1][0]].copy() #crop the box.
         # h, w, c = crop.shape
         # if (h > 0) and (w > 0): #if the box isn't empty.
-        cropped = True  # TODO delete if isn't used.
+        cropped = True
         hsv_frame = cv2.cvtColor(frame, cv2.COLOR_BGR2HSV)
         track_window = (boxes[0][0][0], boxes[0][0][1],
                         boxes[0][1][0] - boxes[0][0][0],
                         boxes[0][1][1] - boxes[0][0][1])
+        track_window = Rtt.resize_track_window(track_window)
         crop_hist = calculate_hist_window(track_window, hsv_frame)
         # after calculating the histrogram of the fruit, we add it to the big array and the window to the big array.
         fruits_info.append(
@@ -162,7 +205,7 @@ def track_known_fruits(fruits_info, current_frame, detection_results):
         to_delete = []
         for fruit in fruits_info:
             if Rtt.track_object(detection_results, fruit):  # update tracker using the detection results.
-                if fruit.counter <= 3:
+                if fruit.counter <= MAX_NUM_OF_FRAMES_ON_SCREEN: # TODO check shit
                     # cv2.imshow("hsv new", img_hsv)
                     fruit.hist = calculate_hist_window(fruit.track_window, img_hsv)
             else:
@@ -200,13 +243,13 @@ def run_detection(src, settings, live, crop, flip):
     current = bg
     counter = 0
     buffer = []
-    while camera.is_opened() and counter < 200:
+    while camera.is_opened() and counter < 100:
         t1 = time.perf_counter()
         counter += 1
         current = camera.next_frame(current)
         temp_frame = current.copy()
         detection_results = Fd.fruit_detection(temp_frame, bg, CONTOUR_AREA_THRESH)
-        # cv2.drawContours(temp_frame, detection_results.conts, -1, (0, 255, 0), 2)
+        cv2.drawContours(temp_frame, detection_results.conts, -1, (0, 255, 0), 2)
         # calculates meanshift for fruits known. removes fruits which left temp_frame.
         track_known_fruits(fruits_info, temp_frame, detection_results)
         if len(detection_results.conts) > 0:
@@ -214,7 +257,7 @@ def run_detection(src, settings, live, crop, flip):
         for fruit in fruits_info:
             if not fruit.is_falling:
                 draw(fruit, temp_frame)
-        cv2.drawContours(temp_frame, detection_results.conts, -1, (0, 255, 0), 2)
+        # cv2.drawContours(temp_frame, detection_results.conts, -1, (0, 255, 0), 2)
         cv2.imshow("temp_frame", temp_frame)
         buffer.append(temp_frame)
         t2 = time.perf_counter()
@@ -222,13 +265,17 @@ def run_detection(src, settings, live, crop, flip):
         if cv2.waitKey(1) == 27:
             break
         print("len of fruits: " + str(len(fruits_info)))
-    # debug_with_buffer(buffer)
-    show_original(camera)
+    debug_with_buffer(buffer)
+    # show_original(camera)
 
 
 def debug_with_buffer(buffer):
     i = 0
     while True:
+        for fruit in fruits_for_debug_trajectories:
+            draw_center(fruit, buffer[i])
+            draw_trajectory(fruit, buffer[i])
+
         cv2.imshow("debug", buffer[i])
         x = cv2.waitKey(1)
         if x == 49:  # '1' key
@@ -236,8 +283,25 @@ def debug_with_buffer(buffer):
         elif x == 50:  # '2' key
             i += 1
 
+
+
 def show_original(camera):
-    debug_with_buffer(camera.buffer)
+    i = 0
+    while True:
+        frame = camera.buffer[i]
+        # frame = cv2.resize(frame, None, fx=0.3, fy=0.3)
+
+        for fruit in fruits_for_debug_trajectories:
+            # draw_center(fruit,frame)
+            draw_trajectory(fruit,frame)
+
+        cv2.imshow("debug", frame)
+        x = cv2.waitKey(1)
+        if x == 49:  # '1' key
+            i -= 1
+        elif x == 50:  # '2' key
+            i += 1
+
 
 def draw(fruit, frame):
     """
@@ -248,4 +312,4 @@ def draw(fruit, frame):
 
 
 if __name__ == '__main__':
-    run_detection(0, Ci.DARK_101_SETTINGS_BEESITO, live=True, crop=True, flip=True)
+    run_detection(0, Ci.IPAD_B4_MIDDLE_LIGHTS_OFF_CLOSED_DRAPES, live=True, crop=True, flip=True)

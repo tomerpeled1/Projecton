@@ -1,8 +1,12 @@
 import math
 import SliceCreator
 
-LINE_LENGTH = 15
+LINE_LENGTH = 10
 
+r = 9.9
+R = 14.9
+d = 17.9
+SCREEN = [16, 12]
 
 def tuple_add(tup1, tup2):
     return tup1[0] + tup2[0], tup1[1] + tup2[1]
@@ -25,15 +29,67 @@ def slice_to_peak(arm_loc, fruit_trajectories_and_starting_times):
 
 def stupid_slice(arm_loc, fruit_trajectories):
     SliceCreator.remove_sliced_fruits(SliceCreator.on_screen_fruits)
-    return (lambda t: tuple_add(arm_loc, tuple_mul(t % 1, (2 * LINE_LENGTH, 0)))), None, None
+    return (lambda t: tuple_add(arm_loc, tuple_mul(t % 1, (LINE_LENGTH, 0)))), None, None
 
+
+def line_trajectory(arm_loc, fruit_trajectories):  # gets time in sec
+
+    def xy_by_t(t):
+        """
+        trajectory in streight line
+        :param t:
+        :return:
+        """
+        T = 0.5
+        x_0 = arm_loc[0]
+        y_0 = arm_loc[1]
+        d_a = abs(x_0 / 2.0)  # must be x_0 / 4.0 for the calculation of the acceleration
+        # acc = 12.5 * abs(x_0) / T
+        acc = 180.0
+        t_a = math.sqrt(2 * abs(d_a / acc))
+        v = acc * t_a
+
+        x = x_0
+        y = y_0
+        y = t / T * d_a
+        if t < t_a:
+            x = x_0 + 0.5 * acc * t**2
+        elif t_a < t < T - t_a:
+            x = x_0 + d_a + v * (t - t_a)
+        elif t > T - t_a:
+            x = x_0 + d_a + v * (T - 2 * t_a) + v * (t - (T - t_a)) - 0.5 * acc * (t - (T - t_a))**2
+
+        x_0 = -x_0
+        v = -v
+        d_a = -d_a
+        acc = -acc
+
+        if T < t < T + t_a:
+            x = x_0 + 0.5 * acc * (t - T)**2
+        elif T + t_a < t < 2 * T - t_a:
+            x = x_0 + d_a + v * (t - T - t_a)
+        elif t > 2 * T - t_a:
+            x = x_0 + d_a + v * (T - 2 * t_a) + v * (t - T - (T - t_a)) - 0.5 * acc * (t - T - (T - t_a))**2
+        return (x, y)
+
+    return xy_by_t, None, None
 
 def complex_slice(arm_loc, fruit_trajectories):
     return (lambda t: tuple_add(tuple_add(arm_loc, (0, -2)),
                                 tuple_mul(2, (math.cos(2*math.pi*t*10), math.sin(2*math.pi*t*10))))), None, None
 
 def theta_slice(arm_loc, fruit_trajectories):
-    r = 10
-    R = 15
-    return (lambda t: (R*math.cos(math.pi / 3 + 2 * math.pi * t/6), R*math.sin(math.pi / 3 + 2 * math.pi * t/6 + r))),\
+    SliceCreator.on_screen_fruits = []
+
+    return (lambda t: (R*math.cos(math.pi / 3 + 2 * math.pi * (1-t)/6),
+                       R*math.sin(math.pi / 3 + 2 * math.pi * (1-t)/6) + r - d)),\
+           None, None
+
+def radius_slice(arm_loc, fruit_trajectories):
+    SliceCreator.on_screen_fruits = []
+    theta_0 = math.acos(SCREEN[0]/(2*(R+r))) + 0.07
+
+    return (lambda t: tuple_mul((R+r),
+                                (math.cos(theta_0 + (math.pi - 2* theta_0) * (1 - t)),
+                                math.sin(theta_0 + (math.pi - 2* theta_0) * (1 - t))  - d/(R+r)))), \
            None, None

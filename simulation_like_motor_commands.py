@@ -182,7 +182,7 @@ ARMS = (15, 10)     # length of arm links in cm
 # density = 7         # gr/cm
 # link_mass = 20      # mass of link in gr
 # pen_mass = 10       # mass of end in gr
-d = 10               # distance from screen in cm
+d = 18                  # distance from screen in cm
 WIDTH = to_pixels(2 * SCREEN[0])
 HEIGHT = to_pixels(2 * (SCREEN[1] + d))
 # MOTOR_SPEED = 50    # angular speed of motor in rpm
@@ -246,7 +246,8 @@ def run_simulation(func):
         pygame.display.flip()
 
         time.sleep(dt_motor)
-
+    time.sleep(2)
+    pygame.display.quit()
     # draw_graph(x_ideal_vector, y_ideal_vector, "ideal", "x", "y")
     # draw_graph(x_practical_vector, y_practical_vector, "practical", "x", "y")
 

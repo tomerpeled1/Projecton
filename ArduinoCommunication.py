@@ -13,7 +13,8 @@ import matplotlib.pyplot as plt
 # ------------- CONSTANTS --------------
 # board constants
 RADIUS = 15
-DIMS = (21.7, 13.6)  # (X,Y)
+
+DIMS = (16, 12)  # (X,Y)
 ALPHA_MIN = (180/math.pi)*math.acos(DIMS[0]/(2.0*RADIUS))
 ALPHA_MAX = 180 - ALPHA_MIN
 STEPS_PER_REVOLUTION = 200
@@ -31,14 +32,16 @@ LENGTH_OF_COMMAND = 6
 WRITE_DELAY = 1000/(SERIAL_BPS/BITS_PER_BYTE/LENGTH_OF_COMMAND)  # delay in ms after writing to prevent buffer overload
 # dt = 0.003      # the basic period of time of the simulation in sec
 # times = int(T / dt)  # the size of the vectors for the simulation
-TRAJECTORY_DIVISION_NUMBER = 40
+TRAJECTORY_DIVISION_NUMBER = 20
 DT_DIVIDE_TRAJECTORY = float(T) / TRAJECTORY_DIVISION_NUMBER
 END_WRITING = 'e'
 START_SLICE = 'd'
-WANTED_RPS = 0.27
+WANTED_RPS = 0.5
 ONE_STEP_DELAY = 5.0 / WANTED_RPS / STEPS_FRACTION  # in ms
 SLICE_END_SIGNAL = 'z'
-WAIT_FOR_STOP = 1000  # ms
+WAIT_FOR_STOP = 50  # ms
+COMMAND_PACKAGE_SIZE = 10  # number of commands to write at once
+MAX_COMMAND_IN_INVERT = 20
 
 
 try:
@@ -82,7 +85,7 @@ def modulo(a, n):
     :param n: second argument
     :return: fixed a % n
     """
-    if a > 0:
+    if a >= 0:
         return a % n
     else:
         return a % n - 1
@@ -102,7 +105,7 @@ def make_slice_by_trajectory(get_xy_by_t):
     steps_theta = steps_theta_decimal.astype(int)
     steps_phi = steps_phi_decimal.astype(int)
     move_2_motors(steps_theta, steps_phi)
-    wait(WAIT_FOR_STOP)
+    time.sleep(0.001 * WAIT_FOR_STOP)
     i_steps_theta, i_steps_phi = invert_slice(steps_theta, steps_phi)
     move_2_motors(i_steps_theta, i_steps_phi)
 
@@ -112,9 +115,15 @@ def get_angles_by_xy_and_dt(get_xy_by_t, dt):
     Converts continuous function of (x,y)(t) to discrete lists of angles.
     :param get_xy_by_t: function given form algorithmic module
     :param dt: discretization of time
-    :return: {theta, phi), tuple of lists
+    :return: (theta, phi), tuple of lists
     """
-    times = range(int(T / dt))
+    if get_xy_by_t is None:  # make slice in theta only
+        delta_theta = math.pi - 2 * math.acos(DIMS[0]/(2*ARMS[0]))
+        steps_theta = [math.pi - math.acos(DIMS[0]/(2*ARMS[0])) - i*(0.1*delta_theta) for i in range(11)]
+        steps_phi = len(steps_theta) * [0]
+        return steps_theta, steps_phi
+
+    times = range(int(T / dt) + 1)
     # get xy by dt
     xy = [[0 for _ in times], [0 for _ in times]]
     for i in times:
@@ -150,6 +159,20 @@ def wait(t):
         pass
 
 
+def encode_message(steps_theta, steps_phi):
+    message = abs(steps_theta) * 10000 + abs(steps_phi) * 100
+    if steps_theta < 0:
+        message += 10
+    if steps_phi < 0:
+        message += 1
+
+    message = str(message)
+    len_message = len(message)
+    for _ in range(6 - len_message):
+        message = "0" + message
+    return message
+
+
 # theta - small motor.    phi - big motor
 def move_2_motors(steps_theta, steps_phi):  # WRITE MAXIMUM 41 STEPS PER SLICE
     """
@@ -158,25 +181,21 @@ def move_2_motors(steps_theta, steps_phi):  # WRITE MAXIMUM 41 STEPS PER SLICE
     :param steps_phi: list of steps in phi
     """
 
-    t1 = time.time()
+    t1 = time.perf_counter()
     print("Divide trajectory to " + str(len(steps_theta)) + " parts")
-    for i in range(len(steps_theta)):
-        message = abs(steps_theta[i]) * 10000 + abs(steps_phi[i]) * 100
-        if steps_theta[i] < 0:
-            message += 10
-        if steps_phi[i] < 0:
-            message += 1
-
-        message = str(message)
-        len_message = len(message)
-        for _ in range(6-len_message):
-            message = "0" + message
-
+    for i in range(math.floor(len(steps_theta)/COMMAND_PACKAGE_SIZE)):
+        message = ""
+        for j in range(COMMAND_PACKAGE_SIZE):
+            index = i * COMMAND_PACKAGE_SIZE + j
+            message += encode_message(steps_theta[index], steps_phi[index])
         ser.write(str.encode(message))
-        wait(WRITE_DELAY)
-        # print(str(message))
-
-    t2 = time.time()
+        time.sleep(0.001*COMMAND_PACKAGE_SIZE*WRITE_DELAY)
+    message = ""
+    for i in range(len(steps_theta) - len(steps_theta)%COMMAND_PACKAGE_SIZE, len(steps_theta)):
+        message += encode_message(steps_theta[i], steps_phi[i])
+    ser.write(str.encode(message))
+    time.sleep(0.001*COMMAND_PACKAGE_SIZE*(COMMAND_PACKAGE_SIZE%len(steps_theta)))
+    t2 = time.perf_counter()
     print("time for writing: ", t2-t1)
     ser.write(str.encode(END_WRITING))
     print("ended writing")
@@ -186,9 +205,10 @@ def move_2_motors(steps_theta, steps_phi):  # WRITE MAXIMUM 41 STEPS PER SLICE
     ser.write(str.encode(START_SLICE))
 
     time_of_slice = calc_time_of_slice(steps_theta, steps_phi)
-    time_in_slice_start = 1000.0 * time.time()
-    while 1000.0 * time.time() < time_in_slice_start + time_of_slice:  # make sure the arm isn't moving
-        pass
+    time.sleep(0.001 * time_of_slice)
+    # time_in_slice_start = 1000.0 * time.time()
+    # while 1000.0 * time.time() < time_in_slice_start + time_of_slice:  # make sure the arm isn't moving
+    #     pass
 
     # read_from_serial = (ser.readline()).decode("utf-8")
     # print(read_from_serial)
@@ -197,9 +217,9 @@ def move_2_motors(steps_theta, steps_phi):  # WRITE MAXIMUM 41 STEPS PER SLICE
     #     print(read_from_serial)
 
     print("Theta steps:")
-    print(steps_theta)
+    print(str(steps_theta) + str(sum(steps_theta)))
     print("Phi steps:")
-    print(steps_phi)
+    print(str(steps_phi) + str(sum(steps_phi)))
 
 
 def sign(x):
@@ -208,7 +228,7 @@ def sign(x):
     :param x: input number
     :return: 1 if x>0, -1 if x<0, 0 if x==0
     """
-    return x/abs(x) if x != 0 else 0
+    return int(x/abs(x)) if x != 0 else 0
 
 
 def invert_slice(steps_theta, steps_phi):
@@ -218,16 +238,26 @@ def invert_slice(steps_theta, steps_phi):
     :param steps_phi: list of steps in phi in first slice
     :return: (i_steps_theta, i_steps_phi), steps of returning-to-start slice
     """
+    print("INVERT SLICE")
+
     delta_theta, delta_phi = sum(steps_theta), sum(steps_phi)
     i_steps_theta, i_steps_phi = list(), list()
-    while abs(delta_theta) > 99:
-        i_steps_theta.append(-99*sign(delta_theta))
-        delta_theta -= 99*sign(delta_theta)
-    i_steps_theta.append(-delta_theta)
-    while abs(delta_phi) > 99:
-        i_steps_phi.append(-99*sign(delta_phi))
-        delta_phi -= 99*sign(delta_phi)
-    i_steps_phi.append(-delta_phi)
+    while abs(delta_theta) > MAX_COMMAND_IN_INVERT or abs(delta_phi) > MAX_COMMAND_IN_INVERT:
+        if abs(delta_theta) > MAX_COMMAND_IN_INVERT:
+            i_steps_theta.append(-MAX_COMMAND_IN_INVERT*sign(delta_theta))
+            delta_theta -= MAX_COMMAND_IN_INVERT * sign(delta_theta)
+        else:
+            i_steps_theta.append(-delta_theta)
+            delta_theta = 0
+        if abs(delta_phi) > MAX_COMMAND_IN_INVERT:
+            i_steps_phi.append(-MAX_COMMAND_IN_INVERT*sign(delta_phi))
+            delta_phi -= MAX_COMMAND_IN_INVERT * sign(delta_phi)
+        else:
+            i_steps_phi.append(-delta_phi)
+            delta_phi = 0
+    if delta_theta != 0 or delta_phi != 0:
+        i_steps_theta.append(-delta_theta)
+        i_steps_phi.append(-delta_phi)
 
     return i_steps_theta, i_steps_phi
 
@@ -264,8 +294,13 @@ def calc_time_of_slice(steps_theta, steps_phi):
 # print(time.time()-start)
 
 if __name__ == '__main__':
-    while True:
-        steps_theta = [-90, -90, -90, 0, 90, 90, 90]
-        steps_phi = [0, 0, 0, 0, 0, 0, 0]
-        move_2_motors(steps_theta, steps_phi)
-        wait(calc_time_of_slice(steps_theta, steps_phi))
+    pass
+    steps_theta = 36*[-5]
+    steps_phi = 36*[0]
+    move_2_motors(steps_theta, steps_phi)
+    start = time.perf_counter()
+    i_steps_theta, i_steps_phi = invert_slice(steps_theta, steps_phi)
+    while 1000.0*(time.perf_counter() - start) < WAIT_FOR_STOP:
+        pass
+    move_2_motors(i_steps_theta, i_steps_phi)
+    wait(calc_time_of_slice(steps_theta, steps_phi))
