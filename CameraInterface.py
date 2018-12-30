@@ -31,6 +31,8 @@ class Camera:
     def read(self):
         frame = self.stream.read()
         self.current = frame.copy()
+        self.current = cv2.resize(self.current, (0,0), fx = 0.4, fy = 0.4)
+        frame = cv2.resize(frame, (0,0), fx = 0.4, fy = 0.4)
         if CALIBRATE:
             frame = self.crop_to_screen_size(frame)
         if (self.CROP):

@@ -16,7 +16,6 @@ v_lower = 32
 v_upper = 255
 
 # consts
-SAVED_VIDEO_NAME = "SmallFruit2.flv"
 CONTOUR_AREA_THRESH = 1000
 NUM_OF_FRAMES = 5
 MAX_NUM_OF_FRAMES_ON_SCREEN = 13
@@ -33,9 +32,6 @@ HISTS_COMPARE_METHOD = cv2.HISTCMP_CORREL
 SECONDS_FOR_BG = 3
 
 INTEGRATE_WITH_ALGORITHMICS = False
-
-fruits_for_debug_trajectories = []
-
 
 def center(box):
     """
@@ -63,25 +59,6 @@ def draw_center(fruit, frame):
     """
     for cen in fruit.centers:
         cv2.circle(frame, cen, 2, (0, 0, 255), -1)
-
-
-def draw_trajectory(fruit, frame):
-    # if fruit.trajectory:
-    #     cv2.putText(frame, 'ron is gay as hell', (200, 100), cv2.FONT_HERSHEY_DUPLEX, 1, (255, 255, 255), 2, cv2.LINE_AA)
-    T = 2
-    dt = 0.05
-    times = range(int(T / dt))
-    xy = [[0 for _ in times], [0 for _ in times]]
-    route = fruit.trajectory.calc_trajectory()
-    for i in times:
-        xy[0][i], xy[1][i] = route(dt * i)
-        xy[1][i], xy[0][i] = Sc.cm2pixel((xy[0][i], xy[1][i]))
-
-        # xy[0][i], xy[1][i] = 10*i, i**2
-
-
-    for i in range(len(xy[0])):
-        cv2.circle(frame, (int(xy[0][i]),int(xy[1][i])), 2, (0, 0, 255), -1)
 
 
 def calculate_hist_window(window, img_hsv):
@@ -134,22 +111,8 @@ def calc_meanshift_all_fruits(fruits_info, img_hsv):
 
 def print_and_extract_centers(fruits_to_extract):
     if fruits_to_extract:
-        if (INTEGRATE_WITH_ALGORITHMICS):
+        if(INTEGRATE_WITH_ALGORITHMICS):
             Sc.update_and_slice(fruits_to_extract)
-
-        # ---------Add trajectory to fruit object ------- #
-
-        for fruit in fruits_to_extract:
-            fruit_locs = [Sc.pixel2cm(pix_loc) for pix_loc in fruit.centers]
-            trajectory = Sc.get_trajectory(fruit_locs)
-            fruit.trajectory = trajectory
-            # --- add first fruit to debug fruits buffer ---#
-            if not fruits_for_debug_trajectories:
-                fruits_for_debug_trajectories.append(fruit)
-
-        global FRUIT_TO_EXTRACT
-        FRUIT_TO_EXTRACT[:] = []
-
         # thread = Thread(target=sc.create_and_do_slice)
         # thread.start()
         # slm.run_simulation(slice)
@@ -237,7 +200,7 @@ def run_detection(src, settings, live, crop, flip):
     current = bg
     counter = 0
     buffer = []
-    while camera.is_opened() and counter < 100:
+    while camera.is_opened() and counter < 200:
         t1 = time.perf_counter()
         counter += 1
         current = camera.next_frame(current)
@@ -273,23 +236,8 @@ def debug_with_buffer(buffer):
         elif x == 50:  # '2' key
             i += 1
 
-
 def show_original(camera):
-    i = 0
-    while True:
-        frame = camera.buffer[i]
-        frame = cv2.resize(frame, None, fx=0.3, fy=0.3)
-
-        for fruit in fruits_for_debug_trajectories:
-            draw_trajectory(fruit,frame)
-
-        cv2.imshow("debug", frame)
-        x = cv2.waitKey(1)
-        if x == 49:  # '1' key
-            i -= 1
-        elif x == 50:  # '2' key
-            i += 1
-
+    debug_with_buffer(camera.buffer)
 
 def draw(fruit, frame):
     """
@@ -300,4 +248,4 @@ def draw(fruit, frame):
 
 
 if __name__ == '__main__':
-    run_detection(SAVED_VIDEO_NAME, Ci.DARK_101_SETTINGS_BEESITO, live=False, crop=True, flip=False)
+    run_detection(0, Ci.DARK_101_SETTINGS_BEESITO, live=True, crop=True, flip=True)
