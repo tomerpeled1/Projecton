@@ -12,8 +12,8 @@ from threading import Thread
 from multiprocessing import Process  # TODO delete if isn't used
 import threading
 
-# RELATIVE_ACC = 2.34
-RELATIVE_ACC = 1.5
+# RELATIVE_ACC = 1.5
+RELATIVE_ACC = 1.7
 ARM_DELAY = 1
 CROP_SIZE = (160, 480)  #(y,x)
 FRAME_SIZE = (480, 640)   #(y,x)
@@ -141,15 +141,41 @@ def get_trajectory(fruit_locs):
     y_total = y_coords[-1] - y_coords[0]
     t_total = (len(x_coords) - 1) * time_between_2_frames
 
+    r_coords = [0 for _ in range(len(x_coords) - 1)]
+    for i in range(len(y_coords) - 1):
+        r_coords[i] = math.sqrt((x_coords[i+1]-x_coords[i])**2 + (y_coords[i+1]-y_coords[i])**2)
+
     r_total = math.sqrt(x_total**2 + y_total**2)
 
     x0 = x_coords[-1]
     y0 = y_coords[-1]
     if x_total == 0:
-        x_total = 0.01
+        x_total = 0.011
     theta = math.pi - math.atan(y_total / x_total)
+
     r_total_real = abs((SCREEN_SIZE[0] / 3 / math.sin(theta)))  # 3 is because the screen is croped to third
-    v0 = r_total_real / (8 * time_between_2_frames)
+    sum_v = 0
+    sum_vy = 0
+    for i in range(len(r_coords)):
+        sum_v += r_coords[i] / time_between_2_frames
+        sum_vy += (y_coords[i+1] - y_coords[i]) / time_between_2_frames
+    v0_mean = sum_v / len(r_coords)
+    vy_mean = sum_vy / len(r_coords)
+
+    v0_by_vy = vy_mean / math.sin(theta)
+
+    v0_stupid = r_total_real / (8 * time_between_2_frames)
+
+    v0_start_to_end = r_total / t_total
+
+    v0 = (v0_mean + v0_stupid) / 2
+
+    # if len(x_coords) < 10:
+    #     v0 = r_total_real / (8 * time_between_2_frames)
+    # else:
+    #     v0 = r_total_real / t_total
+
+    # v0 = r_total_real / t_total
 
     trajectory = Trajectory(x0, y0, v0, theta)
 

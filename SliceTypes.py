@@ -73,6 +73,7 @@ def line_trajectory(arm_loc, fruit_trajectories):  # gets time in sec
 
     return xy_by_t, None, None
 
+
 def complex_slice(arm_loc, fruit_trajectories):
     return (lambda t: tuple_add(tuple_add(arm_loc, (0, -2)),
                                 tuple_mul(2, (math.cos(2*math.pi*t*10), math.sin(2*math.pi*t*10))))), None, None
