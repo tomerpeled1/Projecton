@@ -197,7 +197,10 @@ times_serial = int(T / dt_serial)     # the amount of different values for the
 
 
 # ------------- CALCULATE LOCATIONS -------------
-def run_simulation(func):
+def run_simulation(func, fruits_trajectories):
+
+    print(fruits_trajectories)
+
     # the ideal angles like in the function of the algorithmic
     theta_ideal, phi_ideal = make_ideal_slice_by_trajectory(func)
 
@@ -242,6 +245,9 @@ def run_simulation(func):
 
         errors[i] = math.sqrt(math.pow(x_practical - x_ideal, 2) + math.pow(y_practical -
                                                                             y_ideal, 2))
+
+        # draw fruits locations
+
 
         pygame.display.flip()
 

@@ -17,7 +17,7 @@ RELATIVE_ACC = 1.8
 CAMERA_FPS = 30
 ARM_DELAY = 1
 CROP_SIZE = (160, 480)  # (y,x)
-FRAME_SIZE = (480, 640)   # (y,x)
+FRAME_SIZE = (480, 640)  # (y,x)
 SCREEN_SIZE = (12, 16)  # (y,x)
 ACC = RELATIVE_ACC * SCREEN_SIZE[0]
 INTEGRATE_WITH_MECHANICS = True
@@ -27,7 +27,7 @@ oops = 0
 success = 0
 
 on_screen_fruits = []
-SIMULATE = False
+SIMULATE = True
 simulation_queue_lock = threading.Condition()
 simulation_thread = None
 simulation_queue = []
@@ -70,10 +70,10 @@ def create_slice():
 
 
 def do_slice(slice):
-    parametrization, timer, t_peak = slice
+    parametrization, timer, t_peak, fruits_trajectories = slice
     # time.sleep(time_until_slice(slice))
     if SIMULATE:
-        slm.run_simulation(parametrization)
+        slm.run_simulation(parametrization, fruits_trajectories)
     else:
         ArduinoCommunication.make_slice_by_trajectory(parametrization)
 
@@ -265,7 +265,8 @@ def y_trajectory(t, y0, v, theta):
 
 def calc_slice(fruit_trajectories_and_starting_times):
     # time.sleep(time_until_slice())
-    return SliceTypes.radius_slice(get_arm_loc(), fruit_trajectories_and_starting_times)
+    # return SliceTypes.radius_slice(get_arm_loc(), fruit_trajectories_and_starting_times)
+    return SliceTypes.slice_to_peak(get_arm_loc(), fruit_trajectories_and_starting_times)
     # return None, None, None
 
 
