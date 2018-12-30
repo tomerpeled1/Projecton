@@ -35,16 +35,16 @@ TRAJECTORY_DIVISION_NUMBER = 20
 DT_DIVIDE_TRAJECTORY = float(T) / TRAJECTORY_DIVISION_NUMBER
 END_WRITING = 'e'
 START_SLICE = 'd'
-WANTED_RPS = 0.5
+WANTED_RPS = 0.6
 ONE_STEP_DELAY = 5.0 / WANTED_RPS / STEPS_FRACTION  # in ms
 SLICE_END_SIGNAL = 'z'
 WAIT_FOR_STOP = 50  # ms
 COMMAND_PACKAGE_SIZE = 10  # number of commands to write at once
-MAX_COMMAND_IN_INVERT = 20
+MAX_COMMAND_IN_INVERT = 5
 
 
 try:
-    ser = serial.Serial('com5', SERIAL_BPS)  # Create Serial port object
+    ser = serial.Serial('com6', SERIAL_BPS)  # Create Serial port object
     time.sleep(2)  # wait for 2 seconds for the communication to get established
 except SerialException:
     print("Didn't create serial.")
