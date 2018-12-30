@@ -3,6 +3,9 @@ import SliceCreator
 
 LINE_LENGTH = 10
 
+r = 9.9
+R = 14.9
+d = 17.9
 
 def tuple_add(tup1, tup2):
     return tup1[0] + tup2[0], tup1[1] + tup2[1]
@@ -76,8 +79,15 @@ def complex_slice(arm_loc, fruit_trajectories):
 
 def theta_slice(arm_loc, fruit_trajectories):
     SliceCreator.on_screen_fruits = []
-    r = 9.9
-    R = 14.9
-    d = 17.9
-    return (lambda t: (R*math.cos(math.pi / 3 + 2 * math.pi * (1-t)/6), R*math.sin(math.pi / 3 + 2 * math.pi * (1-t)/6) + r - d)),\
+
+    return (lambda t: (R*math.cos(math.pi / 3 + 2 * math.pi * (1-t)/6),
+                       R*math.sin(math.pi / 3 + 2 * math.pi * (1-t)/6) + r - d)),\
+           None, None
+
+def radius_slice(arm_loc, fruit_trajectories):
+    SliceCreator.on_screen_fruits = []
+
+    return (lambda t: tuple_mul((R+r),
+                                (math.cos(math.pi / 3 + 2 * math.pi * (1 - t) / 6),
+                                math.sin(math.pi / 3 + 2 * math.pi * (1 - t) / 6)  - d/(R+r)))), \
            None, None

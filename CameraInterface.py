@@ -10,8 +10,10 @@ MORNING_101_SETTINGS = (220, 40, -7, 5)  # order is (saturation, gain, exposure,
 DARK_101_SETTINGS = (255, 144, -8, 16)  # order is (saturation, gain, exposure, focus)
 DARK_101_SETTINGS_BEESITO = (255, 127, -7, 5)
 MORNING_101_SETTINGS_BEESITO = (255, 127, -7, 12)
+IPAD_NIGHT_LIT = (255, 24, -7, 12)
+IPAD_NIGHT_LIT_SILVER = (255, 37, -7, 12)
 
-CALIBRATE = True
+CALIBRATE = False
 
 
 class Camera:
