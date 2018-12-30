@@ -113,6 +113,8 @@ class Camera:
             frame = frame[:new_h, new_w:7 * new_w]
         elif not self.FLIP:
             frame = frame[2 * new_h:height, new_w: 7 * new_w]
+            frame = cv2.resize(frame, (480,160))
+
         return frame
 
     def background_and_wait(self):
