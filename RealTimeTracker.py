@@ -4,7 +4,7 @@ from Fruit import Fruit
 import SavedVideoRun as ni
 
 NUM_OF_FRAMES = 5
-MOVEMENT_RADIUS = 200
+MOVEMENT_RADIUS = 300
 RESIZE_WINDOW_FACTOR = 0.2
 
 def center(box):

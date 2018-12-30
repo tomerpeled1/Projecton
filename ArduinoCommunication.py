@@ -31,15 +31,16 @@ LENGTH_OF_COMMAND = 6
 WRITE_DELAY = 1000/(SERIAL_BPS/BITS_PER_BYTE/LENGTH_OF_COMMAND)  # delay in ms after writing to prevent buffer overload
 # dt = 0.003      # the basic period of time of the simulation in sec
 # times = int(T / dt)  # the size of the vectors for the simulation
-TRAJECTORY_DIVISION_NUMBER = 40
+TRAJECTORY_DIVISION_NUMBER = 20
 DT_DIVIDE_TRAJECTORY = float(T) / TRAJECTORY_DIVISION_NUMBER
 END_WRITING = 'e'
 START_SLICE = 'd'
-WANTED_RPS = 0.27
+WANTED_RPS = 0.5
 ONE_STEP_DELAY = 5.0 / WANTED_RPS / STEPS_FRACTION  # in ms
 SLICE_END_SIGNAL = 'z'
-WAIT_FOR_STOP = 100  # ms
+WAIT_FOR_STOP = 50  # ms
 COMMAND_PACKAGE_SIZE = 10  # number of commands to write at once
+MAX_COMMAND_IN_INVERT = 20
 
 
 try:
@@ -83,7 +84,7 @@ def modulo(a, n):
     :param n: second argument
     :return: fixed a % n
     """
-    if a > 0:
+    if a >= 0:
         return a % n
     else:
         return a % n - 1
@@ -113,15 +114,11 @@ def get_angles_by_xy_and_dt(get_xy_by_t, dt):
     Converts continuous function of (x,y)(t) to discrete lists of angles.
     :param get_xy_by_t: function given form algorithmic module
     :param dt: discretization of time
-    :return: {theta, phi), tuple of lists
+    :return: (theta, phi), tuple of lists
     """
-    if get_xy_by_t is None:
-        delta_theta = math.degrees(math.pi - 2 * math.acos(DIMS[0]/(2*ARMS[0])))
-        steps_theta = list()
-        while delta_theta > 99:
-            steps_theta.append(-99)
-            delta_theta -= 99
-        steps_theta.append(-delta_theta)
+    if get_xy_by_t is None:  # make slice in theta only
+        delta_theta = math.pi - 2 * math.acos(DIMS[0]/(2*ARMS[0]))
+        steps_theta = [math.pi - math.acos(DIMS[0]/(2*ARMS[0])) - i*(0.1*delta_theta) for i in range(11)]
         steps_phi = len(steps_theta) * [0]
         return steps_theta, steps_phi
 
@@ -190,7 +187,6 @@ def move_2_motors(steps_theta, steps_phi):  # WRITE MAXIMUM 41 STEPS PER SLICE
         for j in range(COMMAND_PACKAGE_SIZE):
             index = i * COMMAND_PACKAGE_SIZE + j
             message += encode_message(steps_theta[index], steps_phi[index])
-
         ser.write(str.encode(message))
         time.sleep(0.001*COMMAND_PACKAGE_SIZE*WRITE_DELAY)
     message = ""
@@ -208,9 +204,10 @@ def move_2_motors(steps_theta, steps_phi):  # WRITE MAXIMUM 41 STEPS PER SLICE
     ser.write(str.encode(START_SLICE))
 
     time_of_slice = calc_time_of_slice(steps_theta, steps_phi)
-    time_in_slice_start = 1000.0 * time.time()
-    while 1000.0 * time.time() < time_in_slice_start + time_of_slice:  # make sure the arm isn't moving
-        pass
+    time.sleep(0.001 * time_of_slice)
+    # time_in_slice_start = 1000.0 * time.time()
+    # while 1000.0 * time.time() < time_in_slice_start + time_of_slice:  # make sure the arm isn't moving
+    #     pass
 
     # read_from_serial = (ser.readline()).decode("utf-8")
     # print(read_from_serial)
@@ -219,9 +216,9 @@ def move_2_motors(steps_theta, steps_phi):  # WRITE MAXIMUM 41 STEPS PER SLICE
     #     print(read_from_serial)
 
     print("Theta steps:")
-    print(steps_theta)
+    print(str(steps_theta) + str(sum(steps_theta)))
     print("Phi steps:")
-    print(steps_phi)
+    print(str(steps_phi) + str(sum(steps_phi)))
 
 
 def sign(x):
@@ -244,16 +241,16 @@ def invert_slice(steps_theta, steps_phi):
 
     delta_theta, delta_phi = sum(steps_theta), sum(steps_phi)
     i_steps_theta, i_steps_phi = list(), list()
-    while abs(delta_theta) > 99 or abs(delta_phi) > 99:
-        if abs(delta_theta) > 99:
-            i_steps_theta.append(-99*sign(delta_theta))
-            delta_theta -= 99 * sign(delta_theta)
+    while abs(delta_theta) > MAX_COMMAND_IN_INVERT or abs(delta_phi) > MAX_COMMAND_IN_INVERT:
+        if abs(delta_theta) > MAX_COMMAND_IN_INVERT:
+            i_steps_theta.append(-MAX_COMMAND_IN_INVERT*sign(delta_theta))
+            delta_theta -= MAX_COMMAND_IN_INVERT * sign(delta_theta)
         else:
             i_steps_theta.append(-delta_theta)
             delta_theta = 0
-        if abs(delta_phi) > 99:
-            i_steps_phi.append(-99*sign(delta_phi))
-            delta_phi -= 99 * sign(delta_phi)
+        if abs(delta_phi) > MAX_COMMAND_IN_INVERT:
+            i_steps_phi.append(-MAX_COMMAND_IN_INVERT*sign(delta_phi))
+            delta_phi -= MAX_COMMAND_IN_INVERT * sign(delta_phi)
         else:
             i_steps_phi.append(-delta_phi)
             delta_phi = 0

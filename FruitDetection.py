@@ -33,6 +33,7 @@ def fruit_detection(frame, background, contour_area_thresh):
     # print(real_v.shape, back_v.shape)
     subtract_v = cv2.absdiff(real_v, back_v)
     # cv2.imshow("sub_v", subtract_v)
+
     # find hue change, amplify hue
     subtract_h = cv2.absdiff(real_h, back_h)
     # cv2.imshow("sub_h_bef", subtract_h)
@@ -45,7 +46,7 @@ def fruit_detection(frame, background, contour_area_thresh):
     # calc total change (value + hue) and remove noise
     sub_add = cv2.add(subtract_v, subtract_h_mod)
     # cv2.imshow("sub_add", sub_add)
-    ret3, add_thresh = cv2.threshold(sub_add, 55, 255, cv2.THRESH_BINARY)
+    ret3, add_thresh = cv2.threshold(sub_add, 70, 255, cv2.THRESH_BINARY)
     add_thresh = cv2.morphologyEx(add_thresh, cv2.MORPH_OPEN, np.ones((5,5), np.uint8))
 
     # mask that removes very bright noises (blade)
@@ -58,10 +59,12 @@ def fruit_detection(frame, background, contour_area_thresh):
     #connect pieces of fruit and remove noises
     mask = cv2.morphologyEx(mask, cv2.MORPH_CLOSE, np.ones((5,5), np.uint8))
     mask = cv2.morphologyEx(mask, cv2.MORPH_OPEN, np.ones((10,10), np.uint8))
+    # cv2.imshow("mask", mask)
 
     # apply mask
     masked = cv2.bitwise_and(real, real, mask=mask)
     # cv2.imshow("masked", masked)
+    # cv2.waitKey(0)
 
 
     # find lapping fruit - not ready!!!

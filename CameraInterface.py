@@ -12,6 +12,9 @@ DARK_101_SETTINGS_BEESITO = (255, 127, -7, 5)
 MORNING_101_SETTINGS_BEESITO = (255, 127, -7, 12)
 IPAD_NIGHT_LIT = (255, 24, -7, 12)
 IPAD_NIGHT_LIT_SILVER = (255, 37, -7, 12)
+IPAD_NIGHT_DARK = (255, 8, -6, 12)
+IPAD_B4_MIDDLE_LIGHTS_OFF_CLOSED_DRAPES = (255, 7, -6, 12)
+WHITE_BALANCE = True
 
 CALIBRATE = False
 
@@ -133,7 +136,7 @@ class Camera:
         cv2.destroyAllWindows()
         self.stream.stop()
 
-    def set(self, settings):
+    def set(self, settings, white_balance = False):
         cam = self.stream.stream
         # cam.set(3, 1920)  # width
         # cam.set(4, 1080)  # height
@@ -142,11 +145,12 @@ class Camera:
         cam.set(12, settings[0])  # saturation     min: 0   , max: 255 , increment:1
         cam.set(14, settings[1])  # gain           min: 0   , max: 127 , increment:1
         cam.set(15, settings[2])  # exposure       min: -7  , max: -1  , increment:1
-        # cam.set(17, 4000)  # white_balance  min: 4000, max: 7000, increment:1
+        if white_balance:
+            cam.set(17, 4000)  # white_balance  min: 4000, max: 7000, increment:1
         cam.set(28, settings[3])
 
     def set_camera_settings(self, settings):
-        self.set(settings)
+        self.set(settings, WHITE_BALANCE)
         if CALIBRATE:
             frame = None
             while True:

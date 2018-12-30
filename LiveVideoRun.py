@@ -171,6 +171,7 @@ def get_hists(detection_results, frame):
         track_window = (boxes[0][0][0], boxes[0][0][1],
                         boxes[0][1][0] - boxes[0][0][0],
                         boxes[0][1][1] - boxes[0][0][1])
+        track_window = Rtt.resize_track_window(track_window)
         crop_hist = calculate_hist_window(track_window, hsv_frame)
         # after calculating the histrogram of the fruit, we add it to the big array and the window to the big array.
         fruits_info.append(
@@ -195,7 +196,7 @@ def track_known_fruits(fruits_info, current_frame, detection_results):
         to_delete = []
         for fruit in fruits_info:
             if Rtt.track_object(detection_results, fruit):  # update tracker using the detection results.
-                if fruit.counter <= 3:
+                if fruit.counter <= MAX_NUM_OF_FRAMES_ON_SCREEN: # TODO check shit
                     # cv2.imshow("hsv new", img_hsv)
                     fruit.hist = calculate_hist_window(fruit.track_window, img_hsv)
             else:
@@ -233,7 +234,7 @@ def run_detection(src, settings, live, crop, flip):
     current = bg
     counter = 0
     buffer = []
-    while camera.is_opened() and counter < 100:
+    while camera.is_opened() and counter < 60000:
         t1 = time.perf_counter()
         counter += 1
         current = camera.next_frame(current)
@@ -254,7 +255,6 @@ def run_detection(src, settings, live, crop, flip):
         print("time for everything", abs(t1 - t2))
         if cv2.waitKey(1) == 27:
             break
-        # cv2.waitKey(0)
         print("len of fruits: " + str(len(fruits_info)))
     # debug_with_buffer(buffer)
     show_original(camera)

@@ -6,6 +6,7 @@ LINE_LENGTH = 10
 r = 9.9
 R = 14.9
 d = 17.9
+SCREEN = [16, 12]
 
 def tuple_add(tup1, tup2):
     return tup1[0] + tup2[0], tup1[1] + tup2[1]
@@ -73,7 +74,6 @@ def line_trajectory(arm_loc, fruit_trajectories):  # gets time in sec
 
     return xy_by_t, None, None
 
-
 def complex_slice(arm_loc, fruit_trajectories):
     return (lambda t: tuple_add(tuple_add(arm_loc, (0, -2)),
                                 tuple_mul(2, (math.cos(2*math.pi*t*10), math.sin(2*math.pi*t*10))))), None, None
@@ -87,8 +87,9 @@ def theta_slice(arm_loc, fruit_trajectories):
 
 def radius_slice(arm_loc, fruit_trajectories):
     SliceCreator.on_screen_fruits = []
+    theta_0 = math.acos(SCREEN[0]/(2*(R+r))) + 0.07
 
     return (lambda t: tuple_mul((R+r),
-                                (math.cos(math.pi / 3 + 2 * math.pi * (1 - t) / 6),
-                                math.sin(math.pi / 3 + 2 * math.pi * (1 - t) / 6)  - d/(R+r)))), \
+                                (math.cos(theta_0 + (math.pi - 2* theta_0) * (1 - t)),
+                                math.sin(theta_0 + (math.pi - 2* theta_0) * (1 - t))  - d/(R+r)))), \
            None, None

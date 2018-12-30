@@ -15,11 +15,11 @@ import threading
 # RELATIVE_ACC = 1.5
 RELATIVE_ACC = 1.7
 ARM_DELAY = 1
-CROP_SIZE = (160, 480)  #(y,x)
-FRAME_SIZE = (480, 640)   #(y,x)
-SCREEN_SIZE = (12, 16)  #(y,x)
+CROP_SIZE = (160, 480)  # (y,x)
+FRAME_SIZE = (480, 640)   # (y,x)
+SCREEN_SIZE = (12, 16)  # (y,x)
 ACC = RELATIVE_ACC * SCREEN_SIZE[0]
-INTEGRATE_WITH_MECHANICS = False
+INTEGRATE_WITH_MECHANICS = True
 
 # for hakab
 oops = 0
@@ -232,7 +232,8 @@ def y_trajectory(t, y0, v, theta):
 
 def calc_slice(fruit_trajectories_and_starting_times):
     # time.sleep(time_until_slice())
-    return SliceTypes.theta_slice(get_arm_loc(), fruit_trajectories_and_starting_times)
+    return SliceTypes.radius_slice(get_arm_loc(), fruit_trajectories_and_starting_times)
+    # return None, None, None
 
 
 def get_arm_loc():
@@ -288,8 +289,7 @@ if __name__ == "__main__":
     # inpt = input("enter 1 to start slice")
     # while inpt != '1':
     #     inpt = input()
-    for _ in range(10):
-        slice_and_times = create_slice()
-        print("START: " + str(time.perf_counter()))
-        # ArduinoCommunication.make_slice_by_trajectory(slice)
+    slice_and_times = create_slice()
+    print("START: " + str(time.perf_counter()))
+    for i in range(10):
         do_slice(slice_and_times)
