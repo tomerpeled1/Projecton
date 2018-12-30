@@ -320,10 +320,7 @@ def init_everything():
 
 
 if __name__ == "__main__":
-    # inpt = input("enter 1 to start slice")
-    # while inpt != '1':
-    #     inpt = input()
     slice_and_times = create_slice()
     print("START: " + str(time.perf_counter()))
-    for i in range(10):
+    while True:
         do_slice(slice_and_times)
