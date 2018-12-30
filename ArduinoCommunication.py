@@ -13,6 +13,7 @@ import matplotlib.pyplot as plt
 # ------------- CONSTANTS --------------
 # board constants
 RADIUS = 15
+
 DIMS = (16, 12)  # (X,Y)
 ALPHA_MIN = (180/math.pi)*math.acos(DIMS[0]/(2.0*RADIUS))
 ALPHA_MAX = 180 - ALPHA_MIN

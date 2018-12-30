@@ -32,7 +32,7 @@ HISTS_COMPARE_METHOD = cv2.HISTCMP_CORREL
 # Magic numbers for camera
 SECONDS_FOR_BG = 3
 
-INTEGRATE_WITH_ALGORITHMICS = True
+INTEGRATE_WITH_ALGORITHMICS = False
 
 fruits_for_debug_trajectories = []
 
@@ -231,11 +231,13 @@ def run_detection(src, settings, live, crop, flip):
         camera.set_camera_settings(settings)
     print("choose background")
     bg = camera.background_and_wait()
+
     cv2.waitKey(0)  # wait to start game after background retrieval
     current = bg
     counter = 0
     buffer = []
-    while camera.is_opened() and counter < 60000:
+    while camera.is_opened() and counter < 510:
+
         t1 = time.perf_counter()
         counter += 1
         current = camera.next_frame(current)
