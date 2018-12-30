@@ -121,12 +121,12 @@ def pixel2cm(pix_loc):
 def cm2pixel(cm_loc):
     """
     :param cm_loc: cm location in order (x,y)
-    :return: pixel location in order (y,x)
+    :return: pixel location in order (y, x, t)
     """
-    j_coord_screen, i_coord_screen, t = cm_loc
-    j_coord_frame = int(j_coord_screen * float(FRAME_SIZE[1]) / SCREEN_SIZE[1])
-    i_coord_frame = int((1.0 - float(i_coord_screen / SCREEN_SIZE[0])) * FRAME_SIZE[0])
-    return i_coord_frame, j_coord_frame, t
+    x_coord_screen, y_coord_screen, t = cm_loc
+    x_coord_frame = int(x_coord_screen * float(FRAME_SIZE[1]) / SCREEN_SIZE[1])
+    y_coord_frame = int((1.0 - float(y_coord_screen / SCREEN_SIZE[0])) * FRAME_SIZE[0])
+    return y_coord_frame, x_coord_frame, t
 
 
 def get_trajectory(fruit_locs):
@@ -145,6 +145,8 @@ def get_trajectory(fruit_locs):
 
     x0 = x_coords[-1]
     y0 = y_coords[-1]
+    if x_total == 0:
+        x_total = 0.01
     theta = math.pi - math.atan(y_total / x_total)
     r_total_real = abs((SCREEN_SIZE[0] / 3 / math.sin(theta)))  # 3 is because the screen is croped to third
     v0 = r_total_real / (8 * time_between_2_frames)
@@ -185,7 +187,7 @@ def get_trajectory(fruit_locs):
     plt.plot(x_coords, y_coords,'bo')
     plt.ylim(0, 13)
     plt.xlim(0, 16)
-    plt.show()
+    # plt.show()
     return trajectory
 
 
