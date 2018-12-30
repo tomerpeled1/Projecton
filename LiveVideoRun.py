@@ -21,7 +21,7 @@ CONTOUR_AREA_THRESH = 1000
 NUM_OF_FRAMES = 5
 MAX_NUM_OF_FRAMES_ON_SCREEN = 13
 WINDOW_NAME = "Fruit tracker"
-term_crit = (cv2.TERM_CRITERIA_EPS | cv2.TERM_CRITERIA_COUNT, 10, 1)
+term_crit = (cv2.TERM_CRITERIA_EPS | cv2.TERM_CRITERIA_COUNT, 30, 1)
 FRUIT_TO_EXTRACT = []
 # init window
 # cv2.namedWindow(WINDOW_NAME, cv2.WINDOW_NORMAL)  # the window to show22
@@ -102,8 +102,8 @@ def calculate_hist_window(window, img_hsv):
     cropped = img_hsv[y:y + h, x:x + w].copy()
     mask = cv2.inRange(cropped, np.array((0., float(s_lower), float(v_lower))),
                        np.array((180., float(s_upper), float(v_upper))))
-    crop_hist = cv2.calcHist([cropped], [0, 1], mask, [180, 255],
-                             [0, 180, 0, 255])
+    crop_hist = cv2.calcHist([cropped], [0], mask, [180],
+                             [0, 180])
     cv2.normalize(crop_hist, crop_hist, 0, 255, cv2.NORM_MINMAX)
     return crop_hist
 
@@ -145,13 +145,13 @@ def print_and_extract_centers(fruits_to_extract):
     for fruit in fruits_to_extract:
         fruit.centers = fruit.centers[1:-1]
     if fruits_to_extract:
-        # ---------Add trajectory to fruit object ------- #
-        global fruits_for_debug_trajectories
-        for fruit in fruits_to_extract:
-            centers_cm = [Sc.pixel2cm(center) for center in fruit.centers]
-            fruit.trajectory = Sc.get_trajectory(centers_cm)
-            # --- add first fruit to debug fruits buffer ---#
-            fruits_for_debug_trajectories.append(fruit)
+        # # ---------Add trajectory to fruit object ------- #
+        # global fruits_for_debug_trajectories
+        # for fruit in fruits_to_extract:
+        #     centers_cm = [Sc.pixel2cm(center) for center in fruit.centers]
+        #     fruit.trajectory = Sc.get_trajectory(centers_cm)
+        #     # --- add first fruit to debug fruits buffer ---#
+        #     fruits_for_debug_trajectories.append(fruit)
 
         if (INTEGRATE_WITH_ALGORITHMICS):
             Sc.update_and_slice(fruits_to_extract)
@@ -243,7 +243,7 @@ def run_detection(src, settings, live, crop, flip):
     current = bg
     counter = 0
     buffer = []
-    while camera.is_opened() and counter < 100:
+    while camera.is_opened() and counter < 900:
         t1 = time.perf_counter()
         counter += 1
         current = camera.next_frame(current)

@@ -152,7 +152,7 @@ class Camera:
         cam.set(14, settings[1])  # gain           min: 0   , max: 127 , increment:1
         cam.set(15, settings[2])  # exposure       min: -7  , max: -1  , increment:1
         if white_balance:
-            cam.set(17, 4000)  # white_balance  min: 4000, max: 7000, increment:1
+            cam.set(17, 2000)  # white_balance  min: 4000, max: 7000, increment:1
         cam.set(28, settings[3])
 
     def set_camera_settings(self, settings):
