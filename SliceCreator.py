@@ -19,7 +19,7 @@ CROP_SIZE = (160, 480)  # (y,x)
 FRAME_SIZE = (480, 640)   # (y,x)
 SCREEN_SIZE = (12, 16)  # (y,x)
 ACC = RELATIVE_ACC * SCREEN_SIZE[0]
-INTEGRATE_WITH_MECHANICS = False
+INTEGRATE_WITH_MECHANICS = True
 
 # for hakab
 oops = 0
@@ -265,5 +265,5 @@ if __name__ == "__main__":
     #     inpt = input()
     slice_and_times = create_slice()
     print("START: " + str(time.perf_counter()))
-    # ArduinoCommunication.make_slice_by_trajectory(slice)
-    do_slice(slice_and_times)
+    for i in range(10):
+        do_slice(slice_and_times)
