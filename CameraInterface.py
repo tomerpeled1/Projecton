@@ -35,6 +35,7 @@ class Camera:
         self.tr_crop_dimensions = []
         self.current = None
         self.buffer = []
+        self.MAX_SIZE_BUFFER = 500
 
     def read(self):
         frame = self.stream.read()
@@ -43,7 +44,8 @@ class Camera:
         #     time.sleep(0.02)
         if CALIBRATE:
             frame = self.crop_to_screen_size(frame)
-        self.current = frame.copy()
+        # self.current = frame.copy()
+        self.current = frame
         if (self.CROP):
             frame = self.crop_image(frame)
         if (self.FLIP):
@@ -80,7 +82,8 @@ class Camera:
             dif = cv2.subtract(to_return, current)
             dif = cv2.cvtColor(dif, cv2.COLOR_BGR2GRAY)
             if (cv2.countNonZero(dif) > 0):
-                self.buffer.append(self.current)
+                if (len(self.buffer) < self.MAX_SIZE_BUFFER):
+                    self.buffer.append(self.current)
                 return to_return
             else:
                 print("PYDF")

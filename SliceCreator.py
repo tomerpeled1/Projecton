@@ -27,7 +27,7 @@ oops = 0
 success = 0
 
 on_screen_fruits = []
-SIMULATE = True
+SIMULATE = False
 simulation_queue_lock = threading.Condition()
 simulation_thread = None
 simulation_queue = []
@@ -266,7 +266,7 @@ def y_trajectory(t, y0, v, theta):
 def calc_slice(fruit_trajectories_and_starting_times):
     # time.sleep(time_until_slice())
     # return SliceTypes.radius_slice(get_arm_loc(), fruit_trajectories_and_starting_times)
-    return SliceTypes.slice_to_peak(get_arm_loc(), fruit_trajectories_and_starting_times)
+    return SliceTypes.radius_slice(get_arm_loc(), fruit_trajectories_and_starting_times)
     # return None, None, None
 
 

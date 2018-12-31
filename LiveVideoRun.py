@@ -32,7 +32,7 @@ HISTS_COMPARE_METHOD = cv2.HISTCMP_CORREL
 # Magic numbers for camera
 SECONDS_FOR_BG = 3
 
-INTEGRATE_WITH_ALGORITHMICS = False
+INTEGRATE_WITH_ALGORITHMICS = True
 
 fruits_for_debug_trajectories = []
 
@@ -243,7 +243,7 @@ def run_detection(src, settings, live, crop, flip):
     current = bg
     counter = 0
     buffer = []
-    while camera.is_opened() and counter < 900:
+    while camera.is_opened() and counter < 90000:
         t1 = time.perf_counter()
         counter += 1
         current = camera.next_frame(current)
