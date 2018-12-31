@@ -11,26 +11,23 @@ import matplotlib.pyplot as plt
 
 
 # ------------- CONSTANTS --------------
-# board constants
-RADIUS = 15
 
+# mechanics constants
 DIMS = (16.0, 12.0)  # (X,Y)
-ALPHA_MIN = (180/math.pi)*math.acos(DIMS[0]/(2.0*RADIUS))
-ALPHA_MAX = 180 - ALPHA_MIN
-STEPS_PER_REVOLUTION = 200
-STEPS_FRACTION = 8
-MINIMAL_ANGLE = 2 * np.pi / (STEPS_PER_REVOLUTION * STEPS_FRACTION)
-STEPS_IN_CUT = STEPS_PER_REVOLUTION / 360.0 * (ALPHA_MAX - ALPHA_MIN)
-ARMS = [15.0, 10.0]     # length of arm links in cm
-d = 18.0
+STEPS_PER_REVOLUTION = 200  # number of full steps to make a full round
+STEPS_FRACTION = 8  # the number of steps to make a full step (full step is 1.8 degrees)
+MINIMAL_ANGLE = 2 * np.pi / (STEPS_PER_REVOLUTION * STEPS_FRACTION)  # the minimal angle of the motor in rad (it is
+# 1.8 degrees divided by the steps fraction)
+ARMS = [15.0, 10.0]  # length of arm links in cm
+d = 18.0  # distance between motor to screen in cm
+
 # time constants
 T = 1          # total time of slice - it is not real time but parametrization
-SERIAL_BPS = 115200
-BITS_PER_BYTE = 8
-LENGTH_OF_COMMAND = 6
+SERIAL_BPS = 115200  # the bit rate of reading and writing to the Serial
+BITS_PER_BYTE = 8  # the number of bits in one byte
+LENGTH_OF_COMMAND = 6  # the length of a command to the serial that contains the number of steps for each motor and the
+# direction of moving for each motor
 WRITE_DELAY = 1000/(SERIAL_BPS/BITS_PER_BYTE/LENGTH_OF_COMMAND)  # delay in ms after writing to prevent buffer overload
-# dt = 0.003      # the basic period of time of the simulation in sec
-# times = int(T / dt)  # the size of the vectors for the simulation
 TRAJECTORY_DIVISION_NUMBER = 20
 DT_DIVIDE_TRAJECTORY = float(T) / TRAJECTORY_DIVISION_NUMBER
 END_WRITING = 'e'
@@ -41,7 +38,13 @@ SLICE_END_SIGNAL = 'z'
 WAIT_FOR_STOP = 50.0  # ms
 COMMAND_PACKAGE_SIZE = 10  # number of commands to write at once
 MAX_COMMAND_IN_INVERT = 5
-
+# not in use
+# RADIUS = 15
+# ALPHA_MIN = (180/math.pi)*math.acos(DIMS[0]/(2.0*RADIUS))
+# ALPHA_MAX = 180 - ALPHA_MIN
+# STEPS_IN_CUT = STEPS_PER_REVOLUTION / 360.0 * (ALPHA_MAX - ALPHA_MIN)
+# dt = 0.003      # the basic period of time of the simulation in sec
+# times = int(T / dt)  # the size of the vectors for the simulation
 
 try:
     ser = serial.Serial('com6', SERIAL_BPS)  # Create Serial port object

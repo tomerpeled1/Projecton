@@ -13,14 +13,15 @@ from threading import Thread
 from multiprocessing import Process  # TODO delete if isn't used
 import threading
 
-RELATIVE_ACC = 1.8
+# RELATIVE_ACC = 1.8
+RELATIVE_ACC = 1.478 # from experiences we did it tracker program
 CAMERA_FPS = 30
 ARM_DELAY = 1
 CROP_SIZE = (160, 480)  # (y,x)
 FRAME_SIZE = (480, 640)  # (y,x)
 SCREEN_SIZE = (12, 16)  # (y,x)
 ACC = RELATIVE_ACC * SCREEN_SIZE[0]
-INTEGRATE_WITH_MECHANICS = True
+INTEGRATE_WITH_MECHANICS = False
 
 # for hakab
 oops = 0
