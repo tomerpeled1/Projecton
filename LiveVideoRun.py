@@ -228,13 +228,13 @@ def insert_new_fruits(detection_results, fruits_info, current):
     fruits_info += get_hists(detection_results, current)
 
 
-def run_detection(src, settings, live, crop, flip):
+def run_detection(src, settings, live, crop, flip, calibrate):
     # global Lock
     # Lock = False
     if INTEGRATE_WITH_ALGORITHMICS:
         Sc.init_everything()
     fruits_info = []
-    camera = Camera(src, FLIP=flip, CROP=crop, LIVE=live)
+    camera = Camera(src, FLIP=flip, CROP=crop, LIVE=live, CALIBRATE=calibrate)
     if camera.LIVE:
         camera.set_camera_settings(settings)
     print("choose background")
@@ -312,4 +312,4 @@ def draw(fruit, frame):
 
 
 if __name__ == '__main__':
-    run_detection(0, Ci.IPAD_B4_MIDDLE_LIGHTS_OFF_CLOSED_DRAPES, live=True, crop=True, flip=True)
+    run_detection(0, Ci.IPAD_B4_MIDDLE_LIGHTS_OFF_CLOSED_DRAPES, live=True, crop=True, flip=True, calibrate=True)
