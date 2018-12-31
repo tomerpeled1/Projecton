@@ -105,7 +105,7 @@ def make_slice_by_trajectory(get_xy_by_t):
     steps_phi = steps_phi_decimal.astype(int)
     move_2_motors(steps_theta, steps_phi)
     i_steps_theta, i_steps_phi = invert_slice(steps_theta, steps_phi)
-    move_2_motors(i_steps_theta, i_steps_phi)
+    move_2_motors(i_steps_theta, i_steps_phi, True)
 
 
 def get_angles_by_xy_and_dt(get_xy_by_t, dt):
