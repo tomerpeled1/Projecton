@@ -41,8 +41,8 @@ def slice_to_peak(arm_loc, fruit_trajectories_and_starting_times):
     x_peak = x_algo_to_mech(x_peak)
 
     def slice(t):
-        x_slice = x_arm_loc + (x_peak - x_arm_loc) * t
-        y_slice = y_arm_loc + (y_peak - y_arm_loc) * t
+        x_slice = x_arm_loc + (x_peak - x_arm_loc) * t * 2
+        y_slice = y_arm_loc + (y_peak - y_arm_loc) * t * 2
         return x_slice, y_slice
 
     fruit_trajectories_and_starting_times_copy = fruit_trajectories_and_starting_times.copy()

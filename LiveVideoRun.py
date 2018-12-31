@@ -73,7 +73,7 @@ def draw_trajectory(fruit, frame):
     times_centers = range(len(x_coords))
 
     if fruit.trajectory:
-        cv2.putText(frame, 'Lamed Tet', (200, 100), cv2.FONT_HERSHEY_DUPLEX, 1, (255, 255, 255), 2, cv2.LINE_AA)
+        cv2.putText(frame, 'SHANINJA', (200, 400), cv2.FONT_HERSHEY_DUPLEX, 1, (255, 255, 255), 2, cv2.LINE_AA)
 
     T = 3
     dt = 0.02

@@ -12,6 +12,7 @@ WHITE = (255, 255, 255)
 BLACK = (0, 0, 0)
 BLUE = (0, 0, 255)
 RED = (255, 0, 0)
+GREEN = (0, 255, 0)
 
 # ---------- CONSTANTS -------------
 SCREEN = (16, 12)   # dimensions of 10'' screen
@@ -30,9 +31,9 @@ SERIAL_BPS = 19200
 BITS_PER_BYTE = 8
 LENGTH_OF_COMMAND = 6
 WRITE_DELAY = 1.0/(SERIAL_BPS/BITS_PER_BYTE/LENGTH_OF_COMMAND)  # delay in sec after writing to prevent buffer overload
-T = 1               # time of one slice in sec
-dt_serial = WRITE_DELAY    # time between 2 readings from serial in sec
-dt_motor = ONE_STEP_DELAY    # time of writing to the serial in sec
+T = 1  # time of one slice in sec
+dt_serial = WRITE_DELAY * 4    # time between 2 readings from serial in sec
+dt_motor = ONE_STEP_DELAY * 4    # time of writing to the serial in sec
 times_ideal = int(T / dt_motor)  # the size of the vectors for the simulation
 times_serial = int(T / dt_serial)     # the amount of different values for the
 
@@ -75,7 +76,7 @@ def plot_screen(screen):
     draw_line([SCREEN[0] / 2, d + SCREEN[1]], [SCREEN[0] * 3 / 2, d + SCREEN[1]], screen)
     draw_line([SCREEN[0] / 2, d], [SCREEN[0] / 2, d + SCREEN[1]], screen)
     draw_line([SCREEN[0] * 3 / 2, d], [SCREEN[0] * 3 / 2, d + SCREEN[1]], screen)
-    draw_circle([SCREEN[0], 0], 2, screen)
+    draw_circle([SCREEN[0], 0], 2, screen, RED)
 
 
 def draw_line(start_pos, end_pos, screen):
@@ -84,9 +85,9 @@ def draw_line(start_pos, end_pos, screen):
     return
 
 
-def draw_circle(pos, radius, screen):
-    pygame.draw.circle(screen, RED, [to_pixels(pos[0]), to_pixels(pos[1])],
-                       radius, 1)
+def draw_circle(pos, radius, screen, color):
+    pygame.draw.circle(screen, color, [to_pixels(pos[0]), to_pixels(pos[1])],
+                       radius, 0)
 
 
 def to_pixels(length):
@@ -212,7 +213,7 @@ def xy_by_theta(theta, x_0):
 
 
 def xy_by_fruit_trajectory(trajectory, total_time, dt):
-    dt_trajectory = total_time / (T / dt) / 2
+    dt_trajectory = total_time / (T / dt)
     times = range(int(T / dt))
     x_fruit, y_fruit = [0 for _ in times], [0 for _ in times]
     for i in times:
@@ -264,13 +265,18 @@ def run_simulation(func, fruits_trajectories_and_starting_times):
         if event.type == pygame.QUIT:
             running = 0  # TODO why is it here? delete of isn't used.
 
+        # draw screen
         screen.fill(WHITE)
         plot_screen(screen)
+
+        # draw fruits locations
+        draw_circle([x_fruit[i], y_fruit[i]], 10, screen, GREEN)
+
         # ideal locations
         x_ideal, y_ideal = xy_by_theta_phi(theta_ideal[i], phi_ideal[i], x_0)
         x_ideal_vector[i], y_ideal_vector[i] = x_ideal, y_ideal
         x_link_ideal, y_link_ideal = xy_by_theta(theta_ideal[i], x_0)
-        draw_circle([x_ideal, y_ideal], 2, screen)
+        draw_circle([x_ideal, y_ideal], 2, screen, RED)
         draw_line([x_link_ideal, y_link_ideal], [x_0, y_0], screen)
         draw_line([x_link_ideal, y_link_ideal], [x_ideal, y_ideal], screen)
 
@@ -279,16 +285,12 @@ def run_simulation(func, fruits_trajectories_and_starting_times):
                                                    phi_practical[i], x_0)
         x_practical_vector[i], y_practical_vector[i] = x_practical, y_practical
         x_link_practical, y_link_practical = xy_by_theta(theta_practical[i], x_0)
-        draw_circle([x_practical, y_practical], 2, screen)
+        draw_circle([x_practical, y_practical], 2, screen, RED)
         draw_line([x_link_practical, y_link_practical], [x_0, y_0], screen)
         draw_line([x_link_practical, y_link_practical], [x_practical, y_practical], screen)
 
         errors[i] = math.sqrt(math.pow(x_practical - x_ideal, 2) + math.pow(y_practical -
                                                                             y_ideal, 2))
-
-
-        # draw fruits locations
-        draw_circle([x_fruit[i], y_fruit[i]], 2, screen)
 
         pygame.display.flip()
 
