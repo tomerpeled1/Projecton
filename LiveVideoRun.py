@@ -72,8 +72,8 @@ def draw_trajectory(fruit, frame):
     t_coords = [fruit_loc[2] for fruit_loc in centers_cm]
     times_centers = range(len(x_coords))
 
-    if fruit.trajectory:
-        cv2.putText(frame, 'SHANINJA', (200, 400), cv2.FONT_HERSHEY_DUPLEX, 1, (255, 255, 255), 2, cv2.LINE_AA)
+    # if fruit.trajectory:
+    #     cv2.putText(frame, 'SHANINJA', (200, 400), cv2.FONT_HERSHEY_DUPLEX, 1, (255, 255, 255), 2, cv2.LINE_AA)
 
     T = 3
     dt = 0.02
@@ -84,14 +84,14 @@ def draw_trajectory(fruit, frame):
     # draw fitted trajectory
     for i in times_trajectory:
         xy_cm[0][i], xy_cm[1][i] = route(dt * i)
-        xy_pixels[1][i], xy_pixels[0][i],t = Sc.cm2pixel((xy_cm[0][i], xy_cm[1][i],dt*i))
-        cv2.circle(frame, (int(xy_pixels[0][i]),int(xy_pixels[1][i])), 2, fruit.color, -1)
+        xy_pixels[1][i], xy_pixels[0][i], t = Sc.cm2pixel((xy_cm[0][i], xy_cm[1][i], dt * i))
+        cv2.circle(frame, (int(xy_pixels[0][i]), int(xy_pixels[1][i])), 2, fruit.color, -1)
 
     # draw the centers of the fruits
     xy_centers = [[0 for _ in times_centers], [0 for _ in times_centers]]
     for i in times_centers:
-        xy_centers[1][i], xy_centers[0][i],t = Sc.cm2pixel((x_coords[i], y_coords[i],dt*i))
-        cv2.circle(frame, (int(xy_centers[0][i]),int(xy_centers[1][i])), 5, (0, 0, 255), -1)
+        xy_centers[1][i], xy_centers[0][i], t = Sc.cm2pixel((x_coords[i], y_coords[i], dt * i))
+        cv2.circle(frame, (int(xy_centers[0][i]), int(xy_centers[1][i])), 5, (0, 0, 255), -1)
 
 
 def calculate_hist_window(window, img_hsv):
@@ -156,7 +156,6 @@ def print_and_extract_centers(fruits_to_extract):
         if (INTEGRATE_WITH_ALGORITHMICS):
             Sc.update_and_slice(fruits_to_extract)
 
-
         global FRUIT_TO_EXTRACT
         FRUIT_TO_EXTRACT[:] = []
         print("centers of:" + str([fruit.centers for fruit in fruits_to_extract]))
@@ -205,7 +204,7 @@ def track_known_fruits(fruits_info, current_frame, detection_results):
         to_delete = []
         for fruit in fruits_info:
             if Rtt.track_object(detection_results, fruit):  # update tracker using the detection results.
-                if fruit.counter <= MAX_NUM_OF_FRAMES_ON_SCREEN: # TODO check shit
+                if fruit.counter <= MAX_NUM_OF_FRAMES_ON_SCREEN:  # TODO check shit
                     # cv2.imshow("hsv new", img_hsv)
                     fruit.hist = calculate_hist_window(fruit.track_window, img_hsv)
             else:
@@ -266,7 +265,6 @@ def run_detection(src, settings, live, crop, flip):
             break
         print("len of fruits: " + str(len(fruits_info)))
 
-
     # debug_with_buffer(buffer)
     show_original(camera)
 
@@ -286,7 +284,6 @@ def debug_with_buffer(buffer):
             i += 1
 
 
-
 def show_original(camera):
     i = 0
     while True:
@@ -296,8 +293,11 @@ def show_original(camera):
         for fruit in fruits_for_debug_trajectories:
             # draw_center(fruit,frame)
             # if int(fruit.time_created * 30 ) < i and int(fruit.time_created * 30 + 120) > i:
-            draw_trajectory(fruit,frame)
+            draw_trajectory(fruit, frame)
 
+
+        frame = cv2.flip(frame, -1)
+        cv2.putText(frame, 'SHANINJA', (240, 100), cv2.FONT_HERSHEY_DUPLEX, 1, (255, 255, 255), 2, cv2.LINE_AA)
         cv2.imshow("debug", frame)
         x = cv2.waitKey(1)
         if x == 49:  # '1' key
