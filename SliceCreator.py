@@ -279,7 +279,7 @@ def time_until_slice(fruit):
     return timer + t_peak - time.clock()
 
 
-def init_info(crop_size, frame_size, screen_size):
+def init_info(frame_size, crop_size = CROP_SIZE, screen_size = SCREEN_SIZE):
     global CROP_SIZE, FRAME_SIZE, SCREEN_SIZE
     CROP_SIZE = crop_size
     FRAME_SIZE = frame_size
