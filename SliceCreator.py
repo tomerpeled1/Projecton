@@ -321,6 +321,5 @@ def init_everything():
 
 if __name__ == "__main__":
     slice_and_times = create_slice()
-    print("START: " + str(time.perf_counter()))
     while True:
         do_slice(slice_and_times)
