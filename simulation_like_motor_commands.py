@@ -4,11 +4,37 @@ import time
 import math
 import matplotlib.pyplot as plt
 
+
 # plot constants.
+import SliceTypes
+
 WHITE = (255, 255, 255)
 BLACK = (0, 0, 0)
 BLUE = (0, 0, 255)
 RED = (255, 0, 0)
+
+# ---------- CONSTANTS -------------
+SCREEN = (16, 12)   # dimensions of 10'' screen
+ARMS = (15, 10)     # length of arm links in cm
+# density = 7         # gr/cm
+# link_mass = 20      # mass of link in gr
+# pen_mass = 10       # mass of end in gr
+d = 18                  # distance from screen in cm
+# MOTOR_SPEED = 50    # angular speed of motor in rpm
+STEPS_ROUND = 200   # steps of the motor for full round
+MINIMAL_ANGLE = 2 * np.pi / STEPS_ROUND
+STEPS_FRACTION = 8
+WANTED_RPS = 0.5
+ONE_STEP_DELAY = 5.0 / WANTED_RPS / STEPS_FRACTION / 1000.0  # in sec
+SERIAL_BPS = 19200
+BITS_PER_BYTE = 8
+LENGTH_OF_COMMAND = 6
+WRITE_DELAY = 1.0/(SERIAL_BPS/BITS_PER_BYTE/LENGTH_OF_COMMAND)  # delay in sec after writing to prevent buffer overload
+T = 1               # time of one slice in sec
+dt_serial = WRITE_DELAY    # time between 2 readings from serial in sec
+dt_motor = ONE_STEP_DELAY    # time of writing to the serial in sec
+times_ideal = int(T / dt_motor)  # the size of the vectors for the simulation
+times_serial = int(T / dt_serial)     # the amount of different values for the
 
 
 # ---------- ALGORITHMIC FUNCTION ---------------
@@ -75,6 +101,10 @@ def draw_graph(x, y, title, xlabel, ylabel):
     plt.show()
 
 
+WIDTH = to_pixels(2 * SCREEN[0])
+HEIGHT = to_pixels(2 * (SCREEN[1] + d))
+
+
 # ------------- CALCULATION FUNCTIONS ------------
 def modulo(a, n):
     if a > 0:
@@ -89,6 +119,11 @@ def get_angles_by_xy_and_dt(get_xy_by_t, dt):
     xy = [[0 for _ in times], [0 for _ in times]]
     for i in times:
         xy[0][i], xy[1][i] = get_xy_by_t(dt * i)
+
+    # plt.plot(xy[0], xy[1])
+    # plt.xlim(-8,8)
+    # plt.ylim(0,12)
+    # plt.show()
 
     # calc angles by xy
     r = np.sqrt(np.power(xy[0], 2) + np.power(np.add(d, xy[1]), 2))
@@ -176,36 +211,41 @@ def xy_by_theta(theta, x_0):
     return x, y
 
 
-# ---------- CONSTANTS -------------
-SCREEN = (16, 12)   # dimensions of 10'' screen
-ARMS = (15, 10)     # length of arm links in cm
-# density = 7         # gr/cm
-# link_mass = 20      # mass of link in gr
-# pen_mass = 10       # mass of end in gr
-d = 18                  # distance from screen in cm
-WIDTH = to_pixels(2 * SCREEN[0])
-HEIGHT = to_pixels(2 * (SCREEN[1] + d))
-# MOTOR_SPEED = 50    # angular speed of motor in rpm
-STEPS_ROUND = 200   # steps of the motor for full round
-MINIMAL_ANGLE = 2 * np.pi / STEPS_ROUND
-T = 1               # time of one slice in sec
-dt_serial = 0.005    # time between 2 readings from serial in sec
-dt_motor = 0.0025    # time of writing to the serial in sec
-times_ideal = int(T / dt_motor)  # the size of the vectors for the simulation
-times_serial = int(T / dt_serial)     # the amount of different values for the
-# real solution
+def xy_by_fruit_trajectory(trajectory, total_time, dt):
+    dt_trajectory = total_time / (T / dt) / 2
+    times = range(int(T / dt))
+    x_fruit, y_fruit = [0 for _ in times], [0 for _ in times]
+    for i in times:
+        x_fruit[i], y_fruit[i] = trajectory(i * dt_trajectory)
+        x_fruit[i] += SCREEN[0] / 2
+        y_fruit[i] += d
+    return x_fruit, y_fruit
 
 
 # ------------- CALCULATE LOCATIONS -------------
-def run_simulation(func, fruits_trajectories):
-
-    print(fruits_trajectories)
+def run_simulation(func, fruits_trajectories_and_starting_times):
 
     # the ideal angles like in the function of the algorithmic
     theta_ideal, phi_ideal = make_ideal_slice_by_trajectory(func)
 
     # the practical angles
     theta_practical, phi_practical = make_slice_by_trajectory(func)
+
+    # get the trajectory of the first fruit - (x,y) by t
+    if len(fruits_trajectories_and_starting_times) > 0:
+        if len(fruits_trajectories_and_starting_times[0]) > 0:
+            first_trajectory_object = fruits_trajectories_and_starting_times[0][0]
+            first_trajectory = first_trajectory_object.calc_trajectory()
+            first_trajectory_total_time = first_trajectory_object.calc_total_move_time()
+
+        else:
+            first_trajectory = lambda t: (0, 0)
+            first_trajectory_total_time = 1
+    else:
+        first_trajectory = lambda t: (0, 0)
+        first_trajectory_total_time = 1
+
+    x_fruit, y_fruit = xy_by_fruit_trajectory(first_trajectory, first_trajectory_total_time, dt_motor)
 
     # ------------- PLOT -------------------
     screen = pygame.display.set_mode((WIDTH, HEIGHT))
@@ -246,8 +286,9 @@ def run_simulation(func, fruits_trajectories):
         errors[i] = math.sqrt(math.pow(x_practical - x_ideal, 2) + math.pow(y_practical -
                                                                             y_ideal, 2))
 
-        # draw fruits locations
 
+        # draw fruits locations
+        draw_circle([x_fruit[i], y_fruit[i]], 2, screen)
 
         pygame.display.flip()
 

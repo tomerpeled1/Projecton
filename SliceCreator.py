@@ -13,7 +13,8 @@ from threading import Thread
 from multiprocessing import Process  # TODO delete if isn't used
 import threading
 
-RELATIVE_ACC = 1.8
+# RELATIVE_ACC = 1.7
+RELATIVE_ACC = 1.478 # from experiences we did
 CAMERA_FPS = 30
 ARM_DELAY = 1
 CROP_SIZE = (160, 480)  # (y,x)
@@ -50,6 +51,9 @@ class Trajectory:
     def calc_life_time(self):
         t = 2 * self.v * math.sin(self.theta) / ACC
         return t
+
+    def calc_total_move_time(self):
+        return 2 * self.v * math.sin(self.theta) / ACC
 
 
 def update_fruits(fruits):
@@ -161,8 +165,10 @@ def get_trajectory(fruit_locs):
 
     r_total = math.sqrt(x_total**2 + y_total**2)
 
-    x0 = st.mean(x_coords)
-    y0 = st.mean(y_coords)
+    # x0 = st.mean(x_coords)
+    # y0 = st.mean(y_coords)
+    x0 = x_coords[-1]
+    y0 = y_coords[-1]
     if x_total == 0:  # to prevent division by zero
         x_total = 0.001
 
@@ -239,13 +245,12 @@ def get_trajectory(fruit_locs):
     for i in times:
         xy[0][i], xy[1][i] = route(dt * i)
 
-    # plt.plot.xlim(left, right)
 
-    plt.plot(xy[0], xy[1], 'ro')
+    # plt.plot(xy[0], xy[1], 'ro')
     # plt.show()
-    plt.plot(x_coords, y_coords,'bo')
-    plt.ylim(0, 13)
-    plt.xlim(0, 16)
+    # plt.plot(x_coords, y_coords,'bo')
+    # plt.ylim(0, 13)
+    # plt.xlim(0, 16)
     # plt.show()
     return trajectory
 

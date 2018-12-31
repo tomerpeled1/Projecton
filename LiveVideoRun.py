@@ -32,7 +32,7 @@ HISTS_COMPARE_METHOD = cv2.HISTCMP_CORREL
 # Magic numbers for camera
 SECONDS_FOR_BG = 3
 
-INTEGRATE_WITH_ALGORITHMICS = False
+INTEGRATE_WITH_ALGORITHMICS = True
 
 fruits_for_debug_trajectories = []
 
@@ -72,8 +72,8 @@ def draw_trajectory(fruit, frame):
     t_coords = [fruit_loc[2] for fruit_loc in centers_cm]
     times_centers = range(len(x_coords))
 
-    # if fruit.trajectory:
-    # cv2.putText(frame, 'Lamed Tet', (200, 100), cv2.FONT_HERSHEY_DUPLEX, 1, (255, 255, 255), 2, cv2.LINE_AA)
+    if fruit.trajectory:
+        cv2.putText(frame, 'Lamed Tet', (200, 100), cv2.FONT_HERSHEY_DUPLEX, 1, (255, 255, 255), 2, cv2.LINE_AA)
 
     T = 3
     dt = 0.02
@@ -85,7 +85,7 @@ def draw_trajectory(fruit, frame):
     for i in times_trajectory:
         xy_cm[0][i], xy_cm[1][i] = route(dt * i)
         xy_pixels[1][i], xy_pixels[0][i],t = Sc.cm2pixel((xy_cm[0][i], xy_cm[1][i],dt*i))
-        cv2.circle(frame, (int(xy_pixels[0][i]),int(xy_pixels[1][i])), 2, (255, 0, 0), -1)
+        cv2.circle(frame, (int(xy_pixels[0][i]),int(xy_pixels[1][i])), 2, fruit.color, -1)
 
     # draw the centers of the fruits
     xy_centers = [[0 for _ in times_centers], [0 for _ in times_centers]]
@@ -145,13 +145,13 @@ def print_and_extract_centers(fruits_to_extract):
     for fruit in fruits_to_extract:
         fruit.centers = fruit.centers[1:-1]
     if fruits_to_extract:
-        # # ---------Add trajectory to fruit object ------- #
-        # global fruits_for_debug_trajectories
-        # for fruit in fruits_to_extract:
-        #     centers_cm = [Sc.pixel2cm(center) for center in fruit.centers]
-        #     fruit.trajectory = Sc.get_trajectory(centers_cm)
-        #     # --- add first fruit to debug fruits buffer ---#
-        #     fruits_for_debug_trajectories.append(fruit)
+        # ---------Add trajectory to fruit object ------- #
+        global fruits_for_debug_trajectories
+        for fruit in fruits_to_extract:
+            centers_cm = [Sc.pixel2cm(center) for center in fruit.centers]
+            fruit.trajectory = Sc.get_trajectory(centers_cm)
+            # --- add fruit to debug fruits buffer ---#
+            fruits_for_debug_trajectories.append(fruit)
 
         if (INTEGRATE_WITH_ALGORITHMICS):
             Sc.update_and_slice(fruits_to_extract)
@@ -243,7 +243,7 @@ def run_detection(src, settings, live, crop, flip):
     current = bg
     counter = 0
     buffer = []
-    while camera.is_opened() and counter < 900:
+    while camera.is_opened() and counter < 100:
         t1 = time.perf_counter()
         counter += 1
         current = camera.next_frame(current)
@@ -265,8 +265,10 @@ def run_detection(src, settings, live, crop, flip):
         if cv2.waitKey(1) == 27:
             break
         print("len of fruits: " + str(len(fruits_info)))
-    debug_with_buffer(buffer)
-    # show_original(camera)
+
+
+    # debug_with_buffer(buffer)
+    show_original(camera)
 
 
 def debug_with_buffer(buffer):
@@ -293,6 +295,7 @@ def show_original(camera):
 
         for fruit in fruits_for_debug_trajectories:
             # draw_center(fruit,frame)
+            # if int(fruit.time_created * 30 ) < i and int(fruit.time_created * 30 + 120) > i:
             draw_trajectory(fruit,frame)
 
         cv2.imshow("debug", frame)
@@ -312,4 +315,4 @@ def draw(fruit, frame):
 
 
 if __name__ == '__main__':
-    run_detection(0, Ci.IPAD_B4_MIDDLE_LIGHTS_OFF_CLOSED_DRAPES, live=True, crop=True, flip=True)
+    run_detection("saturdayDark.flv", Ci.DARK_101_SETTINGS, live=False, crop=True, flip=True)

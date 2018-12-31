@@ -8,6 +8,7 @@ R = 14.9
 d = 17.9
 SCREEN = [16, 12]
 
+
 def tuple_add(tup1, tup2):
     return tup1[0] + tup2[0], tup1[1] + tup2[1]
 
@@ -15,6 +16,13 @@ def tuple_add(tup1, tup2):
 def tuple_mul(scalar, tup):
     return scalar * tup[0], scalar * tup[1]
 
+def x_algo_to_mech(x_algorithmics):
+    """
+    :param x_algorithmics: x coordinate in the algorithmics (sliceCreator) coordinate system: (0, 0) on bottom left
+    :return: x coordinate in the Mechanics and simulation coordinate system: (0, 0) on bottom middle
+            (where the base of the motor is).
+    """
+    return x_algorithmics - SCREEN[0]/2
 
 def slice_to_peak(arm_loc, fruit_trajectories_and_starting_times):
     """
@@ -30,17 +38,24 @@ def slice_to_peak(arm_loc, fruit_trajectories_and_starting_times):
     chosen_fruits = [chosen_fruit]
     chosen_trajectory, timer = chosen_fruit
     t_peak, (x_peak, y_peak) = chosen_trajectory.calc_peak()
-    slice = lambda t: (t * x_peak, t * y_peak) + ((1 - t) * x_arm_loc, (1 - t) * y_arm_loc)
+    x_peak = x_algo_to_mech(x_peak)
+
+    def slice(t):
+        x_slice = x_arm_loc + (x_peak - x_arm_loc) * t
+        y_slice = y_arm_loc + (y_peak - y_arm_loc) * t
+        return x_slice, y_slice
+
+    fruit_trajectories_and_starting_times_copy = fruit_trajectories_and_starting_times.copy()
     SliceCreator.remove_sliced_fruits(chosen_fruits)
-    return slice, timer, t_peak, fruit_trajectories_and_starting_times
+    return slice, timer, t_peak, fruit_trajectories_and_starting_times_copy
 
 
-def stupid_slice(arm_loc, fruit_trajectories):
+def stupid_slice(arm_loc, fruit_trajectories_and_starting_times):
     SliceCreator.remove_sliced_fruits(SliceCreator.on_screen_fruits)
     return (lambda t: tuple_add(arm_loc, tuple_mul(t % 1, (LINE_LENGTH, 0)))), None, None, None
 
 
-def line_trajectory(arm_loc, fruit_trajectories):  # gets time in sec
+def line_trajectory(arm_loc, fruit_trajectories_and_starting_times):  # gets time in sec
 
     def xy_by_t(t):
         """
@@ -83,12 +98,12 @@ def line_trajectory(arm_loc, fruit_trajectories):  # gets time in sec
     return xy_by_t, None, None, None
 
 
-def complex_slice(arm_loc, fruit_trajectories):
+def complex_slice(arm_loc, fruit_trajectories_and_starting_times):
     return (lambda t: tuple_add(tuple_add(arm_loc, (0, -2)),
                                 tuple_mul(2, (math.cos(2*math.pi*t*10), math.sin(2*math.pi*t*10))))), None, None, None
 
 
-def theta_slice(arm_loc, fruit_trajectories):
+def theta_slice(arm_loc, fruit_trajectories_and_starting_times):
     SliceCreator.on_screen_fruits = []
 
     return (lambda t: (R*math.cos(math.pi / 3 + 2 * math.pi * (1-t)/6),
@@ -96,11 +111,11 @@ def theta_slice(arm_loc, fruit_trajectories):
            None, None, None
 
 
-def radius_slice(arm_loc, fruit_trajectories):
+def radius_slice(arm_loc, fruit_trajectories_and_starting_times):
     SliceCreator.on_screen_fruits = []
     theta_0 = math.acos(SCREEN[0]/(2*(R+r))) + 0.07
 
     return (lambda t: tuple_mul((R+r),
                                 (math.cos(theta_0 + (math.pi - 2* theta_0) * (1 - t)),
                                 math.sin(theta_0 + (math.pi - 2* theta_0) * (1 - t))  - d/(R+r)))), \
-           None, None, None
+           None, None, fruit_trajectories_and_starting_times
