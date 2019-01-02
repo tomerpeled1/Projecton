@@ -69,6 +69,7 @@ def update_fruits(fruits):
     # on_screen_fruits.extend([[fruit_trajectories[i], fruits[i].time_created] for i in range(len(fruits))])
 
 
+
 def create_slice():
     return calc_slice(on_screen_fruits)
 

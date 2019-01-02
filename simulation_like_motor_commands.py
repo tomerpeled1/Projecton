@@ -38,6 +38,7 @@ times_ideal = int(T / dt_motor)  # the size of the vectors for the simulation
 times_serial = int(T / dt_serial)     # the amount of different values for the
 
 
+
 # ---------- ALGORITHMIC FUNCTION ---------------
 def get_xy_by_t_const_acceleration(t):  # gets time in sec
     acc = 1800.0
