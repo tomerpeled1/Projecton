@@ -178,33 +178,59 @@ def get_angles_by_xy_and_dt(get_xy_by_t, dt):
 
 def make_slice_by_trajectory(get_xy_by_t):
     """
-
-    :param get_xy_by_t:
-    :return:
+    makes a slice in the pygame simulation
+    :param get_xy_by_t: function that gets t (double between 0 and 1) and returns a tuple (x, y)
+    :return: tuple (theta vector, phi vector)
     """
-    theta, phi = get_angles_by_xy_and_dt(get_xy_by_t, dt_serial)
-    d_theta, d_phi = np.diff(theta), np.diff(phi)
+    # get the vectors of theta and phi
+    theta_vector, phi_vector = get_angles_by_xy_and_dt(get_xy_by_t, dt_serial)
+
+    # calculate the steps for each motor
+    steps_theta, steps_phi = calc_steps_theta_and_steps_phi_by_theta_and_phi(theta_vector, phi_vector)
+
+    # print("steps theta: ")
+    # print(steps_theta)
+    # print("steps phi: ")
+    # print(steps_phi)
+
+    # get the theta vector and phi vector to show in simulation
+    theta_simulation, phi_simulation = duplicate_theta_and_phi_values_for_simulation(theta_vector, phi_vector,
+                                                                                     steps_theta, steps_phi)
+
+    return theta_simulation, phi_simulation
+
+
+def calc_steps_theta_and_steps_phi_by_theta_and_phi(theta_vector, phi_vector):
+    """
+    calculate the steps for each motor by theta and phi vectors
+    :param theta_vector: list of theta angles in dt interval
+    :param phi_vector: list of phi angles in dt interval
+    :return: tuple of 2 lists (steps for theta motor, steps for phi motor)
+    """
+    # get the subtractions of theta and phi
+    d_theta, d_phi = np.diff(theta_vector), np.diff(phi_vector)
+    # convert to steps units
     steps_theta_decimal, steps_phi_decimal = ((1 / MINIMAL_ANGLE) * d_theta), ((1 / MINIMAL_ANGLE) * d_phi)
+    # improve accuracy by adding the modulo 1 of the previous steps
     for i in range(times_serial-2):
         steps_theta_decimal[i+1] += modulo_by_1(steps_theta_decimal[i])
         steps_phi_decimal[i+1] += modulo_by_1(steps_phi_decimal[i])
+    # cast to int type
     steps_theta = steps_theta_decimal.astype(int)
     steps_phi = steps_phi_decimal.astype(int)
+    return steps_theta, steps_phi
 
-    print(steps_theta)
-    print('*********************')
-    print(steps_phi)
-    # steps_theta, steps_phi = ((1 / MINIMAL_ANGLE) * d_theta).astype(int), \
-    #                          ((1 / MINIMAL_ANGLE) * d_phi).astype(int)
 
+def duplicate_theta_and_phi_values_for_simulation(theta_vector, phi_vector, steps_theta, steps_phi):
     # the vectors for running the simulation - in the ideal dt
     theta_simulation = [0 for _ in range(times_ideal)]
     phi_simulation = [0 for _ in range(times_ideal)]
 
     # initialize the first angles
-    theta_simulation[0] = theta[0]
-    phi_simulation[0] = phi[0]
+    theta_simulation[0] = theta_vector[0]
+    phi_simulation[0] = phi_vector[0]
 
+    # make the delay between 2 moves - the delay is according to the time left to fill the dt_serial
     angle_move_index = 0
     times_ratio = int(times_ideal / times_serial)
     for i in range(times_ideal-1):
@@ -227,6 +253,7 @@ def make_slice_by_trajectory(get_xy_by_t):
                 theta_simulation[i + 1] = theta_simulation[i]
             if phi_simulation[i + 1] == 0:
                 phi_simulation[i + 1] = phi_simulation[i]
+
     return theta_simulation, phi_simulation
 
 
