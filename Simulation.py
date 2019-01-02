@@ -21,6 +21,7 @@ dt_serial = 0.005    # time between 2 readings from serial in sec
 dt_motor = 0.0025    # time of writing to the serial in sec (this is the simulation dt)
 times_ideal = int(T / dt_motor)  # the size of the vectors for the simulation
 times_serial = int(T / dt_serial)     # the amount of different values for the
+TIME_TO_QUIT_SIMULATION = 10  # time to quit the simulation after finished in sec
 
 
 # ---------- ALGORITHMIC FUNCTION ---------------
@@ -361,7 +362,8 @@ def run_simulation(func, fruits_trajectories):
 
         # sleep for the simulation dt (dt_motor is the simulation dt)
         time.sleep(dt_motor)
-    time.sleep(2)
+    # quiting the simulation
+    time.sleep(TIME_TO_QUIT_SIMULATION)
     pygame.display.quit()
 
     # GRAPHS PLOTTING
