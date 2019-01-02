@@ -18,7 +18,7 @@ STEPS_ROUND = 200   # steps of the motor for full round
 MINIMAL_ANGLE = 2 * np.pi / STEPS_ROUND  # the angle that the motors make in full step in radian
 T = 1               # time of one slice in sec
 dt_serial = 0.005    # time between 2 readings from serial in sec
-dt_motor = 0.0025    # time of writing to the serial in sec
+dt_motor = 0.0025    # time of writing to the serial in sec (this is the simulation dt)
 times_ideal = int(T / dt_motor)  # the size of the vectors for the simulation
 times_serial = int(T / dt_serial)     # the amount of different values for the
 
@@ -222,6 +222,14 @@ def calc_steps_theta_and_steps_phi_by_theta_and_phi(theta_vector, phi_vector):
 
 
 def duplicate_theta_and_phi_values_for_simulation(theta_vector, phi_vector, steps_theta, steps_phi):
+    """
+    returns theta vector and phi vector to show in simulation - with the dt of the simulation
+    :param theta_vector: list of theta angles - double list
+    :param phi_vector: list of phi angles - double list
+    :param steps_theta: steps for the theta motor - int list
+    :param steps_phi: steps for the phi motor - int list
+    :return: tuple of 2 lists (theta vector, phi vector) in the right dt interval
+    """
     # the vectors for running the simulation - in the ideal dt
     theta_simulation = [0 for _ in range(times_ideal)]
     phi_simulation = [0 for _ in range(times_ideal)]
@@ -258,23 +266,40 @@ def duplicate_theta_and_phi_values_for_simulation(theta_vector, phi_vector, step
 
 
 def make_ideal_slice_by_trajectory(get_xy_by_t):
+    """
+    returns the theta vector and the phi vector according to the function and the dt of the simulation
+    :param get_xy_by_t: a function that gets a double t between 0 and 1 and returns tuple (x, y)
+    :return: tuple of 2 lists (theta vector, phi vector) in the right dt interval
+    """
     theta, phi = get_angles_by_xy_and_dt(get_xy_by_t, dt_motor)
     return theta, phi
 
 
 def xy_by_theta_phi(theta, phi, x_0):
+    """
+    returns the location in (x, y) according to the location in (theta, phi) by the trigonometric connection - this
+    is the location of the pen (the end of the 2nd arm)
+    :param theta: double
+    :param phi: double
+    :param x_0: double
+    :return: tuple of doubles (x, y)
+    """
     x = x_0 + ARMS[0] * np.cos(theta) + ARMS[1] * np.cos(phi)
     y = ARMS[0] * np.sin(theta) + ARMS[1] * np.sin(phi)
     return x, y
 
 
 def xy_by_theta(theta, x_0):
+    """
+    returns the location in (x, y) according to the location in (theta) by the trigonometric connection - this
+    is the location of the link (the end of the 1st arm)
+    :param theta: double
+    :param x_0: double
+    :return: tuple of doubles (x, y)
+    """
     x = x_0 + ARMS[0] * np.cos(theta)
     y = ARMS[0] * np.sin(theta)
     return x, y
-
-
-# real solution
 
 
 # ------------- CALCULATE LOCATIONS -------------
@@ -297,16 +322,18 @@ def run_simulation(func, fruits_trajectories):
     y_ideal_vector = [0 for _ in range(times_ideal)]
     x_practical_vector = [0 for _ in range(times_ideal)]
     y_practical_vector = [0 for _ in range(times_ideal)]
-    time_vector = [dt_motor * i for i in range(times_ideal)]  # TODO why is it here? delete if isn't used.
 
     # loop of plot
     for i in range(times_ideal):
+        # quiting option
         event = pygame.event.poll()
         if event.type == pygame.QUIT:
-            running = 0  # TODO why is it here? delete of isn't used.
+            pygame.quit()
 
+        # plotting the screen
         screen.fill(WHITE)
         plot_screen(screen)
+
         # ideal locations
         x_ideal, y_ideal = xy_by_theta_phi(theta_ideal[i], phi_ideal[i], x_0)
         x_ideal_vector[i], y_ideal_vector[i] = x_ideal, y_ideal
@@ -329,12 +356,15 @@ def run_simulation(func, fruits_trajectories):
 
         # draw fruits locations
 
-
+        # display the simulation
         pygame.display.flip()
 
+        # sleep for the simulation dt (dt_motor is the simulation dt)
         time.sleep(dt_motor)
     time.sleep(2)
     pygame.display.quit()
+
+    # GRAPHS PLOTTING
     # draw_graph(x_ideal_vector, y_ideal_vector, "ideal", "x", "y")
     # draw_graph(x_practical_vector, y_practical_vector, "practical", "x", "y")
 
