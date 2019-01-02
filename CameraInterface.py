@@ -3,7 +3,7 @@ from imutils.video import WebcamVideoStream
 import time
 from Calibrate import calibrate
 import SavedVideoWrapper
-import SliceCreator as sc
+import Algorithmics as sc
 
 LIGHT_LAB_SETTINGS = (215, 75, -7, 10)  # order is (saturation, gain, exposure, focus)
 TABLE_ABOVE_SETTINGS = (255, 100, -6, 10)  # order is (saturation, gain, exposure, focus)

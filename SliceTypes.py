@@ -1,5 +1,5 @@
 import math
-import SliceCreator
+import Algorithmics
 
 LINE_LENGTH = 10
 
@@ -31,12 +31,12 @@ def slice_to_peak(arm_loc, fruit_trajectories_and_starting_times):
     chosen_trajectory, timer = chosen_fruit
     t_peak, (x_peak, y_peak) = chosen_trajectory.calc_peak()
     slice = lambda t: (t * x_peak, t * y_peak) + ((1 - t) * x_arm_loc, (1 - t) * y_arm_loc)
-    SliceCreator.remove_sliced_fruits(chosen_fruits)
+    Algorithmics.remove_sliced_fruits(chosen_fruits)
     return slice, timer, t_peak, fruit_trajectories_and_starting_times
 
 
 def stupid_slice(arm_loc, fruit_trajectories):
-    SliceCreator.remove_sliced_fruits(SliceCreator.on_screen_fruits)
+    Algorithmics.remove_sliced_fruits(Algorithmics.on_screen_fruits)
     return (lambda t: tuple_add(arm_loc, tuple_mul(t % 1, (LINE_LENGTH, 0)))), None, None, None
 
 
@@ -89,7 +89,7 @@ def complex_slice(arm_loc, fruit_trajectories):
 
 
 def theta_slice(arm_loc, fruit_trajectories):
-    SliceCreator.on_screen_fruits = []
+    Algorithmics.on_screen_fruits = []
 
     return (lambda t: (R*math.cos(math.pi / 3 + 2 * math.pi * (1-t)/6),
                        R*math.sin(math.pi / 3 + 2 * math.pi * (1-t)/6) + r - d)),\
@@ -97,7 +97,7 @@ def theta_slice(arm_loc, fruit_trajectories):
 
 
 def radius_slice(arm_loc, fruit_trajectories):
-    SliceCreator.on_screen_fruits = []
+    Algorithmics.on_screen_fruits = []
     theta_0 = math.acos(SCREEN[0]/(2*(R+r))) + 0.07
 
     return (lambda t: tuple_mul((R+r),

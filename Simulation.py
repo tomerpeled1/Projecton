@@ -10,9 +10,27 @@ BLACK = (0, 0, 0)
 BLUE = (0, 0, 255)
 RED = (255, 0, 0)
 
+# ---------- CONSTANTS -------------
+SCREEN = (16, 12)   # dimensions of 10'' screen
+ARMS = (15, 10)     # length of arm links in cm
+d = 18                  # distance from screen in cm
+STEPS_ROUND = 200   # steps of the motor for full round
+MINIMAL_ANGLE = 2 * np.pi / STEPS_ROUND  # the angle that the motors make in full step in radian
+T = 1               # time of one slice in sec
+dt_serial = 0.005    # time between 2 readings from serial in sec
+dt_motor = 0.0025    # time of writing to the serial in sec
+times_ideal = int(T / dt_motor)  # the size of the vectors for the simulation
+times_serial = int(T / dt_serial)     # the amount of different values for the
+
 
 # ---------- ALGORITHMIC FUNCTION ---------------
-def get_xy_by_t_const_acceleration(t):  # gets time in sec
+def get_xy_by_t_line_acceleration(t):  # gets time in sec
+    """
+    example of trajectory function that tells the arm to make a straight line with acceleration in the beginning and
+    the end of the line
+    :param t: time
+    :return: tuple (x, y)
+    """
     acc = 1800.0
     x_0 = -SCREEN[0] / 2
     y_0 = 0.8 * SCREEN[1]
@@ -28,12 +46,16 @@ def get_xy_by_t_const_acceleration(t):  # gets time in sec
     elif t_a < t < T - t_a:
         x = x_0 + d_a + v * (t - t_a)
     elif t > T - t_a:
-        x = x_0 + d_a + v * (T - 2 * t_a) - 0.5 * acc * math.pow(t - (T -
-                                                                      t_a), 2)
+        x = x_0 + d_a + v * (T - 2 * t_a) + v * (t - (T - t_a)) - 0.5 * acc * (t - (T - t_a)) ** 2
     return x, y
 
 
-def get_xy_by_t_simple(t):  # gets time in sec
+def get_xy_by_t_line_const_speed(t):  # gets time in sec
+    """
+    example of trajectory function that tells the arm to make a straight line with constant speed
+    :param t: time
+    :return: tuple (x, y)
+    """
     x_0 = -SCREEN[0] / 2
     y_0 = 0.5 * SCREEN[1]
 
@@ -45,6 +67,10 @@ def get_xy_by_t_simple(t):  # gets time in sec
 
 # ----------- PLOTS AND GRAPHS FUNCTIONS -----------
 def plot_screen(screen):
+    """
+    plots the lines for the tablet screen in the pygame simulation
+    :param screen: pygame screen object - pygame.display.set_mode((WIDTH, HEIGHT))
+    """
     draw_line([SCREEN[0] / 2, d], [SCREEN[0] * 3 / 2, d], screen)
     draw_line([SCREEN[0] / 2, d + SCREEN[1]], [SCREEN[0] * 3 / 2, d + SCREEN[1]], screen)
     draw_line([SCREEN[0] / 2, d], [SCREEN[0] / 2, d + SCREEN[1]], screen)
@@ -53,21 +79,46 @@ def plot_screen(screen):
 
 
 def draw_line(start_pos, end_pos, screen):
-    pygame.draw.line(screen, BLUE, [to_pixels(start_pos[0]), to_pixels(
-        start_pos[1])], [to_pixels(end_pos[0]), to_pixels(end_pos[1])], 1)
+    """
+    draws a line in the pygame simulation
+    :param start_pos: tuple (x, y)
+    :param end_pos: tuple (x, y)
+    :param screen: pygame screen object - pygame.display.set_mode((WIDTH, HEIGHT))
+    """
+    pygame.draw.line(screen, BLUE, [cm_to_pixels(start_pos[0]), cm_to_pixels(
+        start_pos[1])], [cm_to_pixels(end_pos[0]), cm_to_pixels(end_pos[1])], 1)
     return
 
 
 def draw_circle(pos, radius, screen):
-    pygame.draw.circle(screen, RED, [to_pixels(pos[0]), to_pixels(pos[1])],
+    """
+    draws a circle in the pygame simulation
+    :param pos: tuple (x, y)
+    :param radius: double
+    :param screen: pygame screen object - pygame.display.set_mode((WIDTH, HEIGHT))
+    """
+    pygame.draw.circle(screen, RED, [cm_to_pixels(pos[0]), cm_to_pixels(pos[1])],
                        radius, 1)
 
 
-def to_pixels(length):
+def cm_to_pixels(length):
+    """
+    returns the length in number of pixels
+    :param length: double in cm
+    :return: int - number of pixels
+    """
     return int(20 * length)
 
 
 def draw_graph(x, y, title, xlabel, ylabel):
+    """
+    draws a graph in matplotlib
+    :param x: vector for x axis
+    :param y: vector for y axis
+    :param title: string for title
+    :param xlabel: string for x axis lable
+    :param ylabel: string for y axis lable
+    """
     plt.plot(x, y)
     plt.title(title)
     plt.xlabel(xlabel)
@@ -75,15 +126,30 @@ def draw_graph(x, y, title, xlabel, ylabel):
     plt.show()
 
 
+WIDTH = cm_to_pixels(2 * SCREEN[0])
+HEIGHT = cm_to_pixels(2 * (SCREEN[1] + d))
+
+
 # ------------- CALCULATION FUNCTIONS ------------
-def modulo(a, n):
-    if a > 0:
-        return a % n
+def modulo_by_1(num):
+    """
+    makes a modulo by 1 that returns a positive number for positive parameter and a negative number for a negative
+    parameter
+    :param num: double
+    """
+    if num > 0:
+        return num % 1
     else:
-        return a % n - 1
+        return num % 1 - 1
 
 
 def get_angles_by_xy_and_dt(get_xy_by_t, dt):
+    """
+    returns theta and phi in intervals of dt by the function "get_xy_by_t"
+    :param get_xy_by_t: a function that gets a double t between 0 and 1 and returns tuple (x, y)
+    :param dt: interval to make theta and phi - double
+    :return: tuple (vector of theta, vector of phi)
+    """
     times = range(int(T / dt))
     # get xy by dt
     xy = [[0 for _ in times], [0 for _ in times]]
@@ -111,12 +177,17 @@ def get_angles_by_xy_and_dt(get_xy_by_t, dt):
 
 
 def make_slice_by_trajectory(get_xy_by_t):
+    """
+
+    :param get_xy_by_t:
+    :return:
+    """
     theta, phi = get_angles_by_xy_and_dt(get_xy_by_t, dt_serial)
     d_theta, d_phi = np.diff(theta), np.diff(phi)
     steps_theta_decimal, steps_phi_decimal = ((1 / MINIMAL_ANGLE) * d_theta), ((1 / MINIMAL_ANGLE) * d_phi)
     for i in range(times_serial-2):
-        steps_theta_decimal[i+1] += modulo(steps_theta_decimal[i], 1)
-        steps_phi_decimal[i+1] += modulo(steps_phi_decimal[i], 1)
+        steps_theta_decimal[i+1] += modulo_by_1(steps_theta_decimal[i])
+        steps_phi_decimal[i+1] += modulo_by_1(steps_phi_decimal[i])
     steps_theta = steps_theta_decimal.astype(int)
     steps_phi = steps_phi_decimal.astype(int)
 
@@ -176,23 +247,6 @@ def xy_by_theta(theta, x_0):
     return x, y
 
 
-# ---------- CONSTANTS -------------
-SCREEN = (16, 12)   # dimensions of 10'' screen
-ARMS = (15, 10)     # length of arm links in cm
-# density = 7         # gr/cm
-# link_mass = 20      # mass of link in gr
-# pen_mass = 10       # mass of end in gr
-d = 18                  # distance from screen in cm
-WIDTH = to_pixels(2 * SCREEN[0])
-HEIGHT = to_pixels(2 * (SCREEN[1] + d))
-# MOTOR_SPEED = 50    # angular speed of motor in rpm
-STEPS_ROUND = 200   # steps of the motor for full round
-MINIMAL_ANGLE = 2 * np.pi / STEPS_ROUND
-T = 1               # time of one slice in sec
-dt_serial = 0.005    # time between 2 readings from serial in sec
-dt_motor = 0.0025    # time of writing to the serial in sec
-times_ideal = int(T / dt_motor)  # the size of the vectors for the simulation
-times_serial = int(T / dt_serial)     # the amount of different values for the
 # real solution
 
 

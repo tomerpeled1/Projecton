@@ -1,16 +1,11 @@
 import math
 import matplotlib.pyplot as plt
 import statistics as st
-# import cv2
-
-
 import SliceTypes
 import time
-from scipy.optimize import curve_fit
 import ArduinoCommunication
-import simulation_like_motor_commands as slm
+import Simulation as slm
 from threading import Thread
-from multiprocessing import Process  # TODO delete if isn't used
 import threading
 
 # RELATIVE_ACC = 1.8
@@ -34,6 +29,34 @@ simulation_thread = None
 simulation_queue = []
 
 
+# CONVERTING FUNCTIONS
+def pixel2cm(pix_loc):
+    '''
+    :param pix_loc: a pixel in order (x,y).
+    :return: (x coord of screen, y coord of screen) when we look at the screen from the opposite side.
+            we look at the opposite side because the arm is looking at the screen from it's top
+            and we look at it from the bottom
+    '''
+    (j_coord_crop, i_coord_crop, t) = pix_loc
+    i_coord_frame = FRAME_SIZE[0] - CROP_SIZE[0] + i_coord_crop
+    j_coord_frame = FRAME_SIZE[1] / 2 - CROP_SIZE[1] / 2 + j_coord_crop
+    i_coord_screen = (float(i_coord_frame / FRAME_SIZE[0])) * SCREEN_SIZE[0]
+    j_coord_screen = (1 - float(j_coord_frame / FRAME_SIZE[1])) * SCREEN_SIZE[1]
+    return j_coord_screen, i_coord_screen, t  # (x,y)
+
+
+def cm2pixel(cm_loc):
+    """
+    :param cm_loc: cm location in order (x,y)
+    :return: pixel location in order (y, x, t)
+    """
+    x_coord_screen, y_coord_screen, t = cm_loc
+    x_coord_frame = int(x_coord_screen * float(FRAME_SIZE[1]) / SCREEN_SIZE[1])
+    y_coord_frame = int((1.0 - float(y_coord_screen / SCREEN_SIZE[0])) * FRAME_SIZE[0])
+    return y_coord_frame, x_coord_frame, t
+
+
+# TRAJECTORY CLASS
 class Trajectory:
     def __init__(self, x0, y0, v, theta):
         self.x0 = x0
@@ -51,6 +74,16 @@ class Trajectory:
     def calc_life_time(self):
         t = 2 * self.v * math.sin(self.theta) / ACC
         return t
+
+    def trajectory_physics(self, x, x0, v, theta):
+        return SCREEN_SIZE[0] - (x - x0) * math.tan(theta) + ACC * (x - x0) ** 2 / (2 * v ** 2 * math.cos(theta) ** 2)
+
+    def x_trajectory(self, t, x0, v, theta):
+        return x0 + v * math.cos(theta) * t
+
+    def y_trajectory(self, t, y0, v, theta):
+        # return SCREEN_SIZE[0] - v * math.sin(theta) * t + 0.5 * ACC * t ** 2
+        return y0 - v * math.sin(theta) * t + 0.5 * ACC * t ** 2
 
 
 def update_fruits(fruits):
@@ -79,17 +112,6 @@ def do_slice(slice):
         ArduinoCommunication.make_slice_by_trajectory(parametrization)
 
 
-# def create_and_do_slice():
-#     global lock
-#     #lock.acquire()
-#     print(3333333333333333333)
-#     gui_lock.acquire()
-#     slice = create_slice()
-#     p = Process(target=do_slice, args=(slice,))
-#     p.start()
-#     lock.release()
-
-
 def update_and_slice(fruits):
     global simulation_queue
     global simulation_queue_lock
@@ -103,32 +125,6 @@ def update_and_slice(fruits):
                 print("x")
         simulation_queue_lock.notify()
         simulation_queue_lock.release()
-
-
-def pixel2cm(pix_loc):
-    '''
-    :param pix_loc: a pixel in order (x,y).
-    :return: (x coord of screen, y coord of screen) when we look at the screen from the opposite side.
-            we look at the opposite side because the arm is looking at the screen from it's top
-            and we look at it from the bottom
-    '''
-    (j_coord_crop, i_coord_crop, t) = pix_loc
-    i_coord_frame = FRAME_SIZE[0] - CROP_SIZE[0] + i_coord_crop
-    j_coord_frame = FRAME_SIZE[1] / 2 - CROP_SIZE[1] / 2 + j_coord_crop
-    i_coord_screen = (float(i_coord_frame / FRAME_SIZE[0])) * SCREEN_SIZE[0]
-    j_coord_screen = (1 - float(j_coord_frame / FRAME_SIZE[1])) * SCREEN_SIZE[1]
-    return j_coord_screen, i_coord_screen, t  # (x,y)
-
-
-def cm2pixel(cm_loc):
-    """
-    :param cm_loc: cm location in order (x,y)
-    :return: pixel location in order (y, x, t)
-    """
-    x_coord_screen, y_coord_screen, t = cm_loc
-    x_coord_frame = int(x_coord_screen * float(FRAME_SIZE[1]) / SCREEN_SIZE[1])
-    y_coord_frame = int((1.0 - float(y_coord_screen / SCREEN_SIZE[0])) * FRAME_SIZE[0])
-    return y_coord_frame, x_coord_frame, t
 
 
 def rms(array):
@@ -249,19 +245,6 @@ def get_trajectory(fruit_locs):
     plt.xlim(0, 16)
     # plt.show()
     return trajectory
-
-
-def trajectory_physics(x, x0, v, theta):
-    return SCREEN_SIZE[0] - (x - x0) * math.tan(theta) + ACC * (x - x0) ** 2 / (2 * v ** 2 * math.cos(theta) ** 2)
-
-
-def x_trajectory(t, x0, v, theta):
-    return x0 + v * math.cos(theta) * t
-
-
-def y_trajectory(t, y0, v, theta):
-    # return SCREEN_SIZE[0] - v * math.sin(theta) * t + 0.5 * ACC * t ** 2
-    return y0 - v * math.sin(theta) * t + 0.5 * ACC * t ** 2
 
 
 def calc_slice(fruit_trajectories_and_starting_times):
