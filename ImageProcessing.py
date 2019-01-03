@@ -8,6 +8,11 @@ import time
 import numpy as np
 from Fruit import Fruit
 
+"""
+the main image proccessing file - does the tracking and gets detection from FruitDetection.
+works in pixels coordinates - (0,0) is top left of the frame.
+"""
+
 # Minimal number of centers for fruit to create good fit.
 MINIMUM_NUM_OF_CENTERS_TO_EXTRACT = 4
 
@@ -31,7 +36,6 @@ FRUIT_TO_EXTRACT = []
 HISTS_THRESH = 0.2
 # Method to compare between histograms.
 HISTS_COMPARE_METHOD = cv2.HISTCMP_CORREL
-
 
 INTEGRATE_WITH_ALGORITHMICS = False
 
@@ -58,32 +62,39 @@ def draw_center(fruit, frame):
 
 
 def draw_trajectory(fruit, frame):
+    """
+    draws the predicted route of the fruit  and the centers we found for it
+    on the specific frame. used mostly for debugging.
+    :param fruit: a fruit object
+    :param frame: a single frame
+    :return:
+    """
+    # ---------get the centers and transfer to cm.-------#
     centers_cm = [Sc.pixel2cm(center) for center in fruit.centers]
-    x_coords = [fruit_loc[0] for fruit_loc in centers_cm]  # TODO this is a bug. need to make in a loop
-    y_coords = [fruit_loc[1] for fruit_loc in centers_cm]
-    t_coords = [fruit_loc[2] for fruit_loc in centers_cm]
+    x_coords = [center[0] for center in centers_cm]
+    y_coords = [center[1] for center in centers_cm]
+    t_coords = [center[2] for center in centers_cm]
     times_centers = range(len(x_coords))
 
-    # if fruit.trajectory:
-    # cv2.putText(frame, 'Lamed Tet', (200, 100), cv2.FONT_HERSHEY_DUPLEX, 1, (255, 255, 255), 2, cv2.LINE_AA)
-
+    # ------- get the trajectory of the fruit -------#
     T = 3
     dt = 0.02
     times_trajectory = range(-int(T / dt), int(T / dt))
     xy_cm = [[0 for _ in times_trajectory], [0 for _ in times_trajectory]]
     xy_pixels = [[0 for _ in times_trajectory], [0 for _ in times_trajectory]]
     route = fruit.trajectory.calc_trajectory()
-    # draw fitted trajectory
+
+    # -------draw fitted trajectory----------#
     for i in times_trajectory:
         xy_cm[0][i], xy_cm[1][i] = route(dt * i)
-        xy_pixels[1][i], xy_pixels[0][i],t = Sc.cm2pixel((xy_cm[0][i], xy_cm[1][i],dt*i))
-        cv2.circle(frame, (int(xy_pixels[0][i]),int(xy_pixels[1][i])), 2, (255, 0, 0), -1)
+        xy_pixels[1][i], xy_pixels[0][i], t = Sc.cm2pixel((xy_cm[0][i], xy_cm[1][i], dt * i))
+        cv2.circle(frame, (int(xy_pixels[0][i]), int(xy_pixels[1][i])), 2, (255, 0, 0), -1)
 
-    # draw the centers of the fruits
+    # ---------draw the centers of the fruits------------#
     xy_centers = [[0 for _ in times_centers], [0 for _ in times_centers]]
     for i in times_centers:
-        xy_centers[1][i], xy_centers[0][i],t = Sc.cm2pixel((x_coords[i], y_coords[i],dt*i))
-        cv2.circle(frame, (int(xy_centers[0][i]),int(xy_centers[1][i])), 5, (0, 0, 255), -1)
+        xy_centers[1][i], xy_centers[0][i], t = Sc.cm2pixel((x_coords[i], y_coords[i], dt * i))
+        cv2.circle(frame, (int(xy_centers[0][i]), int(xy_centers[1][i])), 5, (0, 0, 255), -1)
 
 
 def calculate_hist_window(window, img_hsv):
@@ -129,7 +140,8 @@ def calc_meanshift_all_fruits(fruits_info, img_hsv):
         # Calculated correlation between new histogram to previous one.
         correl = cv2.compareHist(new_hist, fruit.hist, HISTS_COMPARE_METHOD)
         # If the correlation is high enough we update the track window.
-        if (abs(correl) > HISTS_THRESH) and fruit.counter < MAX_NUM_OF_FRAMES_ON_SCREEN:  # threshold for hist resemblance.
+        if (abs(
+                correl) > HISTS_THRESH) and fruit.counter < MAX_NUM_OF_FRAMES_ON_SCREEN:  # threshold for hist resemblance.
             fruit.track_window = track_window
             fruit.counter += 1
         # Otherwise the fruit is gone and we remove it from fruits_info and add it to FRUIT_TO_EXTRACT
@@ -251,7 +263,7 @@ def run_detection(src, settings, live, crop, flip, calibrate):
     # Initialize fruits known.
     fruits_info = []
     # Creates new camera object.
-    camera = Camera(src, flip = flip, crop = crop, live = live, calibrate = calibrate)
+    camera = Camera(src, flip=flip, crop=crop, live=live, calibrate=calibrate)
     if camera.LIVE:
         camera.set_camera_settings(settings)
     # Allows user to click in oreder to capture background.
@@ -327,4 +339,5 @@ def draw(fruit, frame):
 
 
 if __name__ == '__main__':
-    run_detection(SAVED_VIDEO_NAME, Ci.IPAD_B4_MIDDLE_LIGHTS_OFF_CLOSED_DRAPES, live=False, crop=True, flip=False, calibrate=False)
+    run_detection(SAVED_VIDEO_NAME, Ci.IPAD_B4_MIDDLE_LIGHTS_OFF_CLOSED_DRAPES, live=False, crop=True, flip=False,
+                  calibrate=False)
