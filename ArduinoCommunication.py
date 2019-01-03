@@ -136,35 +136,35 @@ def get_angles_by_xy_and_dt(get_xy_by_t, dt):
     :param dt: discretization of time
     :return: (theta, phi), tuple of lists
     """
+    # sample function
     times = range(int(T / dt) + 1)
     # get xy by dt
     xy = [[0 for _ in times], [0 for _ in times]]
     for i in times:
         xy[0][i], xy[1][i] = get_xy_by_t(dt * i)
 
+    # plot function
     # plt.plot(xy[0], xy[1])
     # plt.show()
 
     # calc angles by xy
-    r = np.sqrt(np.power(xy[0], 2) + np.power(np.add(d, xy[1]), 2))
-    alpha = np.arctan2(np.add(d, xy[1]), xy[0])  # angle
-    # between r and x axis
+    r = np.sqrt(np.power(xy[0], 2) + np.power(np.add(d, xy[1]), 2))  # distance from main axis
+    alpha = np.arctan2(np.add(d, xy[1]), xy[0])  # angle between r and x axis
     a = np.add(-1, np.remainder(np.add(1, np.multiply(np.add(-math.pow(ARMS[0], 2) - math.pow(ARMS[1], 2),
                                                              np.power(r, 2)), 1.0 / (2 * ARMS[0] * ARMS[1]))), 2))
-    beta = np.arccos(a)
+    beta = np.arccos(a)  # angle between arms
     b = np.add(-1, np.remainder(np.add(1, np.multiply(np.add(math.pow(ARMS[0], 2) - math.pow(ARMS[1], 2),
                                                              np.power(r, 2)), 1.0 / (2 * ARMS[0] * r))), 2))
-    delta = np.arccos(b)
-    # angle between r and 1st link
-    theta = alpha + delta
-    phi = theta - beta
+    delta = np.arccos(b)  # angle between r and 1st arm
+    theta = alpha + delta  # angle between 1st arm and x axis
+    phi = theta - beta  # angle between 2nd arm and x axis
 
     return theta, phi
 
 
 def wait(t):
     """
-    Creates a delay in the code.
+    Creates a delay in the code. DO NOT USE WHILE THREADING, OR IT WILL GET STUCK!!!
     :param t: time to wait in ms.
     """
     start = time.perf_counter()
@@ -173,6 +173,12 @@ def wait(t):
 
 
 def encode_message(steps_theta, steps_phi):
+    """
+    Builds the message to send to Arduino according to protocol.
+    :param steps_theta: steps to move in theta motor
+    :param steps_phi: steps to move in phi motor
+    :return: '[steps-theta][steps-phi][sign-theta][sign-phi]'
+    """
     message = abs(steps_theta) * 10000 + abs(steps_phi) * 100
     if steps_theta < 0:
         message += 10
@@ -186,51 +192,48 @@ def encode_message(steps_theta, steps_phi):
     return message
 
 
-# theta - small motor.    phi - big motor
 def move_2_motors(steps_theta, steps_phi, inverse=False):  # WRITE MAXIMUM 41 STEPS PER SLICE
     """
     Sends commands to Arduino given the lists of steps.
     :param steps_theta: list of steps in theta
     :param steps_phi: list of steps in phi
+    :param inverse: True if this is an inverse slice, False otherwise
     """
 
     t1 = time.perf_counter()
     print("Divide trajectory to " + str(len(steps_theta)) + " parts")
-    for i in range(math.floor(len(steps_theta)/COMMAND_PACKAGE_SIZE)):
+
+    # send trajectory to Arduino
+    for i in range(math.floor(len(steps_theta)/COMMAND_PACKAGE_SIZE)):  # send messages in packages
         message = ""
         for j in range(COMMAND_PACKAGE_SIZE):
             index = i * COMMAND_PACKAGE_SIZE + j
             message += encode_message(steps_theta[index], steps_phi[index])
         ser.write(str.encode(message))
         time.sleep(0.001*COMMAND_PACKAGE_SIZE*WRITE_DELAY)
+    # send last package
     message = ""
-    for i in range(len(steps_theta) - len(steps_theta)%COMMAND_PACKAGE_SIZE, len(steps_theta)):
+    for i in range(len(steps_theta) - len(steps_theta) % COMMAND_PACKAGE_SIZE, len(steps_theta)):
         message += encode_message(steps_theta[i], steps_phi[i])
     ser.write(str.encode(message))
     time.sleep(0.001*COMMAND_PACKAGE_SIZE*(len(steps_theta) % COMMAND_PACKAGE_SIZE))
+
     t2 = time.perf_counter()
     print("time for writing: ", t2-t1)
     ser.write(str.encode(END_WRITING))
-    print("ended writing")
+
+    # if it is an inverse slice, wait to prevent drifting
     if inverse and time.perf_counter() < t1 + WAIT_FOR_STOP:
         time.sleep(0.001 * (WAIT_FOR_STOP + t1 - time.perf_counter()))
+
+    # commit slice
     print("CUT THEM!!!")
     ser.write(str.encode(START_SLICE))
-    print("END: " + str(time.perf_counter()))
-
+    # wait for slice to end
     time_of_slice = calc_time_of_slice(steps_theta, steps_phi)
     time.sleep(0.001 * time_of_slice)
-    print("START: " + str(time.perf_counter()))
-    # time_in_slice_start = 1000.0 * time.time()
-    # while 1000.0 * time.time() < time_in_slice_start + time_of_slice:  # make sure the arm isn't moving
-    #     pass
 
-    # read_from_serial = (ser.readline()).decode("utf-8")
-    # print(read_from_serial)
-    # while SLICE_END_SIGNAL not in read_from_serial:
-    #     read_from_serial = (ser.readline()).decode("utf-8")
-    #     print(read_from_serial)
-
+    # print steps made
     print("Theta steps:")
     print(str(steps_theta) + str(sum(steps_theta)))
     print("Phi steps:")
@@ -255,7 +258,7 @@ def invert_slice(steps_theta, steps_phi):
     """
     print("INVERT SLICE")
 
-    delta_theta, delta_phi = sum(steps_theta), sum(steps_phi)
+    delta_theta, delta_phi = sum(steps_theta), sum(steps_phi)  # total movement in theta and phi
     i_steps_theta, i_steps_phi = list(), list()
     while abs(delta_theta) > MAX_COMMAND_IN_INVERT or abs(delta_phi) > MAX_COMMAND_IN_INVERT:
         if abs(delta_theta) > MAX_COMMAND_IN_INVERT:
@@ -284,13 +287,10 @@ def calc_time_of_slice(steps_theta, steps_phi):
     :param steps_phi: steps of slice in phi
     :return: duration of given slice in ms
     """
-    steps_counter = 20
+    steps_counter = 20  # take spare
     for i in range(len(steps_theta)):
         steps_counter += abs(steps_theta[i]) + abs(steps_phi[i])
     time_of_slice = steps_counter * ONE_STEP_DELAY
-    for i in range(len(steps_theta)):
-        if steps_theta[i] == 0 and steps_phi[i] == 0:
-            time_of_slice += WAIT_FOR_STOP
     print("time of slice is supposed to be " + str(time_of_slice/1000) + " seconds")
     return time_of_slice
 
@@ -309,13 +309,13 @@ def calc_time_of_slice(steps_theta, steps_phi):
 # print(time.time()-start)
 
 if __name__ == '__main__':
-    pass
+    # ערס mode
     steps_theta_main = 36 * [-5]
     steps_phi_main = 36 * [0]
     move_2_motors(steps_theta_main, steps_phi_main)
-    start = time.perf_counter()
+    start_main = time.perf_counter()
     i_steps_theta_main, i_steps_phi_main = invert_slice(steps_theta_main, steps_phi_main)
-    while 1000.0*(time.perf_counter() - start) < WAIT_FOR_STOP:
+    while 1000.0*(time.perf_counter() - start_main) < WAIT_FOR_STOP:
         pass
     move_2_motors(i_steps_theta_main, i_steps_phi_main)
     wait(calc_time_of_slice(steps_theta_main, steps_phi_main))
