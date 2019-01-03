@@ -16,10 +16,14 @@ CROP = True
 FLIP = False
 CALIBRATE = False
 IMAGE_PROCESSING_ALGORITHMICS_INTEGRATION = False
-ALGORITHMICS_MECHANICS = False
+ALGORITHMICS_MECHANICS_INTEGRATION = False
 SIMULATION = False
 
-def run_detection(src, settings, live, crop, flip, calibrate):
+IMAGE_PROCESSING_FEATURES = [FLIP, CROP, LIVE, CALIBRATE]
+INTEGRATION = [IMAGE_PROCESSING_ALGORITHMICS_INTEGRATION, ALGORITHMICS_MECHANICS_INTEGRATION]
+
+def run_detection(src, settings, image_processing_features = IMAGE_PROCESSING_FEATURES,
+                  integration = INTEGRATION, simulation = SIMULATION):
     """
     Main function which runs.
     :param src: The source of the video (0 for live, video name for saved video).
@@ -30,12 +34,13 @@ def run_detection(src, settings, live, crop, flip, calibrate):
     :param calibrate: True if we want to use automatic calibration.
     """
     # Initiate algorithmics if integrated.
-    if IMAGE_PROCESSING_ALGORITHMICS_INTEGRATION:
-        Algo.init_everything()
+    if integration[0]:
+        Algo.init_everything(integrate_with_mechanics = integration[1], simulate = simulation)
     # Initialize fruits known.
     fruits_info = []
     # Creates new camera object.
-    camera = Camera(src, flip = flip, crop = crop, live = live, calibrate = calibrate)
+    camera = Camera(src, flip = image_processing_features[0], crop = image_processing_features[1],
+                    live = image_processing_features[2], calibrate = image_processing_features[3])
     if camera.LIVE:
         camera.set_camera_settings(settings)
     # Allows user to click in oreder to capture background.
@@ -77,5 +82,4 @@ def run_detection(src, settings, live, crop, flip, calibrate):
     # show_original(camera)
 
 if __name__ == '__main__':
-    run_detection(SAVED_VIDEO_NAME, Ci.IPAD_B4_MIDDLE_LIGHTS_OFF_CLOSED_DRAPES,
-                  live=False, crop=True, flip=False, calibrate=False)
+    run_detection(SAVED_VIDEO_NAME, Ci.IPAD_B4_MIDDLE_LIGHTS_OFF_CLOSED_DRAPES)
