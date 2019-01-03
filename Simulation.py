@@ -4,6 +4,10 @@ import time
 import math
 import matplotlib.pyplot as plt
 
+"""
+the simulation, simulates the motors and work in the same coordinate system.
+"""
+
 
 # ---------- CONSTANTS -------------
 # COLORS

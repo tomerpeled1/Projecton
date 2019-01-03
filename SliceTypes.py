@@ -1,6 +1,11 @@
 import math
 import Algorithmics
 
+"""
+this files inly create slices which are functions of t.
+"""
+
+
 #
 LINE_LENGTH = 10
 
@@ -36,7 +41,7 @@ def x_algorithmics_to_mechanics(x_algorithmics):
     :return: x coordinate in the Mechanics and simulation coordinate system: (0, 0) on bottom middle
             (where the base of the motor is).
     """
-    return x_algorithmics - SCREEN[0]/2
+    return x_algorithmics - SCREEN[0] / 2
 
 
 def slice_to_peak(arm_loc, fruit_trajectories_and_starting_times):
@@ -56,7 +61,7 @@ def slice_to_peak(arm_loc, fruit_trajectories_and_starting_times):
     chosen_trajectory, timer = chosen_fruit
     # the coordinates of the peak
     t_peak, (x_peak, y_peak) = chosen_trajectory.calc_peak()
-    # converting the int to the right5 coordinate system
+    # converting the int to the right coordinate system
     x_peak = x_algorithmics_to_mechanics(x_peak)
 
     def slice_trajectory(t):
@@ -123,11 +128,11 @@ def line_acceleration_trajectory(arm_loc, fruit_trajectories_and_starting_times)
         y = y_0
         y = t / T * d_a
         if t < t_a:
-            x = x_0 + 0.5 * acc * t**2
+            x = x_0 + 0.5 * acc * t ** 2
         elif t_a < t < T - t_a:
             x = x_0 + d_a + v * (t - t_a)
         elif t > T - t_a:
-            x = x_0 + d_a + v * (T - 2 * t_a) + v * (t - (T - t_a)) - 0.5 * acc * (t - (T - t_a))**2
+            x = x_0 + d_a + v * (T - 2 * t_a) + v * (t - (T - t_a)) - 0.5 * acc * (t - (T - t_a)) ** 2
 
         x_0 = -x_0
         v = -v
@@ -135,11 +140,11 @@ def line_acceleration_trajectory(arm_loc, fruit_trajectories_and_starting_times)
         acc = -acc
 
         if T < t < T + t_a:
-            x = x_0 + 0.5 * acc * (t - T)**2
+            x = x_0 + 0.5 * acc * (t - T) ** 2
         elif T + t_a < t < 2 * T - t_a:
             x = x_0 + d_a + v * (t - T - t_a)
         elif t > 2 * T - t_a:
-            x = x_0 + d_a + v * (T - 2 * t_a) + v * (t - T - (T - t_a)) - 0.5 * acc * (t - T - (T - t_a))**2
+            x = x_0 + d_a + v * (T - 2 * t_a) + v * (t - T - (T - t_a)) - 0.5 * acc * (t - T - (T - t_a)) ** 2
         return (x, y)
 
     return xy_by_t, None, None, None
@@ -148,27 +153,68 @@ def line_acceleration_trajectory(arm_loc, fruit_trajectories_and_starting_times)
 def complex_slice(arm_loc, fruit_trajectories_and_starting_times):
     """
 
-    :param arm_loc:
-    :param fruit_trajectories_and_starting_times:
-    :return:
+    :param arm_loc: the location of the pen - tuple (x, y) in cm.
+    :param fruit_trajectories_and_starting_times:the trajectories of the fruits
+    :return: function of (x, y) by t of the pen, None, None, None
     """
-    return (lambda t: tuple_add(tuple_add(arm_loc, (0, -2)),
-                                tuple_mul(2, (math.cos(2*math.pi*t*10), math.sin(2*math.pi*t*10))))), None, None, None
+
+    def ret_slice(t):
+        location = (math.cos(2 * math.pi * t * 10), math.sin(2 * math.pi * t * 10))
+        location = tuple_mul(2, location)
+        new_arm_loc = tuple_add(arm_loc, (0, -2))
+        return tuple_add(location, new_arm_loc)
+
+    # ---- this is the old lambda, for cases the new code does not work.-------#
+
+    # (lambda t: tuple_add(tuple_add(arm_loc, (0, -2)),
+    #                         tuple_mul(2, (
+    #                         math.cos(2 * math.pi * t * 10), math.sin(2 * math.pi * t * 10))))), None, None, None
+
+    return ret_slice, None, None, None
 
 
 def theta_slice(arm_loc, fruit_trajectories_and_starting_times):
+    """
+    :param arm_loc: the location of the pen - tuple (x, y) in cm.
+    :param fruit_trajectories_and_starting_times:the trajectories of the fruits
+    :return: function of (x, y) by t of the pen, None, None, None
+    """
     Algorithmics.on_screen_fruits = []
 
-    return (lambda t: (R*math.cos(math.pi / 3 + 2 * math.pi * (1-t)/6),
-                       R*math.sin(math.pi / 3 + 2 * math.pi * (1-t)/6) + r - d)),\
-           None, None, None
+    def ret_slice(t):
+        x_loc = R * math.cos(math.pi / 3 + 2 * math.pi * (1 - t) / 6)
+        y_loc = R * math.sin(math.pi / 3 + 2 * math.pi * (1 - t) / 6) + r - d
+        return (x_loc, y_loc)
+
+    # ---- this is the old lambda, for cases the new code does not work.-------#
+
+    # return (lambda t: (R * math.cos(math.pi / 3 + 2 * math.pi * (1 - t) / 6),
+    #                    R * math.sin(math.pi / 3 + 2 * math.pi * (1 - t) / 6) + r - d)), \
+    #        None, None, None
+
+    return ret_slice, None, None, None
 
 
 def radius_slice(arm_loc, fruit_trajectories_and_starting_times):
+    """
+    the slice that uses only theta - stupid and simple.
+    :param fruit_trajectories_and_starting_times:the trajectories of the fruits
+    :return: function of (x, y) by t of the pen, None, None, None
+    """
     Algorithmics.on_screen_fruits = []
-    theta_0 = math.acos(SCREEN[0]/(2*(R+r))) + 0.07
+    theta_0 = math.acos(SCREEN[0] / (2 * (R + r))) + 0.07
 
-    return (lambda t: tuple_mul((R+r),
-                                (math.cos(theta_0 + (math.pi - 2* theta_0) * (1 - t)),
-                                math.sin(theta_0 + (math.pi - 2* theta_0) * (1 - t))  - d/(R+r)))), \
-           None, None, fruit_trajectories_and_starting_times
+    def ret_slice(t):
+        # not normalized x and y
+        x_loc = math.cos(theta_0 + (math.pi - 2 * theta_0) * (1 - t))
+        y_loc = math.sin(theta_0 + (math.pi - 2 * theta_0) * (1 - t)) - d / (R + r)
+
+        return tuple_mul(r + R, (x_loc, y_loc))
+
+
+        # ---- this is the old lambda, for cases the new code does not work.-------#
+        # return (lambda t: tuple_mul((R + r),
+        #                             (math.cos(theta_0 + (math.pi - 2 * theta_0) * (1 - t)),
+        #                              math.sin(theta_0 + (math.pi - 2 * theta_0) * (1 - t)) - d / (R + r)))), \
+        #        None, None, fruit_trajectories_and_starting_times
+    return ret_slice, None,  None, fruit_trajectories_and_starting_times

@@ -8,6 +8,13 @@ import Simulation as slm
 from threading import Thread
 import threading
 
+"""
+this was SliceCreator. this file is the brain of the algoritmics - it gets data from image prosseccing 
+and generates slices (x and y locations) for arduino.
+the coordinates here is (begadol) (x,y) when the 0,0 is at bottom left of the flipped screen
+(for example, the parabula of fruits routes is smiling).
+"""
+
 # RELATIVE_ACC = 1.8
 #
 RELATIVE_ACC = 1.478 # from experiences we did it tracker program

@@ -6,6 +6,10 @@ import FruitDetection as Fd
 import time
 import cv2
 
+"""
+MAIN!!!!!!!!!
+"""
+
 SAVED_VIDEO_NAME = "sundayNoon.flv"
 LIVE = False
 CROP = True
