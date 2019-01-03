@@ -32,9 +32,9 @@ success = 0
 
 on_screen_fruits = []
 SIMULATE = False
-simulation_queue_lock = threading.Condition()
+slice_queue_lock = threading.Condition()
 simulation_thread = None
-simulation_queue = []
+slice_queue = []
 
 
 # CONVERTING FUNCTIONS
@@ -196,18 +196,18 @@ def update_and_slice(fruits):
     :param fruits:
     :return:
     """
-    global simulation_queue
-    global simulation_queue_lock
+    global slice_queue
+    global slice_queue_lock
     update_fruits(fruits)
-    if simulation_queue_lock.acquire(False):
+    if slice_queue_lock.acquire(False):
         if len(on_screen_fruits) > 0:
             slice = create_slice()
-            simulation_queue.append(slice)
-            print("Length of queue : " + str(len(simulation_queue)))
-            if (len(simulation_queue) == 2):
+            slice_queue.append(slice)
+            print("Length of queue : " + str(len(slice_queue)))
+            if (len(slice_queue) == 2):
                 print("x")
-        simulation_queue_lock.notify()
-        simulation_queue_lock.release()
+        slice_queue_lock.notify()
+        slice_queue_lock.release()
 
 
 def rms(array):
@@ -335,9 +335,9 @@ def get_pen_loc():
 
 def time_until_slice(fruit):
     """
-
-    :param fruit:
-    :return:
+    Calculates the time needs to be waited until slicing the fruit.
+    :param fruit: fruit to calculate when to slice.
+    :return: the time until the slice.
     """
     _, timer, t_peak = fruit
     return timer + t_peak - time.clock()
@@ -345,11 +345,7 @@ def time_until_slice(fruit):
 
 def init_info(frame_size, crop_size = CROP_SIZE, screen_size = SCREEN_SIZE):
     """
-
-    :param frame_size:
-    :param crop_size:
-    :param screen_size:
-    :return:
+    Initializes the sizes for the screen so that the algorithmics work properly.
     """
     global CROP_SIZE, FRAME_SIZE, SCREEN_SIZE
     CROP_SIZE = crop_size
@@ -359,12 +355,9 @@ def init_info(frame_size, crop_size = CROP_SIZE, screen_size = SCREEN_SIZE):
 
 def remove_sliced_fruits(fruits):
     """
-
-    :param fruits:
-    :return:
+    Remove fruits which have already been sliced.
+    :param fruits: list of fruits to remove from on_screen_fruits (sliced fruits are not on the screen anymore).
     """
-    # if len(fruits) != len(on_screen_fruits):
-    #     print("FUCK")
     for fruit in fruits:
         on_screen_fruits.remove(fruit)
     for fruit in on_screen_fruits:
@@ -373,31 +366,39 @@ def remove_sliced_fruits(fruits):
             on_screen_fruits.remove(fruit)
 
 
-def simulation_thread_run():
+def mechanics_thread_run():
     """
-
-    :return:
+    The function which runs in a different thread and executes the slices.
     """
-    global simulation_queue_lock
-    global simulation_queue
+    global slice_queue_lock
+    global slice_queue
     while True:
-        simulation_queue_lock.acquire()
-        while len(simulation_queue) == 0:
-            simulation_queue_lock.wait()
-        slice = simulation_queue[0]
-        simulation_queue.remove(slice)
+        # Unlocks access to the slice queue (slices waiting to be done).
+        slice_queue_lock.acquire()
+        # Waits for a slice to enter the queue.
+        while len(slice_queue) == 0:
+            slice_queue_lock.wait()
+        # Retrieves a slice for the queue.
+        slice = slice_queue[0]
+        slice_queue.remove(slice)
+        # Executes slice (still memory not unlocked so that we want start a new slice during the previous one).
         do_slice(slice)
-        simulation_queue_lock.release()
+        # Release the access to the memory so that we can enter new slices to queue.
+        slice_queue_lock.release()
 
 
-def init_everything():
+def init_everything(integrate_with_mechanics = INTEGRATE_WITH_MECHANICS, simulate = SIMULATE):
     """
-
-    :return:
+    Initializes the algorithmics module - opens a thread for the mechanics module.
     """
+    global INTEGRATE_WITH_MECHANICS
+    INTEGRATE_WITH_MECHANICS = integrate_with_mechanics
+    global SIMULATE
+    SIMULATE = simulate
+    # In case we want to integrate with mechanics (simulation or arduino) we must open a new thread for it.
     if INTEGRATE_WITH_MECHANICS:
         global simulation_thread
-        simulation_thread = Thread(target=simulation_thread_run)
+        simulation_thread = Thread(target=mechanics_thread_run)
         simulation_thread.start()
     else:
         pass
