@@ -12,17 +12,17 @@ MAIN!!!!!!!!!
 
 SAVED_VIDEO_NAME = "sundayNoon.flv"
 LIVE = False
-CROP = True
-FLIP = False
+CROP = False
+FLIP = True
 CALIBRATE = False
-IMAGE_PROCESSING_ALGORITHMICS_INTEGRATION = False
-ALGORITHMICS_MECHANICS_INTEGRATION = False
-SIMULATION = False
+IMAGE_PROCESSING_ALGORITHMICS_INTEGRATION = True
+ALGORITHMICS_MECHANICS_INTEGRATION = True
+SIMULATION = True
 
 IMAGE_PROCESSING_FEATURES = [FLIP, CROP, LIVE, CALIBRATE]
 INTEGRATION = [IMAGE_PROCESSING_ALGORITHMICS_INTEGRATION, ALGORITHMICS_MECHANICS_INTEGRATION]
 
-def run_detection(src, settings, image_processing_features = IMAGE_PROCESSING_FEATURES,
+def fruit_shaninja(src, settings, image_processing_features = IMAGE_PROCESSING_FEATURES,
                   integration = INTEGRATION, simulation = SIMULATION):
     """
     Main function which runs.
@@ -35,6 +35,7 @@ def run_detection(src, settings, image_processing_features = IMAGE_PROCESSING_FE
     """
     # Initiate algorithmics if integrated.
     if integration[0]:
+        Ip.init_everything(integrate_with_algorithmics= integration[0])
         Algo.init_everything(integrate_with_mechanics = integration[1], simulate = simulation)
     # Initialize fruits known.
     fruits_info = []
@@ -79,7 +80,7 @@ def run_detection(src, settings, image_processing_features = IMAGE_PROCESSING_FE
         if cv2.waitKey(1) == 27:
             break
     Ip.debug_with_buffer(buffer)
-    # show_original(camera)
+    # Ip.show_original(camera)
 
 if __name__ == '__main__':
-    run_detection(SAVED_VIDEO_NAME, Ci.IPAD_B4_MIDDLE_LIGHTS_OFF_CLOSED_DRAPES)
+    fruit_shaninja(SAVED_VIDEO_NAME, Ci.IPAD_B4_MIDDLE_LIGHTS_OFF_CLOSED_DRAPES)

@@ -37,7 +37,7 @@ dt_serial = WRITE_DELAY * 4    # time between 2 readings from serial in sec
 dt_motor = ONE_STEP_DELAY * 4    # time of writing to the serial in sec
 times_ideal = int(T / dt_motor)  # the size of the vectors for the simulation
 times_serial = int(T / dt_serial)     # the amount of different values for the
-TIME_TO_QUIT_SIMULATION = 10  # time to quit the simulation after finished in sec
+TIME_TO_QUIT_SIMULATION = 0.2  # time to quit the simulation after finished in sec
 
 
 # ---------- ALGORITHMIC FUNCTION ---------------
@@ -361,7 +361,7 @@ def run_simulation(func, fruits_trajectories_and_starting_times):
         if len(fruits_trajectories_and_starting_times[0]) > 0:
             first_trajectory_object = fruits_trajectories_and_starting_times[0][0]
             first_trajectory = first_trajectory_object.calc_trajectory()
-            first_trajectory_total_time = first_trajectory_object.calc_total_move_time()
+            first_trajectory_total_time = first_trajectory_object.calc_life_time()
             # do not have to get into the 2 else down
         else:
             first_trajectory = lambda t: (0, 0)

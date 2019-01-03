@@ -104,7 +104,7 @@ class Trajectory:
         t = self.v * math.sin(self.theta) / ACC
         return t, self.calc_trajectory()(t)
 
-    def calc_life_time(self):
+    def calc_life_time(self):  # TODO improve function to return the time until the fruit exits the screen
         """
         returns the time that the fruit gets to the symmetric location to the initial location (x0, y0)
         :return: double time in sec
@@ -242,7 +242,7 @@ def get_trajectory_by_fruit_locations(fruit_locs):
     # plt.show()
 
     # values between last location to first location
-    x_total = x_coords[-1] - x_coords[0]
+    x_total = x_coords[-1] - x_coords[0] if x_coords[-1] - x_coords[0] != 0 else 0.00001
     y_total = y_coords[-1] - y_coords[0]
     t_total = (len(x_coords) - 1) * TIME_BETWEEN_2_FRAMES
     r_total = math.sqrt(x_total ** 2 + y_total ** 2)
@@ -294,7 +294,7 @@ def get_trajectory_by_fruit_locations(fruit_locs):
     trajectory = Trajectory(x0, y0, v0, theta)
 
     # plot the trajectory
-    draw_trajectory_matplotlib(trajectory, x_coords, y_coords)
+    # draw_trajectory_matplotlib(trajectory, x_coords, y_coords)
 
     return trajectory
 
