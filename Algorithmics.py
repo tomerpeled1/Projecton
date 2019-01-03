@@ -32,12 +32,12 @@ simulation_queue = []
 
 # CONVERTING FUNCTIONS
 def pixel2cm(pix_loc):
-    '''
+    """
     :param pix_loc: a pixel in order (x,y).
     :return: (x coord of screen, y coord of screen) when we look at the screen from the opposite side.
             we look at the opposite side because the arm is looking at the screen from it's top
             and we look at it from the bottom
-    '''
+    """
     (j_coord_crop, i_coord_crop, t) = pix_loc
     i_coord_frame = FRAME_SIZE[0] - CROP_SIZE[0] + i_coord_crop
     j_coord_frame = FRAME_SIZE[1] / 2 - CROP_SIZE[1] / 2 + j_coord_crop
@@ -59,35 +59,96 @@ def cm2pixel(cm_loc):
 
 # TRAJECTORY CLASS
 class Trajectory:
+    """
+    class of fruit trajectory
+    """
     def __init__(self, x0, y0, v, theta):
+        """
+        initiates the parameters for the trajectory
+        :param x0: by the formula
+        :param y0: by the formula
+        :param v: by the formula
+        :param theta: by the formula
+        """
         self.x0 = x0
         self.y0 = y0
         self.v = v
         self.theta = theta
 
     def calc_trajectory(self):
-        return lambda t: (x_trajectory(t, self.x0, self.v, self.theta), y_trajectory(t, self.y0, self.v, self.theta))
+        """
+
+        :return:
+        """
+        def get_xy_by_t(t):
+            """
+
+            :param t:
+            :return:
+            """
+            x = self.x_trajectory(t, self.x0, self.v, self.theta)
+            y = self.y_trajectory(t, self.y0, self.v, self.theta)
+            return x, y
+
+        return get_xy_by_t
 
     def calc_peak(self):
+        """
+
+        :return:
+        """
         t = self.v * math.sin(self.theta) / ACC
         return t, self.calc_trajectory()(t)
 
     def calc_life_time(self):
+        """
+
+        :return:
+        """
         t = 2 * self.v * math.sin(self.theta) / ACC
         return t
 
     def trajectory_physics(self, x, x0, v, theta):
+        """
+
+        :param x:
+        :param x0:
+        :param v:
+        :param theta:
+        :return:
+        """
         return SCREEN_SIZE[0] - (x - x0) * math.tan(theta) + ACC * (x - x0) ** 2 / (2 * v ** 2 * math.cos(theta) ** 2)
 
     def x_trajectory(self, t, x0, v, theta):
+        """
+
+        :param t:
+        :param x0:
+        :param v:
+        :param theta:
+        :return:
+        """
         return x0 + v * math.cos(theta) * t
 
     def y_trajectory(self, t, y0, v, theta):
+        """
+
+        :param t:
+        :param y0:
+        :param v:
+        :param theta:
+        :return:
+        """
         # return SCREEN_SIZE[0] - v * math.sin(theta) * t + 0.5 * ACC * t ** 2
         return y0 - v * math.sin(theta) * t + 0.5 * ACC * t ** 2
 
 
 def update_fruits(fruits):
+    """
+
+    :param fruits:
+    :return:
+    """
     fruits_locs = [[pixel2cm(pix_loc) for pix_loc in fruit.centers] for fruit in fruits]
     centers = [[center for center in fruit.centers] for fruit in fruits]
     centers2 = [[cm2pixel(loc) for loc in fruit_locs] for fruit_locs in fruits_locs]
@@ -101,11 +162,20 @@ def update_fruits(fruits):
 
 
 def create_slice():
+    """
+
+    :return:
+    """
     return calc_slice(on_screen_fruits)
 
 
-def do_slice(slice):
-    parametrization, timer, t_peak, fruits_trajectories = slice
+def do_slice(slice_trajectory):
+    """
+
+    :param slice_trajectory:
+    :return:
+    """
+    parametrization, timer, t_peak, fruits_trajectories = slice_trajectory
     # time.sleep(time_until_slice(slice))
     if SIMULATE:
         slm.run_simulation(parametrization, fruits_trajectories)
@@ -114,6 +184,11 @@ def do_slice(slice):
 
 
 def update_and_slice(fruits):
+    """
+
+    :param fruits:
+    :return:
+    """
     global simulation_queue
     global simulation_queue_lock
     update_fruits(fruits)
@@ -130,7 +205,7 @@ def update_and_slice(fruits):
 
 def rms(array):
     """
-    calcs rms
+    calculates rms
     :return: root mean square
     """
     sum_squares = 0
@@ -142,12 +217,20 @@ def rms(array):
 
 
 def get_trajectory(fruit_locs):
+    """
+
+    :param fruit_locs:
+    :return:
+    """
 
     time_between_2_frames = 1.0 / CAMERA_FPS
 
     x_coords = [fruit_loc[0] for fruit_loc in fruit_locs]  # TODO this is a bug. need to make in a loop
     y_coords = [fruit_loc[1] for fruit_loc in fruit_locs]
     t_coords = [fruit_loc[2] for fruit_loc in fruit_locs]
+
+    # plt.plot(x_coords, y_coords)
+    # plt.show()
 
     x_total = x_coords[-1] - x_coords[0]
     y_total = y_coords[-1] - y_coords[0]
@@ -201,32 +284,7 @@ def get_trajectory(fruit_locs):
 
     v0 = v0_mean
 
-    # if len(x_coords) < 10:
-    #     v0 = r_total_real / (8 * time_between_2_frames)
-    # else:
-    #     v0 = r_total_real / t_total
-
-    # v0 = r_total_real / t_total
-
     trajectory = Trajectory(x0, y0, v0, theta)
-
-    # plt.plot(x_coords, y_coords)
-    # plt.show()
-
-    # global success
-    # global oops
-    # try:
-    #     popt, pcov = curve_fit(trajectory_physics, x_coords, y_coords)
-    #     print(popt[0], popt[1], popt[2])
-    #     print("success")
-    #     success += 1
-    # except:
-    #     popt = (0, 0, 0)
-    #     print("oops")
-    #     oops += 1
-    # print("fitted: ", success, "didn't fit: ", oops)
-    # x0_par, v_par, theta_par = popt
-    # trajectory = Trajectory(x0_par, v_par, theta_par)
 
     # ----------draw trajectory-------------- #
     T = 3
@@ -249,22 +307,43 @@ def get_trajectory(fruit_locs):
 
 
 def calc_slice(fruit_trajectories_and_starting_times):
+    """
+
+    :param fruit_trajectories_and_starting_times:
+    :return:
+    """
     # time.sleep(time_until_slice())
     # return SliceTypes.radius_slice(get_arm_loc(), fruit_trajectories_and_starting_times)
-    return SliceTypes.radius_slice(get_arm_loc(), fruit_trajectories_and_starting_times)
+    return SliceTypes.radius_slice(get_pen_loc(), fruit_trajectories_and_starting_times)
     # return None, None, None
 
 
-def get_arm_loc():
-    return -SCREEN_SIZE[1]/2+3, 3
+def get_pen_loc():
+    """
+
+    :return:
+    """
+    return -SCREEN_SIZE[1]/2+3, 3  # location (3cm, 3cm) from the bottom-left corner
 
 
 def time_until_slice(fruit):
+    """
+
+    :param fruit:
+    :return:
+    """
     _, timer, t_peak = fruit
     return timer + t_peak - time.clock()
 
 
 def init_info(frame_size, crop_size = CROP_SIZE, screen_size = SCREEN_SIZE):
+    """
+
+    :param frame_size:
+    :param crop_size:
+    :param screen_size:
+    :return:
+    """
     global CROP_SIZE, FRAME_SIZE, SCREEN_SIZE
     CROP_SIZE = crop_size
     FRAME_SIZE = frame_size
@@ -272,6 +351,11 @@ def init_info(frame_size, crop_size = CROP_SIZE, screen_size = SCREEN_SIZE):
 
 
 def remove_sliced_fruits(fruits):
+    """
+
+    :param fruits:
+    :return:
+    """
     # if len(fruits) != len(on_screen_fruits):
     #     print("FUCK")
     for fruit in fruits:
@@ -283,6 +367,10 @@ def remove_sliced_fruits(fruits):
 
 
 def simulation_thread_run():
+    """
+
+    :return:
+    """
     global simulation_queue_lock
     global simulation_queue
     while True:
@@ -296,6 +384,10 @@ def simulation_thread_run():
 
 
 def init_everything():
+    """
+
+    :return:
+    """
     if INTEGRATE_WITH_MECHANICS:
         global simulation_thread
         simulation_thread = Thread(target=simulation_thread_run)
