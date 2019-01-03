@@ -1,114 +1,35 @@
 import math
 import matplotlib.pyplot as plt
 import statistics as st
-# import cv2
-
-
 import SliceTypes
 import time
-from scipy.optimize import curve_fit
 import ArduinoCommunication
-import simulation_like_motor_commands as slm
+import Simulation as slm
 from threading import Thread
-from multiprocessing import Process  # TODO delete if isn't used
 import threading
 
-# RELATIVE_ACC = 1.7
-RELATIVE_ACC = 1.478 # from experiences we did
+# RELATIVE_ACC = 1.8
+RELATIVE_ACC = 1.478 # from experiences we did it tracker program
 CAMERA_FPS = 30
 ARM_DELAY = 1
 CROP_SIZE = (160, 480)  # (y,x)
 FRAME_SIZE = (480, 640)  # (y,x)
 SCREEN_SIZE = (12, 16)  # (y,x)
 ACC = RELATIVE_ACC * SCREEN_SIZE[0]
-INTEGRATE_WITH_MECHANICS = True
+INTEGRATE_WITH_MECHANICS = False
 
 # for hakab
 oops = 0
 success = 0
 
 on_screen_fruits = []
-SIMULATE = True
+SIMULATE = False
 simulation_queue_lock = threading.Condition()
 simulation_thread = None
 simulation_queue = []
 
 
-class Trajectory:
-    def __init__(self, x0, y0, v, theta):
-        self.x0 = x0
-        self.y0 = y0
-        self.v = v
-        self.theta = theta
-
-    def calc_trajectory(self):
-        return lambda t: (x_trajectory(t, self.x0, self.v, self.theta), y_trajectory(t, self.y0, self.v, self.theta))
-
-    def calc_peak(self):
-        t = self.v * math.sin(self.theta) / ACC
-        return t, self.calc_trajectory()(t)
-
-    def calc_life_time(self):
-        t = 2 * self.v * math.sin(self.theta) / ACC
-        return t
-
-    def calc_total_move_time(self):
-        return 2 * self.v * math.sin(self.theta) / ACC
-
-
-def update_fruits(fruits):
-    fruits_locs = [[pixel2cm(pix_loc) for pix_loc in fruit.centers] for fruit in fruits]
-    centers = [[center for center in fruit.centers] for fruit in fruits]
-    centers2 = [[cm2pixel(loc) for loc in fruit_locs] for fruit_locs in fruits_locs]
-    fruit_trajectories = [get_trajectory(fruit_locs) for fruit_locs in fruits_locs]
-    on_screen_fruits.extend([[fruit_trajectories[i], fruits[i].time_created] for i in range(len(fruits))])
-    # on_screen_fruits.extend(fruits)
-    fruits[:] = []
-
-    # fruit_trajectories = [get_trajectory(fruit_locs) for fruit_locs in fruits_locs]
-    # on_screen_fruits.extend([[fruit_trajectories[i], fruits[i].time_created] for i in range(len(fruits))])
-
-
-
-def create_slice():
-    return calc_slice(on_screen_fruits)
-
-
-def do_slice(slice):
-    parametrization, timer, t_peak, fruits_trajectories = slice
-    # time.sleep(time_until_slice(slice))
-    if SIMULATE:
-        slm.run_simulation(parametrization, fruits_trajectories)
-    else:
-        ArduinoCommunication.make_slice_by_trajectory(parametrization)
-
-
-# def create_and_do_slice():
-#     global lock
-#     #lock.acquire()
-#     print(3333333333333333333)
-#     gui_lock.acquire()
-#     slice = create_slice()
-#     p = Process(target=do_slice, args=(slice,))
-#     p.start()
-#     lock.release()
-
-
-def update_and_slice(fruits):
-    global simulation_queue
-    global simulation_queue_lock
-    update_fruits(fruits)
-    if simulation_queue_lock.acquire(False):
-        if len(on_screen_fruits) > 0:
-            slice = create_slice()
-            simulation_queue.append(slice)
-            print("Length of queue : " + str(len(simulation_queue)))
-            if (len(simulation_queue) == 2):
-                print("x")
-        simulation_queue_lock.notify()
-        simulation_queue_lock.release()
-
-
+# CONVERTING FUNCTIONS
 def pixel2cm(pix_loc):
     '''
     :param pix_loc: a pixel in order (x,y).
@@ -133,6 +54,77 @@ def cm2pixel(cm_loc):
     x_coord_frame = int(x_coord_screen * float(FRAME_SIZE[1]) / SCREEN_SIZE[1])
     y_coord_frame = int((1.0 - float(y_coord_screen / SCREEN_SIZE[0])) * FRAME_SIZE[0])
     return y_coord_frame, x_coord_frame, t
+
+
+# TRAJECTORY CLASS
+class Trajectory:
+    def __init__(self, x0, y0, v, theta):
+        self.x0 = x0
+        self.y0 = y0
+        self.v = v
+        self.theta = theta
+
+    def calc_trajectory(self):
+        return lambda t: (x_trajectory(t, self.x0, self.v, self.theta), y_trajectory(t, self.y0, self.v, self.theta))
+
+    def calc_peak(self):
+        t = self.v * math.sin(self.theta) / ACC
+        return t, self.calc_trajectory()(t)
+
+    def calc_life_time(self):
+        t = 2 * self.v * math.sin(self.theta) / ACC
+        return t
+
+    def trajectory_physics(self, x, x0, v, theta):
+        return SCREEN_SIZE[0] - (x - x0) * math.tan(theta) + ACC * (x - x0) ** 2 / (2 * v ** 2 * math.cos(theta) ** 2)
+
+    def x_trajectory(self, t, x0, v, theta):
+        return x0 + v * math.cos(theta) * t
+
+    def y_trajectory(self, t, y0, v, theta):
+        # return SCREEN_SIZE[0] - v * math.sin(theta) * t + 0.5 * ACC * t ** 2
+        return y0 - v * math.sin(theta) * t + 0.5 * ACC * t ** 2
+
+
+def update_fruits(fruits):
+    fruits_locs = [[pixel2cm(pix_loc) for pix_loc in fruit.centers] for fruit in fruits]
+    centers = [[center for center in fruit.centers] for fruit in fruits]
+    centers2 = [[cm2pixel(loc) for loc in fruit_locs] for fruit_locs in fruits_locs]
+    fruit_trajectories = [get_trajectory(fruit_locs) for fruit_locs in fruits_locs]
+    on_screen_fruits.extend([[fruit_trajectories[i], fruits[i].time_created] for i in range(len(fruits))])
+    # on_screen_fruits.extend(fruits)
+    fruits[:] = []
+
+    # fruit_trajectories = [get_trajectory(fruit_locs) for fruit_locs in fruits_locs]
+    # on_screen_fruits.extend([[fruit_trajectories[i], fruits[i].time_created] for i in range(len(fruits))])
+
+
+def create_slice():
+    return calc_slice(on_screen_fruits)
+
+
+def do_slice(slice):
+    parametrization, timer, t_peak, fruits_trajectories = slice
+    # time.sleep(time_until_slice(slice))
+    if SIMULATE:
+        slm.run_simulation(parametrization, fruits_trajectories)
+    else:
+        ArduinoCommunication.make_slice_by_trajectory(parametrization)
+
+
+def update_and_slice(fruits):
+    global simulation_queue
+    global simulation_queue_lock
+    update_fruits(fruits)
+    if simulation_queue_lock.acquire(False):
+        if len(on_screen_fruits) > 0:
+            slice = create_slice()
+            simulation_queue.append(slice)
+            print("Length of queue : " + str(len(simulation_queue)))
+            if (len(simulation_queue) == 2):
+                print("x")
+        simulation_queue_lock.notify()
+        simulation_queue_lock.release()
 
 
 def rms(array):
@@ -166,10 +158,8 @@ def get_trajectory(fruit_locs):
 
     r_total = math.sqrt(x_total**2 + y_total**2)
 
-    # x0 = st.mean(x_coords)
-    # y0 = st.mean(y_coords)
-    x0 = x_coords[-1]
-    y0 = y_coords[-1]
+    x0 = st.mean(x_coords)
+    y0 = st.mean(y_coords)
     if x_total == 0:  # to prevent division by zero
         x_total = 0.001
 
@@ -246,33 +236,21 @@ def get_trajectory(fruit_locs):
     for i in times:
         xy[0][i], xy[1][i] = route(dt * i)
 
+    # plt.plot.xlim(left, right)
 
-    # plt.plot(xy[0], xy[1], 'ro')
+    plt.plot(xy[0], xy[1], 'ro')
     # plt.show()
-    # plt.plot(x_coords, y_coords,'bo')
-    # plt.ylim(0, 13)
-    # plt.xlim(0, 16)
+    plt.plot(x_coords, y_coords,'bo')
+    plt.ylim(0, 13)
+    plt.xlim(0, 16)
     # plt.show()
     return trajectory
-
-
-def trajectory_physics(x, x0, v, theta):
-    return SCREEN_SIZE[0] - (x - x0) * math.tan(theta) + ACC * (x - x0) ** 2 / (2 * v ** 2 * math.cos(theta) ** 2)
-
-
-def x_trajectory(t, x0, v, theta):
-    return x0 + v * math.cos(theta) * t
-
-
-def y_trajectory(t, y0, v, theta):
-    # return SCREEN_SIZE[0] - v * math.sin(theta) * t + 0.5 * ACC * t ** 2
-    return y0 - v * math.sin(theta) * t + 0.5 * ACC * t ** 2
 
 
 def calc_slice(fruit_trajectories_and_starting_times):
     # time.sleep(time_until_slice())
     # return SliceTypes.radius_slice(get_arm_loc(), fruit_trajectories_and_starting_times)
-    return SliceTypes.slice_to_peak(get_arm_loc(), fruit_trajectories_and_starting_times)
+    return SliceTypes.radius_slice(get_arm_loc(), fruit_trajectories_and_starting_times)
     # return None, None, None
 
 
@@ -285,7 +263,7 @@ def time_until_slice(fruit):
     return timer + t_peak - time.clock()
 
 
-def init_info(crop_size, frame_size, screen_size):
+def init_info(frame_size, crop_size = CROP_SIZE, screen_size = SCREEN_SIZE):
     global CROP_SIZE, FRAME_SIZE, SCREEN_SIZE
     CROP_SIZE = crop_size
     FRAME_SIZE = frame_size
@@ -327,6 +305,5 @@ def init_everything():
 
 if __name__ == "__main__":
     slice_and_times = create_slice()
-    print("START: " + str(time.perf_counter()))
     while True:
         do_slice(slice_and_times)

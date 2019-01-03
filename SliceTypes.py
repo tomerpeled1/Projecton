@@ -1,5 +1,5 @@
 import math
-import SliceCreator
+import Algorithmics
 
 LINE_LENGTH = 10
 
@@ -46,7 +46,7 @@ def slice_to_peak(arm_loc, fruit_trajectories_and_starting_times):
         return x_slice, y_slice
 
     fruit_trajectories_and_starting_times_copy = fruit_trajectories_and_starting_times.copy()
-    SliceCreator.remove_sliced_fruits(chosen_fruits)
+    Algorithmics.remove_sliced_fruits(chosen_fruits)
     return slice, timer, t_peak, fruit_trajectories_and_starting_times_copy
 
 

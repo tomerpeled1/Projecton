@@ -3,6 +3,7 @@ from imutils.video import WebcamVideoStream
 import time
 from Calibrate import calibrate
 import SavedVideoWrapper
+import Algorithmics as sc
 
 LIGHT_LAB_SETTINGS = (215, 75, -7, 10)  # order is (saturation, gain, exposure, focus)
 TABLE_ABOVE_SETTINGS = (255, 100, -6, 10)  # order is (saturation, gain, exposure, focus)
@@ -18,15 +19,16 @@ IPAD_B4_MIDDLE_LIGHTS_OFF_CLOSED_DRAPES_2 = (255, 18, -6, 10)
 WHITE_BALANCE = True
 
 
-CALIBRATE = False
+
 
 
 class Camera:
-    def __init__(self, src=0, FLIP=True, CROP=False, LIVE=True):
+    def __init__(self, src=0, FLIP=True, CROP=False, LIVE=True, CALIBRATE=False):
         self.src = src
         self.FLIP = FLIP
         self.CROP = CROP
         self.LIVE = LIVE
+        self.CALIBRATE = CALIBRATE
         if self.LIVE:
             self.stream = WebcamVideoStream(src=src, name="Live Video").start()
         else:
@@ -35,15 +37,17 @@ class Camera:
         self.tr_crop_dimensions = []
         self.current = None
         self.buffer = []
+        self.MAX_SIZE_BUFFER = 500
 
     def read(self):
         frame = self.stream.read()
         frame = cv2.resize(frame, (640, 480))
         # if not self.LIVE:
         #     time.sleep(0.02)
-        if CALIBRATE:
+        if self.CALIBRATE:
             frame = self.crop_to_screen_size(frame)
-        self.current = frame.copy()
+        # self.current = frame.copy()
+        self.current = frame
         if (self.CROP):
             frame = self.crop_image(frame)
         if (self.FLIP):
@@ -80,7 +84,8 @@ class Camera:
             dif = cv2.subtract(to_return, current)
             dif = cv2.cvtColor(dif, cv2.COLOR_BGR2GRAY)
             if (cv2.countNonZero(dif) > 0):
-                self.buffer.append(self.current)
+                if (len(self.buffer) < self.MAX_SIZE_BUFFER):
+                    self.buffer.append(self.current)
                 return to_return
             else:
                 print("PYDF")
@@ -98,23 +103,15 @@ class Camera:
     def crop_to_screen_size(self, frame):
         frame = frame[self.tr_crop_dimensions[1]:self.bl_crop_dimensions[1],
                 self.bl_crop_dimensions[0]:self.tr_crop_dimensions[0]]
+        sc.init_info(frame.shape[:2])
         return frame
 
     def crop_image(self, frame):
         (height, width, depth) = frame.shape
-        new_h = int(height / 3)
-        new_w = int(width / 8)
         if self.FLIP:
-            # this is exactly for beesito
-            # frame = frame[int(height / 5)-10:int(new_h + height / 5)-10, new_w:7 * new_w]
-
-            # and for generic video:
-            # frame = cv2.resize(frame, None, fx=0.5, fy=0.5)
-            frame = frame[:new_h, new_w:7 * new_w]
+            frame = frame[:160, width//2 - 240 : width//2 + 240]
         elif not self.FLIP:
-            frame = frame[2 * new_h:height, new_w: 7 * new_w]
-            frame = cv2.resize(frame, (480,160))
-
+            frame = frame[height - 160 : width//2 - 240 : width//2 + 240]
         return frame
 
     def background_and_wait(self):
@@ -157,7 +154,7 @@ class Camera:
 
     def set_camera_settings(self, settings):
         self.set(settings, WHITE_BALANCE)
-        if CALIBRATE:
+        if self.CALIBRATE:
             frame = None
             while True:
                 frame = self.stream.read()

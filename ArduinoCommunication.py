@@ -11,37 +11,43 @@ import matplotlib.pyplot as plt
 
 
 # ------------- CONSTANTS --------------
-# board constants
-RADIUS = 15
 
-DIMS = (16, 12)  # (X,Y)
-ALPHA_MIN = (180/math.pi)*math.acos(DIMS[0]/(2.0*RADIUS))
-ALPHA_MAX = 180 - ALPHA_MIN
-STEPS_PER_REVOLUTION = 200
-STEPS_FRACTION = 8
-MINIMAL_ANGLE = 2 * np.pi / (STEPS_PER_REVOLUTION * STEPS_FRACTION)
-STEPS_IN_CUT = STEPS_PER_REVOLUTION / 360.0 * (ALPHA_MAX - ALPHA_MIN)
-ARMS = [15, 10]     # length of arm links in cm
-d = 18
-# time constants
-T = 1          # total time of slice - it is not real time but parametrization
-SERIAL_BPS = 19200
-BITS_PER_BYTE = 8
-LENGTH_OF_COMMAND = 6
-WRITE_DELAY = 1000/(SERIAL_BPS/BITS_PER_BYTE/LENGTH_OF_COMMAND)  # delay in ms after writing to prevent buffer overload
-# dt = 0.003      # the basic period of time of the simulation in sec
-# times = int(T / dt)  # the size of the vectors for the simulation
-TRAJECTORY_DIVISION_NUMBER = 20
-DT_DIVIDE_TRAJECTORY = float(T) / TRAJECTORY_DIVISION_NUMBER
+# MECHANICS CONSTANTS
+DIMS = (16.0, 12.0)  # (X,Y)
+STEPS_PER_REVOLUTION = 200  # number of full steps to make a full round
+STEPS_FRACTION = 8  # the number of steps to make a full step (full step is 1.8 degrees)
+MINIMAL_ANGLE = 2 * np.pi / (STEPS_PER_REVOLUTION * STEPS_FRACTION)  # the minimal angle of the motor in rad (it is
+# 1.8 degrees divided by the steps fraction)
+ARMS = [15.0, 10.0]  # length of arm links in cm
+d = 18.0  # distance between motor to screen in cm
+
+# SERIAL CONSTANTS
 END_WRITING = 'e'
-START_SLICE = 'd'
-WANTED_RPS = 0.6
-ONE_STEP_DELAY = 5.0 / WANTED_RPS / STEPS_FRACTION  # in ms
 SLICE_END_SIGNAL = 'z'
-WAIT_FOR_STOP = 50  # ms
+START_SLICE = 'd'
+LENGTH_OF_COMMAND = 6  # the length of a command to the serial that contains the number of steps for each motor and the
 COMMAND_PACKAGE_SIZE = 10  # number of commands to write at once
 MAX_COMMAND_IN_INVERT = 5
 
+# TIME CONSTANTS
+T = 1          # total time of slice - it is not real time but parametrization
+SERIAL_BPS = 115200  # the bit rate of reading and writing to the Serial
+BITS_PER_BYTE = 8  # the number of bits in one byte
+# direction of moving for each motor
+WRITE_DELAY = 1000/(SERIAL_BPS/BITS_PER_BYTE/LENGTH_OF_COMMAND)  # delay in ms after writing to prevent buffer overload
+TRAJECTORY_DIVISION_NUMBER = 20  # the number of parts that the trajectory of the arm is divided to
+DT_DIVIDE_TRAJECTORY = float(T) / TRAJECTORY_DIVISION_NUMBER
+WANTED_RPS = 0.6
+ONE_STEP_DELAY = 5.0 / WANTED_RPS / STEPS_FRACTION  # in ms
+WAIT_FOR_STOP = 50.0  # ms
+
+# not in use
+# RADIUS = 15
+# ALPHA_MIN = (180/math.pi)*math.acos(DIMS[0]/(2.0*RADIUS))
+# ALPHA_MAX = 180 - ALPHA_MIN
+# STEPS_IN_CUT = STEPS_PER_REVOLUTION / 360.0 * (ALPHA_MAX - ALPHA_MIN)
+# dt = 0.003      # the basic period of time of the simulation in sec
+# times = int(T / dt)  # the size of the vectors for the simulation
 
 try:
     ser = serial.Serial('com6', SERIAL_BPS)  # Create Serial port object
@@ -104,9 +110,8 @@ def make_slice_by_trajectory(get_xy_by_t):
     steps_theta = steps_theta_decimal.astype(int)
     steps_phi = steps_phi_decimal.astype(int)
     move_2_motors(steps_theta, steps_phi)
-    time.sleep(0.001 * WAIT_FOR_STOP)
     i_steps_theta, i_steps_phi = invert_slice(steps_theta, steps_phi)
-    move_2_motors(i_steps_theta, i_steps_phi)
+    move_2_motors(i_steps_theta, i_steps_phi, True)
 
 
 def get_angles_by_xy_and_dt(get_xy_by_t, dt):
@@ -173,7 +178,7 @@ def encode_message(steps_theta, steps_phi):
 
 
 # theta - small motor.    phi - big motor
-def move_2_motors(steps_theta, steps_phi):  # WRITE MAXIMUM 41 STEPS PER SLICE
+def move_2_motors(steps_theta, steps_phi, inverse=False):  # WRITE MAXIMUM 41 STEPS PER SLICE
     """
     Sends commands to Arduino given the lists of steps.
     :param steps_theta: list of steps in theta
@@ -193,18 +198,20 @@ def move_2_motors(steps_theta, steps_phi):  # WRITE MAXIMUM 41 STEPS PER SLICE
     for i in range(len(steps_theta) - len(steps_theta)%COMMAND_PACKAGE_SIZE, len(steps_theta)):
         message += encode_message(steps_theta[i], steps_phi[i])
     ser.write(str.encode(message))
-    time.sleep(0.001*COMMAND_PACKAGE_SIZE*(COMMAND_PACKAGE_SIZE%len(steps_theta)))
+    time.sleep(0.001*COMMAND_PACKAGE_SIZE*(len(steps_theta) % COMMAND_PACKAGE_SIZE))
     t2 = time.perf_counter()
     print("time for writing: ", t2-t1)
     ser.write(str.encode(END_WRITING))
     print("ended writing")
-    print("END: " + str(time.perf_counter()))
-    # time.sleep(2)
+    if inverse and time.perf_counter() < t1 + WAIT_FOR_STOP:
+        time.sleep(0.001 * (WAIT_FOR_STOP + t1 - time.perf_counter()))
     print("CUT THEM!!!")
     ser.write(str.encode(START_SLICE))
+    print("END: " + str(time.perf_counter()))
 
     time_of_slice = calc_time_of_slice(steps_theta, steps_phi)
     time.sleep(0.001 * time_of_slice)
+    print("START: " + str(time.perf_counter()))
     # time_in_slice_start = 1000.0 * time.time()
     # while 1000.0 * time.time() < time_in_slice_start + time_of_slice:  # make sure the arm isn't moving
     #     pass
