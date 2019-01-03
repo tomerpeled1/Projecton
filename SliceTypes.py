@@ -48,7 +48,7 @@ def slice_to_peak(arm_loc, fruit_trajectories_and_starting_times):
     """
     make straight line to the peak in a constant speed
     :param arm_loc: (x,y) of arm location
-    :param fruit_trajectories_and_starting_times: function of (x,y) by t
+    :param fruit_trajectories_and_starting_times: list of [function of (x,y) by t, and double starting time]
     :return: slice, timer, t_peak, fruit_trajectories_and_starting_times
     """
     x_arm_loc, y_arm_loc = arm_loc
@@ -70,6 +70,7 @@ def slice_to_peak(arm_loc, fruit_trajectories_and_starting_times):
         :param t: double time between 0 and 1
         :return: the location (x, y) of the pen in cm
         """
+        # TODO need to check the factor 2:
         x_slice = x_arm_loc + (x_peak - x_arm_loc) * t * 2
         y_slice = y_arm_loc + (y_peak - y_arm_loc) * t * 2
         return x_slice, y_slice
