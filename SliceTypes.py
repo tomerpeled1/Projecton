@@ -1,6 +1,7 @@
 import math
 import Algorithmics
 
+#
 LINE_LENGTH = 10
 
 r = 9.9

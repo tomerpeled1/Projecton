@@ -9,6 +9,7 @@ from threading import Thread
 import threading
 
 # RELATIVE_ACC = 1.8
+#
 RELATIVE_ACC = 1.478 # from experiences we did it tracker program
 CAMERA_FPS = 30
 ARM_DELAY = 1

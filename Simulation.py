@@ -7,6 +7,7 @@ import matplotlib.pyplot as plt
 
 # plot constants.
 import SliceTypes
+#
 
 WHITE = (255, 255, 255)
 BLACK = (0, 0, 0)
