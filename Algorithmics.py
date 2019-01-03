@@ -179,21 +179,23 @@ def do_slice(slice_trajectory):
 
 def update_and_slice(fruits):
     """
-
-    :param fruits:
-    :return:
+    Updates the fruits on the screen and than creates a slice and adds it to slice queue.
+    :param fruits: The fruits extracted by the image processing module.
     """
     global slice_queue
     global slice_queue_lock
+    # Updates the fruits on screen with the fruits extracted by the image processing module.
     update_fruits(fruits)
+    # If the access to slice queue is available, it means we are not in the middle of a slice and we can create
+    # a new one.
     if slice_queue_lock.acquire(False):
+        # If there are fruits on the screen we want to create a slice.
         if len(on_screen_fruits) > 0:
             slice = create_slice()
+            # Add the new slice to slice queue.
             slice_queue.append(slice)
-            print("Length of queue : " + str(len(slice_queue)))
-            if (len(slice_queue) == 2):
-                print("x")
         slice_queue_lock.notify()
+        # Release the lock on the slice queue.
         slice_queue_lock.release()
 
 
