@@ -1,7 +1,7 @@
 import VideoInterface as vi
 import FruitDetection as fd
 import RealTimeTracker as rtt
-import SliceCreator as sc
+import Algorithmics as sc
 import cv2
 import argparse
 import time

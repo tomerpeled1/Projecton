@@ -2,7 +2,7 @@ import FruitDetection as Fd
 import RealTimeTracker as Rtt
 from CameraInterface import Camera
 import CameraInterface as Ci
-import SliceCreator as Sc
+import Algorithmics as Sc
 import cv2
 import time
 import numpy as np

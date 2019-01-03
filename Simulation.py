@@ -10,9 +10,27 @@ BLACK = (0, 0, 0)
 BLUE = (0, 0, 255)
 RED = (255, 0, 0)
 
+# ---------- CONSTANTS -------------
+SCREEN = (16, 12)   # dimensions of 10'' screen
+ARMS = (15, 10)     # length of arm links in cm
+d = 18                  # distance from screen in cm
+STEPS_ROUND = 200   # steps of the motor for full round
+MINIMAL_ANGLE = 2 * np.pi / STEPS_ROUND  # the angle that the motors make in full step in radian
+T = 1               # time of one slice in sec
+dt_serial = 0.005    # time between 2 readings from serial in sec
+dt_motor = 0.0025    # time of writing to the serial in sec (this is the simulation dt)
+times_ideal = int(T / dt_motor)  # the size of the vectors for the simulation
+times_serial = int(T / dt_serial)     # the amount of different values for the
+
 
 # ---------- ALGORITHMIC FUNCTION ---------------
-def get_xy_by_t_const_acceleration(t):  # gets time in sec
+def get_xy_by_t_line_acceleration(t):  # gets time in sec
+    """
+    example of trajectory function that tells the arm to make a straight line with acceleration in the beginning and
+    the end of the line
+    :param t: time
+    :return: tuple (x, y)
+    """
     acc = 1800.0
     x_0 = -SCREEN[0] / 2
     y_0 = 0.8 * SCREEN[1]
@@ -28,12 +46,16 @@ def get_xy_by_t_const_acceleration(t):  # gets time in sec
     elif t_a < t < T - t_a:
         x = x_0 + d_a + v * (t - t_a)
     elif t > T - t_a:
-        x = x_0 + d_a + v * (T - 2 * t_a) - 0.5 * acc * math.pow(t - (T -
-                                                                      t_a), 2)
+        x = x_0 + d_a + v * (T - 2 * t_a) + v * (t - (T - t_a)) - 0.5 * acc * (t - (T - t_a)) ** 2
     return x, y
 
 
-def get_xy_by_t_simple(t):  # gets time in sec
+def get_xy_by_t_line_const_speed(t):  # gets time in sec
+    """
+    example of trajectory function that tells the arm to make a straight line with constant speed
+    :param t: time
+    :return: tuple (x, y)
+    """
     x_0 = -SCREEN[0] / 2
     y_0 = 0.5 * SCREEN[1]
 
@@ -45,6 +67,10 @@ def get_xy_by_t_simple(t):  # gets time in sec
 
 # ----------- PLOTS AND GRAPHS FUNCTIONS -----------
 def plot_screen(screen):
+    """
+    plots the lines for the tablet screen in the pygame simulation
+    :param screen: pygame screen object - pygame.display.set_mode((WIDTH, HEIGHT))
+    """
     draw_line([SCREEN[0] / 2, d], [SCREEN[0] * 3 / 2, d], screen)
     draw_line([SCREEN[0] / 2, d + SCREEN[1]], [SCREEN[0] * 3 / 2, d + SCREEN[1]], screen)
     draw_line([SCREEN[0] / 2, d], [SCREEN[0] / 2, d + SCREEN[1]], screen)
@@ -53,21 +79,46 @@ def plot_screen(screen):
 
 
 def draw_line(start_pos, end_pos, screen):
-    pygame.draw.line(screen, BLUE, [to_pixels(start_pos[0]), to_pixels(
-        start_pos[1])], [to_pixels(end_pos[0]), to_pixels(end_pos[1])], 1)
+    """
+    draws a line in the pygame simulation
+    :param start_pos: tuple (x, y)
+    :param end_pos: tuple (x, y)
+    :param screen: pygame screen object - pygame.display.set_mode((WIDTH, HEIGHT))
+    """
+    pygame.draw.line(screen, BLUE, [cm_to_pixels(start_pos[0]), cm_to_pixels(
+        start_pos[1])], [cm_to_pixels(end_pos[0]), cm_to_pixels(end_pos[1])], 1)
     return
 
 
 def draw_circle(pos, radius, screen):
-    pygame.draw.circle(screen, RED, [to_pixels(pos[0]), to_pixels(pos[1])],
+    """
+    draws a circle in the pygame simulation
+    :param pos: tuple (x, y)
+    :param radius: double
+    :param screen: pygame screen object - pygame.display.set_mode((WIDTH, HEIGHT))
+    """
+    pygame.draw.circle(screen, RED, [cm_to_pixels(pos[0]), cm_to_pixels(pos[1])],
                        radius, 1)
 
 
-def to_pixels(length):
+def cm_to_pixels(length):
+    """
+    returns the length in number of pixels
+    :param length: double in cm
+    :return: int - number of pixels
+    """
     return int(20 * length)
 
 
 def draw_graph(x, y, title, xlabel, ylabel):
+    """
+    draws a graph in matplotlib
+    :param x: vector for x axis
+    :param y: vector for y axis
+    :param title: string for title
+    :param xlabel: string for x axis lable
+    :param ylabel: string for y axis lable
+    """
     plt.plot(x, y)
     plt.title(title)
     plt.xlabel(xlabel)
@@ -75,15 +126,30 @@ def draw_graph(x, y, title, xlabel, ylabel):
     plt.show()
 
 
+WIDTH = cm_to_pixels(2 * SCREEN[0])
+HEIGHT = cm_to_pixels(2 * (SCREEN[1] + d))
+
+
 # ------------- CALCULATION FUNCTIONS ------------
-def modulo(a, n):
-    if a > 0:
-        return a % n
+def modulo_by_1(num):
+    """
+    makes a modulo by 1 that returns a positive number for positive parameter and a negative number for a negative
+    parameter
+    :param num: double
+    """
+    if num > 0:
+        return num % 1
     else:
-        return a % n - 1
+        return num % 1 - 1
 
 
 def get_angles_by_xy_and_dt(get_xy_by_t, dt):
+    """
+    returns theta and phi in intervals of dt by the function "get_xy_by_t"
+    :param get_xy_by_t: a function that gets a double t between 0 and 1 and returns tuple (x, y)
+    :param dt: interval to make theta and phi - double
+    :return: tuple (vector of theta, vector of phi)
+    """
     times = range(int(T / dt))
     # get xy by dt
     xy = [[0 for _ in times], [0 for _ in times]]
@@ -111,29 +177,68 @@ def get_angles_by_xy_and_dt(get_xy_by_t, dt):
 
 
 def make_slice_by_trajectory(get_xy_by_t):
-    theta, phi = get_angles_by_xy_and_dt(get_xy_by_t, dt_serial)
-    d_theta, d_phi = np.diff(theta), np.diff(phi)
+    """
+    makes a slice in the pygame simulation
+    :param get_xy_by_t: function that gets t (double between 0 and 1) and returns a tuple (x, y)
+    :return: tuple (theta vector, phi vector)
+    """
+    # get the vectors of theta and phi
+    theta_vector, phi_vector = get_angles_by_xy_and_dt(get_xy_by_t, dt_serial)
+
+    # calculate the steps for each motor
+    steps_theta, steps_phi = calc_steps_theta_and_steps_phi_by_theta_and_phi(theta_vector, phi_vector)
+
+    # print("steps theta: ")
+    # print(steps_theta)
+    # print("steps phi: ")
+    # print(steps_phi)
+
+    # get the theta vector and phi vector to show in simulation
+    theta_simulation, phi_simulation = duplicate_theta_and_phi_values_for_simulation(theta_vector, phi_vector,
+                                                                                     steps_theta, steps_phi)
+
+    return theta_simulation, phi_simulation
+
+
+def calc_steps_theta_and_steps_phi_by_theta_and_phi(theta_vector, phi_vector):
+    """
+    calculate the steps for each motor by theta and phi vectors
+    :param theta_vector: list of theta angles in dt interval
+    :param phi_vector: list of phi angles in dt interval
+    :return: tuple of 2 lists (steps for theta motor, steps for phi motor)
+    """
+    # get the subtractions of theta and phi
+    d_theta, d_phi = np.diff(theta_vector), np.diff(phi_vector)
+    # convert to steps units
     steps_theta_decimal, steps_phi_decimal = ((1 / MINIMAL_ANGLE) * d_theta), ((1 / MINIMAL_ANGLE) * d_phi)
+    # improve accuracy by adding the modulo 1 of the previous steps
     for i in range(times_serial-2):
-        steps_theta_decimal[i+1] += modulo(steps_theta_decimal[i], 1)
-        steps_phi_decimal[i+1] += modulo(steps_phi_decimal[i], 1)
+        steps_theta_decimal[i+1] += modulo_by_1(steps_theta_decimal[i])
+        steps_phi_decimal[i+1] += modulo_by_1(steps_phi_decimal[i])
+    # cast to int type
     steps_theta = steps_theta_decimal.astype(int)
     steps_phi = steps_phi_decimal.astype(int)
+    return steps_theta, steps_phi
 
-    print(steps_theta)
-    print('*********************')
-    print(steps_phi)
-    # steps_theta, steps_phi = ((1 / MINIMAL_ANGLE) * d_theta).astype(int), \
-    #                          ((1 / MINIMAL_ANGLE) * d_phi).astype(int)
 
+def duplicate_theta_and_phi_values_for_simulation(theta_vector, phi_vector, steps_theta, steps_phi):
+    """
+    returns theta vector and phi vector to show in simulation - with the dt of the simulation
+    :param theta_vector: list of theta angles - double list
+    :param phi_vector: list of phi angles - double list
+    :param steps_theta: steps for the theta motor - int list
+    :param steps_phi: steps for the phi motor - int list
+    :return: tuple of 2 lists (theta vector, phi vector) in the right dt interval
+    """
     # the vectors for running the simulation - in the ideal dt
     theta_simulation = [0 for _ in range(times_ideal)]
     phi_simulation = [0 for _ in range(times_ideal)]
 
     # initialize the first angles
-    theta_simulation[0] = theta[0]
-    phi_simulation[0] = phi[0]
+    theta_simulation[0] = theta_vector[0]
+    phi_simulation[0] = phi_vector[0]
 
+    # make the delay between 2 moves - the delay is according to the time left to fill the dt_serial
     angle_move_index = 0
     times_ratio = int(times_ideal / times_serial)
     for i in range(times_ideal-1):
@@ -156,44 +261,45 @@ def make_slice_by_trajectory(get_xy_by_t):
                 theta_simulation[i + 1] = theta_simulation[i]
             if phi_simulation[i + 1] == 0:
                 phi_simulation[i + 1] = phi_simulation[i]
+
     return theta_simulation, phi_simulation
 
 
 def make_ideal_slice_by_trajectory(get_xy_by_t):
+    """
+    returns the theta vector and the phi vector according to the function and the dt of the simulation
+    :param get_xy_by_t: a function that gets a double t between 0 and 1 and returns tuple (x, y)
+    :return: tuple of 2 lists (theta vector, phi vector) in the right dt interval
+    """
     theta, phi = get_angles_by_xy_and_dt(get_xy_by_t, dt_motor)
     return theta, phi
 
 
 def xy_by_theta_phi(theta, phi, x_0):
+    """
+    returns the location in (x, y) according to the location in (theta, phi) by the trigonometric connection - this
+    is the location of the pen (the end of the 2nd arm)
+    :param theta: double
+    :param phi: double
+    :param x_0: double
+    :return: tuple of doubles (x, y)
+    """
     x = x_0 + ARMS[0] * np.cos(theta) + ARMS[1] * np.cos(phi)
     y = ARMS[0] * np.sin(theta) + ARMS[1] * np.sin(phi)
     return x, y
 
 
 def xy_by_theta(theta, x_0):
+    """
+    returns the location in (x, y) according to the location in (theta) by the trigonometric connection - this
+    is the location of the link (the end of the 1st arm)
+    :param theta: double
+    :param x_0: double
+    :return: tuple of doubles (x, y)
+    """
     x = x_0 + ARMS[0] * np.cos(theta)
     y = ARMS[0] * np.sin(theta)
     return x, y
-
-
-# ---------- CONSTANTS -------------
-SCREEN = (16, 12)   # dimensions of 10'' screen
-ARMS = (15, 10)     # length of arm links in cm
-# density = 7         # gr/cm
-# link_mass = 20      # mass of link in gr
-# pen_mass = 10       # mass of end in gr
-d = 18                  # distance from screen in cm
-WIDTH = to_pixels(2 * SCREEN[0])
-HEIGHT = to_pixels(2 * (SCREEN[1] + d))
-# MOTOR_SPEED = 50    # angular speed of motor in rpm
-STEPS_ROUND = 200   # steps of the motor for full round
-MINIMAL_ANGLE = 2 * np.pi / STEPS_ROUND
-T = 1               # time of one slice in sec
-dt_serial = 0.005    # time between 2 readings from serial in sec
-dt_motor = 0.0025    # time of writing to the serial in sec
-times_ideal = int(T / dt_motor)  # the size of the vectors for the simulation
-times_serial = int(T / dt_serial)     # the amount of different values for the
-# real solution
 
 
 # ------------- CALCULATE LOCATIONS -------------
@@ -216,16 +322,18 @@ def run_simulation(func, fruits_trajectories):
     y_ideal_vector = [0 for _ in range(times_ideal)]
     x_practical_vector = [0 for _ in range(times_ideal)]
     y_practical_vector = [0 for _ in range(times_ideal)]
-    time_vector = [dt_motor * i for i in range(times_ideal)]  # TODO why is it here? delete if isn't used.
 
     # loop of plot
     for i in range(times_ideal):
+        # quiting option
         event = pygame.event.poll()
         if event.type == pygame.QUIT:
-            running = 0  # TODO why is it here? delete of isn't used.
+            pygame.quit()
 
+        # plotting the screen
         screen.fill(WHITE)
         plot_screen(screen)
+
         # ideal locations
         x_ideal, y_ideal = xy_by_theta_phi(theta_ideal[i], phi_ideal[i], x_0)
         x_ideal_vector[i], y_ideal_vector[i] = x_ideal, y_ideal
@@ -248,12 +356,15 @@ def run_simulation(func, fruits_trajectories):
 
         # draw fruits locations
 
-
+        # display the simulation
         pygame.display.flip()
 
+        # sleep for the simulation dt (dt_motor is the simulation dt)
         time.sleep(dt_motor)
     time.sleep(2)
     pygame.display.quit()
+
+    # GRAPHS PLOTTING
     # draw_graph(x_ideal_vector, y_ideal_vector, "ideal", "x", "y")
     # draw_graph(x_practical_vector, y_practical_vector, "practical", "x", "y")
 
