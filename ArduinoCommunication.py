@@ -1,3 +1,7 @@
+"""
+Takes care of communication with Arduino through Serial, including quantization of slice.
+"""
+
 import serial
 from serial import SerialException
 import math
@@ -16,30 +20,31 @@ import matplotlib.pyplot as plt
 DIMS = (16.0, 12.0)  # (X,Y)
 STEPS_PER_REVOLUTION = 200  # number of full steps to make a full round
 STEPS_FRACTION = 8  # the number of steps to make a full step (full step is 1.8 degrees)
-MINIMAL_ANGLE = 2 * np.pi / (STEPS_PER_REVOLUTION * STEPS_FRACTION)  # the minimal angle of the motor in rad (it is
+MINIMAL_ANGLE = 2 * np.pi / (STEPS_PER_REVOLUTION * STEPS_FRACTION)  # the minimal angle step of the motor in rad (it is
 # 1.8 degrees divided by the steps fraction)
 ARMS = [15.0, 10.0]  # length of arm links in cm
-d = 18.0  # distance between motor to screen in cm
+d = 18.0  # distance from motor to screen in cm
 
 # SERIAL CONSTANTS
 END_WRITING = 'e'
 SLICE_END_SIGNAL = 'z'
 START_SLICE = 'd'
 LENGTH_OF_COMMAND = 6  # the length of a command to the serial that contains the number of steps for each motor and the
-COMMAND_PACKAGE_SIZE = 10  # number of commands to write at once
-MAX_COMMAND_IN_INVERT = 5
+SERIAL_BUFFER_SIZE = 64  # in bytes
+COMMAND_PACKAGE_SIZE = math.floor(SERIAL_BUFFER_SIZE/LENGTH_OF_COMMAND)  # number of commands to write at once
+MAX_COMMAND_IN_INVERT = 5  # number of steps to move at every command in inverse slice
 
 # TIME CONSTANTS
-T = 1          # total time of slice - it is not real time but parametrization
+T = 1.0  # max value of parameter at slice
 SERIAL_BPS = 115200  # the bit rate of reading and writing to the Serial
 BITS_PER_BYTE = 8  # the number of bits in one byte
 # direction of moving for each motor
 WRITE_DELAY = 1000/(SERIAL_BPS/BITS_PER_BYTE/LENGTH_OF_COMMAND)  # delay in ms after writing to prevent buffer overload
 TRAJECTORY_DIVISION_NUMBER = 20  # the number of parts that the trajectory of the arm is divided to
-DT_DIVIDE_TRAJECTORY = float(T) / TRAJECTORY_DIVISION_NUMBER
-WANTED_RPS = 0.6
+DT_DIVIDE_TRAJECTORY = float(T) / TRAJECTORY_DIVISION_NUMBER  # size of step in parameter
+WANTED_RPS = 0.6  # speed of motors in revolutions per second
 ONE_STEP_DELAY = 5.0 / WANTED_RPS / STEPS_FRACTION  # in ms
-WAIT_FOR_STOP = 50.0  # ms
+WAIT_FOR_STOP = 50.0  # time to wait after slice until committing invert slice in ms
 
 # not in use
 # RADIUS = 15
@@ -85,7 +90,7 @@ def get_xy(t):  # gets time in sec
 # ----------- SLICE FUNCTIONS ----------------
 def modulo(a, n):
     """
-    Fixed modulo function (TODO add explanation)
+    Fixed modulo function
     :param a: first argument
     :param n: second argument
     :return: fixed a % n
@@ -96,19 +101,29 @@ def modulo(a, n):
         return a % n - 1
 
 
+def quantize_trajectory(get_xy_by_t):
+    """
+    Samples the continuous get_xy_by_t to calculate steps_theta and steps_phi
+    :param get_xy_by_t: continuous function given from algorithmic module
+    :return: steps_theta, steps_phi, lists of steps to make in each motor
+    """
+    theta, phi = get_angles_by_xy_and_dt(get_xy_by_t, DT_DIVIDE_TRAJECTORY)
+    d_theta, d_phi = np.diff(theta), np.diff(phi)
+    steps_theta_decimal, steps_phi_decimal = ((1 / MINIMAL_ANGLE) * d_theta), ((1 / MINIMAL_ANGLE) * d_phi)
+    for i in range(len(theta) - 2):
+        steps_theta_decimal[i + 1] += modulo(steps_theta_decimal[i], 1)
+        steps_phi_decimal[i + 1] += modulo(steps_phi_decimal[i], 1)
+    steps_theta = steps_theta_decimal.astype(int)
+    steps_phi = steps_phi_decimal.astype(int)
+    return steps_theta, steps_phi
+
+
 def make_slice_by_trajectory(get_xy_by_t):
     """
     Sends commands to Arduino according to the given route from the algorithmic module.
     :param get_xy_by_t: function given form algorithmic module
     """
-    theta, phi = get_angles_by_xy_and_dt(get_xy_by_t, DT_DIVIDE_TRAJECTORY)
-    d_theta, d_phi = np.diff(theta), np.diff(phi)
-    steps_theta_decimal, steps_phi_decimal = ((1 / MINIMAL_ANGLE) * d_theta), ((1 / MINIMAL_ANGLE) * d_phi)
-    for i in range(len(theta)-2):
-        steps_theta_decimal[i+1] += modulo(steps_theta_decimal[i], 1)
-        steps_phi_decimal[i+1] += modulo(steps_phi_decimal[i], 1)
-    steps_theta = steps_theta_decimal.astype(int)
-    steps_phi = steps_phi_decimal.astype(int)
+    steps_theta, steps_phi = quantize_trajectory(get_xy_by_t)
     move_2_motors(steps_theta, steps_phi)
     i_steps_theta, i_steps_phi = invert_slice(steps_theta, steps_phi)
     move_2_motors(i_steps_theta, i_steps_phi, True)
@@ -121,12 +136,6 @@ def get_angles_by_xy_and_dt(get_xy_by_t, dt):
     :param dt: discretization of time
     :return: (theta, phi), tuple of lists
     """
-    if get_xy_by_t is None:  # make slice in theta only
-        delta_theta = math.pi - 2 * math.acos(DIMS[0]/(2*ARMS[0]))
-        steps_theta = [math.pi - math.acos(DIMS[0]/(2*ARMS[0])) - i*(0.1*delta_theta) for i in range(11)]
-        steps_phi = len(steps_theta) * [0]
-        return steps_theta, steps_phi
-
     times = range(int(T / dt) + 1)
     # get xy by dt
     xy = [[0 for _ in times], [0 for _ in times]]
@@ -301,12 +310,12 @@ def calc_time_of_slice(steps_theta, steps_phi):
 
 if __name__ == '__main__':
     pass
-    steps_theta = 36*[-5]
-    steps_phi = 36*[0]
-    move_2_motors(steps_theta, steps_phi)
+    steps_theta_main = 36 * [-5]
+    steps_phi_main = 36 * [0]
+    move_2_motors(steps_theta_main, steps_phi_main)
     start = time.perf_counter()
-    i_steps_theta, i_steps_phi = invert_slice(steps_theta, steps_phi)
+    i_steps_theta_main, i_steps_phi_main = invert_slice(steps_theta_main, steps_phi_main)
     while 1000.0*(time.perf_counter() - start) < WAIT_FOR_STOP:
         pass
-    move_2_motors(i_steps_theta, i_steps_phi)
-    wait(calc_time_of_slice(steps_theta, steps_phi))
+    move_2_motors(i_steps_theta_main, i_steps_phi_main)
+    wait(calc_time_of_slice(steps_theta_main, steps_phi_main))
