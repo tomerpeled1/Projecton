@@ -310,6 +310,7 @@ def debug_with_buffer(buffer):
         elif x == 50:  # '2' key
             i += 1
 
+
 def show_original(camera):
     """
     Show original frames taken by camera.
