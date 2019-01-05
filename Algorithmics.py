@@ -202,7 +202,7 @@ def rms(array):
 
 def get_r_coords_by_xy_coords(x_coords, y_coords):
     """
-
+    TODO complete documentation
     :param x_coords:
     :param y_coords:
     :return:
@@ -222,7 +222,7 @@ def get_trajectory_by_fruit_locations(fruit_locs):
 
     x_coords = [fruit_loc[0] for fruit_loc in fruit_locs]
     y_coords = [fruit_loc[1] for fruit_loc in fruit_locs]
-    t_coords = [fruit_loc[2] for fruit_loc in fruit_locs]  # times from image processing are not accurate for sure
+    # t_coords = [fruit_loc[2] for fruit_loc in fruit_locs]  # times from image processing are not accurate for sure
     r_coords = get_r_coords_by_xy_coords(x_coords, y_coords)
 
     # plot the given fruit locations (not the trajectory)
@@ -231,15 +231,15 @@ def get_trajectory_by_fruit_locations(fruit_locs):
 
     # values between last location to first location
     x_total = x_coords[-1] - x_coords[0] if x_coords[-1] - x_coords[0] != 0 else 0.00001
-    y_total = y_coords[-1] - y_coords[0]
-    t_total = (len(x_coords) - 1) * TIME_BETWEEN_2_FRAMES
-    r_total = math.sqrt(x_total ** 2 + y_total ** 2)
+    # y_total = y_coords[-1] - y_coords[0]
+    # t_total = (len(x_coords) - 1) * TIME_BETWEEN_2_FRAMES
+    # r_total = math.sqrt(x_total ** 2 + y_total ** 2)
 
     # *****options for x0 and y0 values*****
     x0_mean = st.mean(x_coords) if x_total != 0 else 0.001  # to prevent division by zero
     y0_mean = st.mean(y_coords)
-    x0_last = x_coords[-1]
-    y0_last = y_coords[-1]
+    # x0_last = x_coords[-1]
+    # y0_last = y_coords[-1]
     x0 = x0_mean
     y0 = y0_mean
 
@@ -252,29 +252,29 @@ def get_trajectory_by_fruit_locations(fruit_locs):
             delta_x = 0.001
         theta_array[i] = math.pi - math.atan((y_coords[i + 1] - y_coords[i]) / delta_x)
     theta_median = st.median(theta_array)  # best theta
-    theta_mean = st.mean(theta_array)
-    theta_start_to_end = math.pi - math.atan(y_total / x_total)
+    # theta_mean = st.mean(theta_array)
+    # theta_start_to_end = math.pi - math.atan(y_total / x_total)
     theta = theta_median
 
     # *****options for v0 value*****
-    r_total_real = abs((SCREEN_SIZE[0] / 3 / math.sin(theta)))  # 3 is because the screen is croped to third
+    # r_total_real = abs((SCREEN_SIZE[0] / 3 / math.sin(theta)))  # 3 is because the screen is croped to third
     v_array = [0 for _ in range(len(r_coords))]
     vy_array = [0 for _ in range(len(r_coords))]
     for i in range(len(r_coords)):
         v_array[i] = r_coords[i] / TIME_BETWEEN_2_FRAMES
         vy_array[i] = (y_coords[i + 1] - y_coords[i]) / TIME_BETWEEN_2_FRAMES
 
-    v0_median = st.median(v_array)
+    # v0_median = st.median(v_array)
     v0_mean = st.mean(v_array)
-    v0_rms = rms(v_array)
-    vy_median = st.median(vy_array)
-    vy_mean = st.mean(vy_array)
+    # v0_rms = rms(v_array)
+    # vy_median = st.median(vy_array)
+    # vy_mean = st.mean(vy_array)
 
-    v0_by_vy_end_to_end = y_total / t_total / math.sin(theta)
-    v0_by_vy_mean = vy_mean / math.sin(theta)
-    v0_by_vy_median = vy_median / math.sin(theta)
-    v0_stupid = r_total_real / (10 * TIME_BETWEEN_2_FRAMES)
-    v0_start_to_end = r_total / t_total
+    # v0_by_vy_end_to_end = y_total / t_total / math.sin(theta)
+    # v0_by_vy_mean = vy_mean / math.sin(theta)
+    # v0_by_vy_median = vy_median / math.sin(theta)
+    # v0_stupid = r_total_real / (10 * TIME_BETWEEN_2_FRAMES)
+    # v0_start_to_end = r_total / t_total
 
     v0 = v0_mean
 
@@ -294,12 +294,12 @@ def draw_trajectory_matplotlib(trajectory, x_coords, y_coords):
     :param x_coords: x values of 1 fruit
     :param y_coords: y values of 1 fruit
     """
-    T = 3
+    t_tot = 3
     dt = 0.1
     x_lim = 13
     y_lim = 16
 
-    times = range(-int(T / dt), int(T / dt))
+    times = range(-int(t_tot / dt), int(t_tot / dt))
     xy = [[0 for _ in times], [0 for _ in times]]
     route = trajectory.calc_trajectory()
     for i in times:
@@ -329,7 +329,7 @@ def get_pen_loc():
     x_location = -SCREEN_SIZE[1] / 2 + 3
     y_location = 3
     return x_location, y_location
-    return -SCREEN_SIZE[1]/2+3, 3  # location (3cm, 3cm) from the bottom-left corner
+    # return -SCREEN_SIZE[1]/2+3, 3  # location (3cm, 3cm) from the bottom-left corner
 
 
 def time_until_slice(fruit):
@@ -378,17 +378,19 @@ def mechanics_thread_run():
         while len(slice_queue) == 0:
             slice_queue_lock.wait()
         # Retrieves a slice for the queue.
-        slice = slice_queue[0]
-        slice_queue.remove(slice)
+        next_slice = slice_queue[0]
+        slice_queue.remove(next_slice)
         # Executes slice (still memory not unlocked so that we want start a new slice during the previous one).
-        do_slice(slice)
+        do_slice(next_slice)
         # Release the access to the memory so that we can enter new slices to queue.
         slice_queue_lock.release()
 
 
-def init_everything(integrate_with_mechanics = INTEGRATE_WITH_MECHANICS, simulate = SIMULATE):
+def init_everything(integrate_with_mechanics=INTEGRATE_WITH_MECHANICS, simulate=SIMULATE):
     """
     Initializes the algorithmics module - opens a thread for the mechanics module.
+    :param integrate_with_mechanics: boolean that decides weather to integrate with mechanics or not.
+    :param simulate: boolean that decides weather to activate simulation or not.
     """
     global INTEGRATE_WITH_MECHANICS
     INTEGRATE_WITH_MECHANICS = integrate_with_mechanics

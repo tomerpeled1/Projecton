@@ -1,9 +1,12 @@
+"""
+Takes care of camera settings and interface.
+"""
+
 import cv2
 from imutils.video import WebcamVideoStream
-import time
-from Calibrate import calibrate
+from Calibrate import calibrate as calib
 import SavedVideoWrapper
-import Algorithmics as sc
+import Algorithmics as Sc
 
 # Settings for camera in projecton lab when lights on.
 LIGHT_LAB_SETTINGS = (215, 75, -7, 10)  # order is (saturation, gain, exposure, focus)
@@ -23,19 +26,16 @@ IPAD_B4_MIDDLE_LIGHTS_OFF_CLOSED_DRAPES_2 = (255, 18, -6, 10)
 WHITE_BALANCE = True
 
 
-
-
-
 class Camera:
 
-    def __init__(self, src=0, flip = True, crop = False, live = True, calibrate = False):
+    def __init__(self, src=0, flip=True, crop=False, live=True, calibrate=False):
         """
         Constructor for camera object.
         :param src: The source for the camera. 0 for live and video name for saved video.
-        :param FLIP: True if image needs to be flipped.
-        :param CROP: True if image needs to be cropped.
-        :param LIVE: True if live camera is on.
-        :param CALIBRATE: Feature to calibrate the tablet. True if we want to use the feature.
+        :param flip: True if image needs to be flipped.
+        :param crop: True if image needs to be cropped.
+        :param live: True if live camera is on.
+        :param calibrate: Feature to calibrate the tablet. True if we want to use the feature.
         """
         self.src = src
         self.FLIP = flip
@@ -128,9 +128,9 @@ class Camera:
         :return: The frame cropped with the calibration dimensions.
         """
         frame = frame[self.tr_crop_dimensions[1]:self.bl_crop_dimensions[1],
-                self.bl_crop_dimensions[0]:self.tr_crop_dimensions[0]]
+                      self.bl_crop_dimensions[0]:self.tr_crop_dimensions[0]]
         # Updates the screen size in algorithm module.
-        sc.init_info(frame.shape[:2])
+        Sc.init_info(frame.shape[:2])
         return frame
 
     def crop_image(self, frame):
@@ -141,9 +141,9 @@ class Camera:
         """
         (height, width, depth) = frame.shape
         if self.FLIP:
-            frame = frame[:160, width//2 - 240 : width//2 + 240]
+            frame = frame[:160, width//2 - 240: width//2 + 240]
         else:
-            frame = frame[height - 160 : height, width//2 - 240 : width//2 + 240]
+            frame = frame[height - 160: height, width//2 - 240: width//2 + 240]
         return frame
 
     def background_and_wait(self):
@@ -153,7 +153,7 @@ class Camera:
         """
         return self.wait_for_click()
 
-    def set(self, settings, white_balance = False):
+    def set(self, settings, white_balance=False):
         """
         Sets camera settings.
         :param settings: The settings to set.
@@ -176,13 +176,12 @@ class Camera:
         """
         self.set(settings, WHITE_BALANCE)
         if self.CALIBRATE:
-            frame = None
             while True:
                 frame = self.stream.read()
                 cv2.imshow("calibrate", frame)
                 # Calibrate the camera with a click on space.
                 if cv2.waitKey(1) == 32:
-                    (bl, tr) = calibrate(frame)
+                    (bl, tr) = calib(frame)
                     self.bl_crop_dimensions = bl
                     self.tr_crop_dimensions = tr
                     return
@@ -214,6 +213,3 @@ class Camera:
                 cv2.imshow("until background", frame)
                 cv2.waitKey(0)
                 return frame
-
-if __name__ == '__main__':
-    pass

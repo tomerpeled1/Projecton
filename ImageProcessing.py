@@ -1,3 +1,8 @@
+"""
+the main image processing file - does the tracking and gets detection from FruitDetection.
+works in pixels coordinates - (0,0) is top left of the frame.
+"""
+
 import FruitDetection as Fd
 import RealTimeTracker as Rtt
 from CameraInterface import Camera
@@ -8,13 +13,8 @@ import time
 import numpy as np
 from Fruit import Fruit
 
-"""
-the main image proccessing file - does the tracking and gets detection from FruitDetection.
-works in pixels coordinates - (0,0) is top left of the frame.
-"""
 
-# Minimal number of centers for fruit to create good fit.
-MINIMUM_NUM_OF_CENTERS_TO_EXTRACT = 4
+MINIMUM_NUM_OF_CENTERS_TO_EXTRACT = 4  # Minimal number of centers for fruit to create good fit.
 
 # Parameters for meanshift
 s_lower = 60
@@ -25,17 +25,12 @@ term_crit = (cv2.TERM_CRITERIA_EPS | cv2.TERM_CRITERIA_COUNT, 30, 1)
 
 # Consts
 SAVED_VIDEO_NAME = "sundayNoon.flv"
-# Threshold for fruit detection.
-CONTOUR_AREA_THRESH = 1000
-# Maximal number of frames for fruit to remain on screen.
-MAX_NUM_OF_FRAMES_ON_SCREEN = 13
-# List of fruits needs to be extracted.
-FRUIT_TO_EXTRACT = []
+CONTOUR_AREA_THRESH = 1000  # Threshold for fruit detection.
+MAX_NUM_OF_FRAMES_ON_SCREEN = 13  # Maximal number of frames for fruit to remain on screen.
+FRUIT_TO_EXTRACT = []  # List of fruits needs to be extracted.
 
-# Threshold for difference between histograms for recognition of fruits.
-HISTS_THRESH = 0.2
-# Method to compare between histograms.
-HISTS_COMPARE_METHOD = cv2.HISTCMP_CORREL
+HISTS_THRESH = 0.2  # Threshold for difference between histograms for recognition of fruits.
+HISTS_COMPARE_METHOD = cv2.HISTCMP_CORREL  # Method to compare between histograms.
 
 INTEGRATE_WITH_ALGORITHMICS = False
 
@@ -46,6 +41,11 @@ fruits_for_debug_trajectories = []
 def draw_rectangle(fruit, frame, color, size=2):
     """
     Draws the track window of the fruit in the frame.
+    :param fruit: the fruit in the frame
+    :param frame: the frame to draw on
+    :param color: color of rectangle
+    :param size: thickness of rectangle
+    :return:
     """
     x, y, w, h = fruit.track_window
     return cv2.rectangle(frame, (x, y), (x + w, y + h), color, thickness=size)
@@ -67,19 +67,18 @@ def draw_trajectory(fruit, frame):
     on the specific frame. used mostly for debugging.
     :param fruit: a fruit object
     :param frame: a single frame
-    :return:
     """
     # ---------get the centers and transfer to cm.-------#
     centers_cm = [Sc.pixel2cm(center) for center in fruit.centers]
     x_coords = [center[0] for center in centers_cm]
     y_coords = [center[1] for center in centers_cm]
-    t_coords = [center[2] for center in centers_cm]
+    # t_coords = [center[2] for center in centers_cm]
     times_centers = range(len(x_coords))
 
     # ------- get the trajectory of the fruit -------#
-    T = 3
+    t_tot = 3
     dt = 0.02
-    times_trajectory = range(-int(T / dt), int(T / dt))
+    times_trajectory = range(-int(t_tot / dt), int(t_tot / dt))
     xy_cm = [[0 for _ in times_trajectory], [0 for _ in times_trajectory]]
     xy_pixels = [[0 for _ in times_trajectory], [0 for _ in times_trajectory]]
     route = fruit.trajectory.calc_trajectory()
@@ -99,9 +98,10 @@ def draw_trajectory(fruit, frame):
 
 def calculate_hist_window(window, img_hsv):
     """
-    Calculates the histogram of a window (given in x, y, w, h) in the hsv image.
-    The histogram is calculated by the hue.
-    :return crop_hist: the histogram of the fruit.
+    Calculates the histogram of a window in image. The histogram is calculated by the hue.
+    :param window: area to calculate histogram, given in (x,y,w,h)
+    :param img_hsv: image of frame in hsv
+    :return: the histogram of the window.
     """
     x, y, w, h = window
     cropped = img_hsv[y:y + h, x:x + w].copy()
@@ -119,8 +119,8 @@ def calc_meanshift_all_fruits(fruits_info, img_hsv):
     Calculates the difference between the histograms of the fruits between the frames and makes sure it passes
     HISTS_THRESH. If it does it updates the track window for fruit. Otherwise we had lost the fruit and add it to
     FRUIT_TO_EXTRACT.
-    :param fruits_info: The information on the fruits we know of.
-    :param img_hsv: The frame in hsv form.
+    :param fruits_info: list of fruits info
+    :param img_hsv: The frame in hsv form
     """
     global FRUIT_TO_EXTRACT
     for fruit in fruits_info:
@@ -138,15 +138,14 @@ def calc_meanshift_all_fruits(fruits_info, img_hsv):
         # Calculates the new histogram of the fruit.
         new_hist = calculate_hist_window(track_window, img_hsv)
         # Calculated correlation between new histogram to previous one.
-        correl = cv2.compareHist(new_hist, fruit.hist, HISTS_COMPARE_METHOD)
+        correlation = cv2.compareHist(new_hist, fruit.hist, HISTS_COMPARE_METHOD)
         # If the correlation is high enough we update the track window.
-        if (abs(
-                correl) > HISTS_THRESH) and fruit.counter < MAX_NUM_OF_FRAMES_ON_SCREEN:  # threshold for hist resemblance.
+        if (abs(correlation) > HISTS_THRESH) and fruit.counter < MAX_NUM_OF_FRAMES_ON_SCREEN:  # threshold for histogram
+            # resemblance
             fruit.track_window = track_window
             fruit.counter += 1
-        # Otherwise the fruit is gone and we remove it from fruits_info and add it to FRUIT_TO_EXTRACT
-        else:
-            print("correlation: " + str(correl))
+        else:  # Otherwise the fruit is gone and we remove it from fruits_info and add it to FRUIT_TO_EXTRACT
+            print("correlation: " + str(correlation))
             fruits_info.remove(fruit)
             if not fruit.is_falling and len(fruit.centers) > MINIMUM_NUM_OF_CENTERS_TO_EXTRACT:
                 FRUIT_TO_EXTRACT.append(fruit)
@@ -169,7 +168,7 @@ def print_and_extract_centers(fruits_to_extract):
         #     fruit.trajectory = Sc.get_trajectory(centers_cm)
         #     # --- add first fruit to debug fruits buffer ---#
         #     fruits_for_debug_trajectories.append(fruit)
-        if (INTEGRATE_WITH_ALGORITHMICS):
+        if INTEGRATE_WITH_ALGORITHMICS:
             Sc.update_and_slice(fruits_to_extract)
         global FRUIT_TO_EXTRACT
         FRUIT_TO_EXTRACT[:] = []
@@ -186,7 +185,7 @@ def get_fruits_info(detection_results, frame):
     fruits_info = []
     boxes = detection_results.rects
     while len(boxes) > 0:
-        cropped = True
+        cropped = True  # TODO delete line?
         hsv_frame = cv2.cvtColor(frame, cv2.COLOR_BGR2HSV)
         # Turns the first box to track window.
         track_window = (boxes[0][0][0], boxes[0][0][1],
@@ -196,7 +195,7 @@ def get_fruits_info(detection_results, frame):
         track_window = Rtt.resize_track_window(track_window)
         # Calculate the histogram of the window.
         crop_hist = calculate_hist_window(track_window, hsv_frame)
-        # After calculating the histrogram of the fruit, we add it to the list of fruits.
+        # After calculating the histogram of the fruit, we add it to the list of fruits.
         fruits_info.append(Fruit(track_window, crop_hist, 0,
                                  [detection_results.centers[0]], detection_results.time_created))
         # Finished dealing with box, now free it.
@@ -212,12 +211,12 @@ def track_known_fruits(fruits_info, current_frame, detection_results):
     :param detection_results: The fruits detected in the current frame.
     """
     img_hsv = cv2.cvtColor(current_frame, cv2.COLOR_BGR2HSV)  # turn image to hsv.
-    # Calculates the meanshift for all fruits and updates their track windows.
-    calc_meanshift_all_fruits(fruits_info, img_hsv)
-    # Draw the new track window of all fruits.
+    calc_meanshift_all_fruits(fruits_info, img_hsv)  # calculate meanshift of all fruits and update their track windows
+    # draw new track windows of all fruits.
     for fruit in fruits_info:
         current_frame = draw_rectangle(fruit, current_frame, (255, 20, 147), 5)
-    # Track all known fruits - match their new track window to the contours in detection results.
+
+    # track all known fruits - match their new track window to the contours in detection results.
     if len(detection_results.conts) > 0:
         to_delete = []
         for fruit in fruits_info:
@@ -268,20 +267,25 @@ def debug_with_buffer(buffer):
 def show_original(camera):
     """
     Show original frames taken by camera.
+    :param camera: Camera object of camera
     """
     debug_with_buffer(camera.buffer)
 
 
 def draw(fruit, frame):
     """
-    Draws relevant things for fruit (center and track window).
+    Draws center and track window for fruit.
+    :param fruit: Fruit object
+    :param frame: frame where fruit appears
     """
     draw_rectangle(fruit, frame, (255, 0, 0))
     draw_center(fruit, frame)
 
-def init_everything(integrate_with_algorithmics = INTEGRATE_WITH_ALGORITHMICS):
+
+def init_everything(integrate_with_algorithmics=INTEGRATE_WITH_ALGORITHMICS):
+    """
+    TODO add documentation
+    :param integrate_with_algorithmics: boolean that decides weather to integrate with mechanics or not.
+    """
     global INTEGRATE_WITH_ALGORITHMICS
     INTEGRATE_WITH_ALGORITHMICS = integrate_with_algorithmics
-
-if __name__ == '__main__':
-    pass

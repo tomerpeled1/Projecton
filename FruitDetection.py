@@ -1,3 +1,7 @@
+"""
+TODO add documentation to all file
+"""
+
 import numpy as np
 import cv2
 import time
@@ -20,14 +24,14 @@ def fruit_detection(frame, background, contour_area_thresh):
     real_hsv = cv2.cvtColor(real, cv2.COLOR_BGR2HSV)
     real_h, real_s, real_v = cv2.split(real_hsv)
     real_h = cv2.convertScaleAbs(real_h, alpha=255/179)
-    real_h = cv2.morphologyEx(real_h, cv2.MORPH_OPEN, np.ones((5,5), np.uint8))
+    real_h = cv2.morphologyEx(real_h, cv2.MORPH_OPEN, np.ones((5, 5), np.uint8))
     # cv2.imshow("real_h_mod", real_h)
 
     # split hvs of background
     back_hsv = cv2.cvtColor(back, cv2.COLOR_BGR2HSV)
     back_h, _, back_v = cv2.split(back_hsv)
     back_h = cv2.convertScaleAbs(back_h, alpha=255/179)
-    back_h = cv2.morphologyEx(back_h, cv2.MORPH_OPEN, np.ones((5,5), np.uint8))
+    back_h = cv2.morphologyEx(back_h, cv2.MORPH_OPEN, np.ones((5, 5), np.uint8))
 
     # find value change
     # print(real_v.shape, back_v.shape)
@@ -48,7 +52,7 @@ def fruit_detection(frame, background, contour_area_thresh):
     # cv2.imshow("sub_add", sub_add)
     ret3, add_thresh = cv2.threshold(sub_add, 80, 255, cv2.THRESH_BINARY)
 
-    add_thresh = cv2.morphologyEx(add_thresh, cv2.MORPH_OPEN, np.ones((5,5), np.uint8))
+    add_thresh = cv2.morphologyEx(add_thresh, cv2.MORPH_OPEN, np.ones((5, 5), np.uint8))
 
     # mask that removes very bright noises (blade)
     # ret, mask_s = cv2.threshold(real_s, 31, 255, cv2.THRESH_BINARY)
@@ -57,9 +61,9 @@ def fruit_detection(frame, background, contour_area_thresh):
     # mask = cv2.bitwise_and(add_thresh, mask_s)
     mask = add_thresh
 
-    #connect pieces of fruit and remove noises
-    mask = cv2.morphologyEx(mask, cv2.MORPH_CLOSE, np.ones((5,5), np.uint8))
-    mask = cv2.morphologyEx(mask, cv2.MORPH_OPEN, np.ones((10,10), np.uint8))
+    # connect pieces of fruit and remove noises
+    mask = cv2.morphologyEx(mask, cv2.MORPH_CLOSE, np.ones((5, 5), np.uint8))
+    mask = cv2.morphologyEx(mask, cv2.MORPH_OPEN, np.ones((10, 10), np.uint8))
     # cv2.imshow("mask", mask)
 
     # apply mask
@@ -67,16 +71,15 @@ def fruit_detection(frame, background, contour_area_thresh):
     # cv2.imshow("masked", masked)
     # cv2.waitKey(0)
 
-
     # find lapping fruit - not ready!!!
     # masked_hsv = cv2.cvtColor(masked, cv2.COLOR_BGR2HSV)
     # masked_h = masked_hsv[:, :, 0]
     # cv2.imshow("masked_h", masked_h)
     # blurred_masked_h = cv2.blur(masked_h, (5, 5))
     # cv2.imshow("b_masked_h", blurred_masked_h)
-    #normalized_masked_h = cv2.normalize(blurred_masked_h, None, 0, 255, norm_type=cv2.NORM_MINMAX)
-    #cv2.imshow("norm", normalized_masked_h)
-    #gradient_hue = cv2.morphologyEx(normalized_masked_h, cv2.MORPH_GRADIENT, None)
+    # normalized_masked_h = cv2.normalize(blurred_masked_h, None, 0, 255, norm_type=cv2.NORM_MINMAX)
+    # cv2.imshow("norm", normalized_masked_h)
+    # gradient_hue = cv2.morphologyEx(normalized_masked_h, cv2.MORPH_GRADIENT, None)
     # cv2.imshow("gradient_hue", gradient_hue)
 
     # create contours
@@ -95,8 +98,8 @@ def fruit_detection(frame, background, contour_area_thresh):
         y_min = c[c[:, :, 1].argmin()][0][1]
         y_max = c[c[:, :, 1].argmax()][0][1]
         bot_left = (x_min, y_min)
-        up_left = (x_min, y_max)
-        bot_right = (x_max, y_min)
+        # up_left = (x_min, y_max)
+        # bot_right = (x_max, y_min)
         up_right = (x_max, y_max)
         rect = [bot_left, up_right]
         center = center_of_contour(c)
@@ -104,31 +107,30 @@ def fruit_detection(frame, background, contour_area_thresh):
         rects.append(rect)
         centers.append(center)
 
-
-
     print("time for detection: " + str(time.perf_counter()-t))
 
-    return DetectionResults.DetectionResults(conts, rects, centers) # a list of lists, representing all the fruits found.
+    return DetectionResults.DetectionResults(conts, rects, centers)  # list of lists, representing all fruits found
 
 
 def center_of_contour(c):
-    M = cv2.moments(c)
-    cX = int(M["m10"] / M["m00"])
-    cY = int(M["m01"] / M["m00"])
-    return (cX, cY)
+    m = cv2.moments(c)
+    c_x = int(m["m10"] / m["m00"])
+    c_y = int(m["m01"] / m["m00"])
+    return c_x, c_y
+
 
 if __name__ == "__main__":
-    frame = cv2.imread("pic1.jpg")
-    frame = cv2.resize(frame, None, fx=0.3, fy=0.3)
-    (height, width, depth) = frame.shape
-    back = cv2.imread("pic2.jpg")
-    back = cv2.resize(back, None, fx=0.3, fy=0.3)
+    frame_main = cv2.imread("pic1.jpg")
+    frame_main = cv2.resize(frame_main, None, fx=0.3, fy=0.3)
+    (height, width, depth) = frame_main.shape
+    back_main = cv2.imread("pic2.jpg")
+    back_main = cv2.resize(back_main, None, fx=0.3, fy=0.3)
 
-    cont, rects = fruit_detection(frame, back, 1000)
-    cv2.drawContours(frame, cont, -1, (0, 255, 0), 2)
+    conts_main, rects_main = fruit_detection(frame_main, back_main, 1000)
+    cv2.drawContours(frame_main, conts_main, -1, (0, 255, 0), 2)
     # for i in range(len(rects)):
     #     frame = cv2.rectangle(frame, rects[i][UP_LEFT], rects[i][BOTTOM_RIGHT],
     #                       (255, 0, 0), 2)
-    cv2.imshow("frame", frame)
+    cv2.imshow("frame", frame_main)
     cv2.waitKey(0)
     cv2.destroyAllWindows()

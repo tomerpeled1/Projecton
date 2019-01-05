@@ -1,4 +1,9 @@
+"""
+Defines the DetectionResults class, that holds the info from the detection of the fruits.
+"""
+
 import time
+
 
 class DetectionResults:
 
