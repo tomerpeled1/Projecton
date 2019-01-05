@@ -1,32 +1,33 @@
+"""
+Previously named SliceCreator. This file is the brain of the algorithmic module - it gets data from image processing
+and generates slices (x and y locations) for arduino.
+the coordinates here is (generally speaking) (x,y) when the 0,0 is at bottom left of the flipped screen
+(the parabola of fruits routes is smiling).
+"""
+
 import math
 import matplotlib.pyplot as plt
 import statistics as st
 import SliceTypes
 import time
 import ArduinoCommunication
-import Simulation as slm
+import Simulation as Slm
 from threading import Thread
 import threading
 
-"""
-this was SliceCreator. this file is the brain of the algoritmics - it gets data from image prosseccing 
-and generates slices (x and y locations) for arduino.
-the coordinates here is (begadol) (x,y) when the 0,0 is at bottom left of the flipped screen
-(for example, the parabula of fruits routes is smiling).
-"""
 
 # ----------------- CONSTANTS -------------------
 RELATIVE_ACC = 1.478  # from experiences we did it tracker program
-CAMERA_FPS = 30
-TIME_BETWEEN_2_FRAMES = 1.0 / CAMERA_FPS
-CROP_SIZE = (160, 480)  # (y,x)
-FRAME_SIZE = (480, 640)  # (y,x)
-SCREEN_SIZE = (12, 16)  # (y,x)
+CAMERA_FPS = 30  # frames per second
+TIME_BETWEEN_2_FRAMES = 1.0 / CAMERA_FPS  # in sec
+CROP_SIZE = (160, 480)  # (y,x) in pixels
+FRAME_SIZE = (480, 640)  # (y,x) in pixels
+SCREEN_SIZE = (12, 16)  # (y,x) in cm
 ACC = RELATIVE_ACC * SCREEN_SIZE[0]
-INTEGRATE_WITH_MECHANICS = False
+INTEGRATE_WITH_MECHANICS = False  # make True to send slices to ArduinoCommunication
 
 on_screen_fruits = []
-SIMULATE = False
+SIMULATE = False  # make True to activate simulation
 slice_queue_lock = threading.Condition()
 simulation_thread = None
 slice_queue = []
@@ -90,9 +91,7 @@ class Trajectory:
             :param t: double time
             :return: tuple (x, y) in cm
             """
-            x = self.x_trajectory(t, self.x0, self.v, self.theta)
-            y = self.y_trajectory(t, self.y0, self.v, self.theta)
-            return x, y
+            return self.x_trajectory(t), self.y_trajectory(t)
 
         return get_xy_by_t
 
@@ -112,34 +111,28 @@ class Trajectory:
         t = 2 * self.v * math.sin(self.theta) / ACC
         return t
 
-    def x_trajectory(self, t, x0, v, theta):
+    def x_trajectory(self, t):
         """
         returns the x value according to the formula of free fall
-        :param x0: by the formula
-        :param y0: by the formula
-        :param v: by the formula
-        :param theta: by the formula
+        :param t: time
         :return: x value according to the formula of free fall in cm
         """
-        return x0 + v * math.cos(theta) * t
+        return self.x0 + self.v * math.cos(self.theta) * t
 
-    def y_trajectory(self, t, y0, v, theta):
+    def y_trajectory(self, t):
         """
         returns the y value according to the formula of free fall
-        :param x0: by the formula
-        :param y0: by the formula
-        :param v: by the formula
-        :param theta: by the formula
+        :param t: time
         :return: y value according to the formula of free fall in cm
         """
         # return SCREEN_SIZE[0] - v * math.sin(theta) * t + 0.5 * ACC * t ** 2
-        return y0 - v * math.sin(theta) * t + 0.5 * ACC * t ** 2
+        return self.y0 - self.v * math.sin(self.theta) * t + 0.5 * ACC * t ** 2
 
 
 # -------------------- slicing functions ------------------
 def update_fruits(fruits):
     """
-    ron and eran have to explain
+    TODO Ron and Eran have to explain
     :param fruits:
     :return:
     """
@@ -171,7 +164,7 @@ def do_slice(slice_trajectory):
     parametrization, timer, t_peak, fruits_trajectories = slice_trajectory
     # run simulation
     if SIMULATE:
-        slm.run_simulation(parametrization, fruits_trajectories)
+        Slm.run_simulation(parametrization, fruits_trajectories)
     # run arduino
     else:
         ArduinoCommunication.make_slice_by_trajectory(parametrization)
@@ -184,19 +177,14 @@ def update_and_slice(fruits):
     """
     global slice_queue
     global slice_queue_lock
-    # Updates the fruits on screen with the fruits extracted by the image processing module.
-    update_fruits(fruits)
-    # If the access to slice queue is available, it means we are not in the middle of a slice and we can create
-    # a new one.
-    if slice_queue_lock.acquire(False):
-        # If there are fruits on the screen we want to create a slice.
-        if len(on_screen_fruits) > 0:
-            slice = create_slice()
-            # Add the new slice to slice queue.
-            slice_queue.append(slice)
+    update_fruits(fruits)  # Updates the fruits on screen with the fruits extracted by the image processing module.
+    if slice_queue_lock.acquire(False):  # If the access to slice queue is available, it means we are not in the middle
+        # of a slice and we can create a new one.
+        if len(on_screen_fruits) > 0:  # If there are fruits on the screen we want to create a slice.
+            new_slice = create_slice()
+            slice_queue.append(new_slice)  # Add the new slice to slice queue.
         slice_queue_lock.notify()
-        # Release the lock on the slice queue.
-        slice_queue_lock.release()
+        slice_queue_lock.release()  # Release the lock on the slice queue.
 
 
 def rms(array):
