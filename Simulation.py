@@ -1,12 +1,12 @@
+"""
+the simulation, simulates the motors and work in the same coordinate system.
+"""
+
 import pygame
 import numpy as np
 import time
 import math
 import matplotlib.pyplot as plt
-
-"""
-the simulation, simulates the motors and work in the same coordinate system.
-"""
 
 
 # ---------- CONSTANTS -------------
@@ -18,25 +18,25 @@ RED = (255, 0, 0)
 GREEN = (0, 255, 0)
 
 # MECHANICS
-SCREEN = (16, 12)   # dimensions of 10'' screen
-ARMS = (15, 10)     # length of arm links in cm
-d = 18                  # distance from screen in cm
-STEPS_ROUND = 200   # steps of the motor for full round
-MINIMAL_ANGLE = 2 * np.pi / STEPS_ROUND
-STEPS_FRACTION = 8
+SCREEN = (16, 12)  # dimensions of 10'' screen
+ARMS = (15, 10)  # length of arm links in cm
+d = 18  # distance from screen in cm
+STEPS_ROUND = 200  # steps of the motor for full round
+MINIMAL_ANGLE = 2 * np.pi / STEPS_ROUND  # minimal angle step the motor can do
+STEPS_FRACTION = 8  # resolution of micro-stepping
 BITS_PER_BYTE = 8
-LENGTH_OF_COMMAND = 6
+LENGTH_OF_COMMAND = 6  # how many chars are in one command
 
 # TIME
-WANTED_RPS = 0.5
+WANTED_RPS = 0.5  # revolutions per second of motors
 ONE_STEP_DELAY = 5.0 / WANTED_RPS / STEPS_FRACTION / 1000.0  # in sec
-SERIAL_BPS = 19200
+SERIAL_BPS = 19200  # bits per second the serial can read and write
 WRITE_DELAY = 1.0/(SERIAL_BPS/BITS_PER_BYTE/LENGTH_OF_COMMAND)  # delay in sec after writing to prevent buffer overload
 T = 1  # time of one slice in sec
-dt_serial = WRITE_DELAY * 4    # time between 2 readings from serial in sec
-dt_motor = ONE_STEP_DELAY * 4    # time of writing to the serial in sec
+dt_serial = WRITE_DELAY * 4  # time between 2 readings from serial in sec
+dt_motor = ONE_STEP_DELAY * 4  # time of writing to the serial in sec
 times_ideal = int(T / dt_motor)  # the size of the vectors for the simulation
-times_serial = int(T / dt_serial)     # the amount of different values for the
+times_serial = int(T / dt_serial)  # the amount of different values for the
 TIME_TO_QUIT_SIMULATION = 0.2  # time to quit the simulation after finished in sec
 
 
@@ -113,6 +113,7 @@ def draw_circle(pos, radius, screen, color):
     :param pos: tuple (x, y)
     :param radius: double
     :param screen: pygame screen object - pygame.display.set_mode((WIDTH, HEIGHT))
+    :param color: color of circle
     """
     pygame.draw.circle(screen, color, [cm_to_pixels(pos[0]), cm_to_pixels(pos[1])],
                        radius, 0)
@@ -340,8 +341,7 @@ def xy_by_fruit_trajectory(trajectory, total_time, dt):
     x_fruit, y_fruit = [0 for _ in times], [0 for _ in times]
     for i in times:
         x_fruit[i], y_fruit[i] = trajectory(i * dt_trajectory)
-        # TODO the next 2 lines are a bit "fishi" need to check why this is necessary to add this values for the
-        # conversion
+        # TODO the next 2 lines are a bit "fishy". check why it is necessary to add values for the conversion
         x_fruit[i] += SCREEN[0] / 2
         y_fruit[i] += d
     return x_fruit, y_fruit
@@ -349,6 +349,14 @@ def xy_by_fruit_trajectory(trajectory, total_time, dt):
 
 # ------------- CALCULATE LOCATIONS -------------
 def run_simulation(func, fruits_trajectories_and_starting_times):
+    """
+    Runs the simulation.
+    :param func: function of (x,y)(t), route of slice
+    :param fruits_trajectories_and_starting_times:
+    """
+
+    def zero_trajectory(_):
+        return 0, 0
 
     # the ideal angles like in the function of the algorithmic
     theta_ideal, phi_ideal = make_ideal_slice_by_trajectory(func)
@@ -364,10 +372,10 @@ def run_simulation(func, fruits_trajectories_and_starting_times):
             first_trajectory_total_time = first_trajectory_object.calc_life_time()
             # do not have to get into the 2 else down
         else:
-            first_trajectory = lambda t: (0, 0)
+            first_trajectory = zero_trajectory
             first_trajectory_total_time = 1
     else:
-        first_trajectory = lambda t: (0, 0)
+        first_trajectory = zero_trajectory
         first_trajectory_total_time = 1
 
     x_fruit, y_fruit = xy_by_fruit_trajectory(first_trajectory, first_trajectory_total_time, dt_motor)
@@ -405,16 +413,14 @@ def run_simulation(func, fruits_trajectories_and_starting_times):
         draw_line([x_link_ideal, y_link_ideal], [x_ideal, y_ideal], screen)
 
         # real locations
-        x_practical, y_practical = xy_by_theta_phi(theta_practical[i],
-                                                   phi_practical[i], x_0)
+        x_practical, y_practical = xy_by_theta_phi(theta_practical[i], phi_practical[i], x_0)
         x_practical_vector[i], y_practical_vector[i] = x_practical, y_practical
         x_link_practical, y_link_practical = xy_by_theta(theta_practical[i], x_0)
         draw_circle([x_practical, y_practical], 2, screen, RED)
         draw_line([x_link_practical, y_link_practical], [x_0, y_0], screen)
         draw_line([x_link_practical, y_link_practical], [x_practical, y_practical], screen)
 
-        errors[i] = math.sqrt(math.pow(x_practical - x_ideal, 2) + math.pow(y_practical -
-                                                                            y_ideal, 2))
+        errors[i] = math.sqrt(math.pow(x_practical - x_ideal, 2) + math.pow(y_practical - y_ideal, 2))
         # display the simulation
         pygame.display.flip()
 

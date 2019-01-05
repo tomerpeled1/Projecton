@@ -1,12 +1,8 @@
-import VideoInterface as vi
+from graveyard import VideoInterface as vi
 import FruitDetection as fd
 import RealTimeTracker as rtt
-import Algorithmics as sc
 import cv2
-import argparse
 import time
-import sys
-import math
 import numpy as np
 from Fruit import Fruit
 

@@ -3,13 +3,13 @@ the main image processing file - does the tracking and gets detection from Fruit
 works in pixels coordinates - (0,0) is top left of the frame.
 """
 
-import FruitDetection as Fd
+# import FruitDetection as Fd
 import RealTimeTracker as Rtt
-from CameraInterface import Camera
-import CameraInterface as Ci
+# from CameraInterface import Camera
+# import CameraInterface as Ci
 import Algorithmics as Sc
 import cv2
-import time
+# import time
 import numpy as np
 from Fruit import Fruit
 
@@ -185,7 +185,6 @@ def get_fruits_info(detection_results, frame):
     fruits_info = []
     boxes = detection_results.rects
     while len(boxes) > 0:
-        cropped = True  # TODO delete line?
         hsv_frame = cv2.cvtColor(frame, cv2.COLOR_BGR2HSV)
         # Turns the first box to track window.
         track_window = (boxes[0][0][0], boxes[0][0][1],
@@ -284,8 +283,7 @@ def draw(fruit, frame):
 
 def init_everything(integrate_with_algorithmics=INTEGRATE_WITH_ALGORITHMICS):
     """
-    TODO add documentation
-    :param integrate_with_algorithmics: boolean that decides weather to integrate with mechanics or not.
+    :param integrate_with_algorithmics: boolean that decides weather to integrate with algorithmics or not.
     """
     global INTEGRATE_WITH_ALGORITHMICS
     INTEGRATE_WITH_ALGORITHMICS = integrate_with_algorithmics

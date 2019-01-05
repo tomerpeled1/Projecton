@@ -132,9 +132,8 @@ class Trajectory:
 # -------------------- slicing functions ------------------
 def update_fruits(fruits):
     """
-    TODO Ron and Eran have to explain
-    :param fruits:
-    :return:
+    Updates on_screen_fruits according to fruits list acquired from image processing.
+    :param fruits: list of Fruit objects - fruits to add to on_scree_fruits
     """
     fruits_locs = [[pixel2cm(pix_loc) for pix_loc in fruit.centers] for fruit in fruits]
     # centers = [[center for center in fruit.centers] for fruit in fruits]
@@ -202,15 +201,15 @@ def rms(array):
 
 def get_r_coords_by_xy_coords(x_coords, y_coords):
     """
-    TODO complete documentation
-    :param x_coords:
-    :param y_coords:
-    :return:
+    Calculates the distance between points on trajectory
+    :param x_coords: x coordinates along trajectory
+    :param y_coords: y coordinates along trajectory
+    :return: list of length len(x_coords)-1 of the distances between points
     """
     r_coords = [0 for _ in range(len(x_coords) - 1)]
     for i in range(len(y_coords) - 1):
         r_coords[i] = math.sqrt((x_coords[i + 1] - x_coords[i]) ** 2 + (y_coords[i + 1] - y_coords[i]) ** 2)
-        return r_coords
+    return r_coords
 
 
 def get_trajectory_by_fruit_locations(fruit_locs):
@@ -345,6 +344,9 @@ def time_until_slice(fruit):
 def init_info(frame_size, crop_size=CROP_SIZE, screen_size=SCREEN_SIZE):
     """
     Initializes the sizes for the screen so that the algorithmics work properly.
+    :param frame_size: size of frame in pixels
+    :param crop_size: size of cropped frame in pixels
+    :param screen_size: size of screen in cm
     """
     global CROP_SIZE, FRAME_SIZE, SCREEN_SIZE
     CROP_SIZE = crop_size

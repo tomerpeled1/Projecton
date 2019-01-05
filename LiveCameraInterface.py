@@ -1,5 +1,5 @@
 """
-TODO add documentation
+TODO add documentation to all file
 """
 
 import cv2

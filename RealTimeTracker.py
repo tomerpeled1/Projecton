@@ -1,7 +1,6 @@
-import cv2
-import numpy as np
-from Fruit import Fruit
-import SavedVideoRun as ni
+"""
+Implementation of function for tracking fruits.
+"""
 
 # Maximal distance a fruit can pass between two frames.
 MOVEMENT_RADIUS = 400
@@ -21,6 +20,7 @@ def center(rectangle):
     y = (rectangle[0][1] + rectangle[1][1]) / 2.0
     return x, y
 
+
 def dis(a, b):
     """
     Euclidean distance between to points.
@@ -30,6 +30,7 @@ def dis(a, b):
     """
     return pow(a[0] - b[0], 2) + pow(a[1] - b[1], 2)
 
+
 def update_falling(fruit):
     """
     Updates the fruit status on whether it is falling by comparison of two centers.
@@ -38,6 +39,7 @@ def update_falling(fruit):
     assert len(fruit.centers) > 1
     if fruit.centers[0][1] < fruit.centers[1][1]:
         fruit.is_falling = True
+
 
 def track_object(detection_results, fruit):
     """
@@ -54,14 +56,14 @@ def track_object(detection_results, fruit):
         # Calculates the center of the rectangle.
         r_cent = center(r)
         n = len(detection_results.centers)
-        min = detection_results.centers[0]
-        min_dis = dis(r_cent, min)
+        min_cen = detection_results.centers[0]
+        min_dis = dis(r_cent, min_cen)
         index = 0
         # Finds the contour with minimal distance to tracker results.
-        for i in range(1,n):
+        for i in range(1, n):
             if dis(detection_results.centers[i], r_cent) < min_dis:
-                min = detection_results.centers[i]
-                min_dis = dis(r_cent, min)
+                min_cen = detection_results.centers[i]
+                min_dis = dis(r_cent, min_cen)
                 index = i
         # Threshold - if the fruit found is too far from original fruit.
         if min_dis > MOVEMENT_RADIUS:
@@ -77,19 +79,23 @@ def track_object(detection_results, fruit):
             # Updates the fruit track window with new frame. TODO - Try to take the meanshift window instead.
             fruit.track_window = new_track_window
             # At the end, we add another center.
-            fruit.centers.append(min)
+            fruit.centers.append(min_cen)
             # Update the fruit's falling status.
             update_falling(fruit)
             return True
 
+
 def resize_track_window(track_window):
-    '''
+    """
     For tracking with inner histogram.
-    '''
+    :param track_window: original track window
+    :return: resized window
+    """
     x, y, w, h = track_window
     factor = RESIZE_WINDOW_FACTOR
     inner_window = (int(x + factor*w), int(factor*h + y), int((1-2*factor)*w), int((1-2*factor)*h))
     return inner_window
+
 
 def rect2window(rectangle):
     """
