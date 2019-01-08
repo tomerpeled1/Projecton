@@ -9,7 +9,6 @@ import time
 import DetectionResults
 
 
-
 def fruit_detection(frame, background, contour_area_thresh):
     """
     fruit detection algorithm. based on background reduction and hsv color format
@@ -26,15 +25,15 @@ def fruit_detection(frame, background, contour_area_thresh):
     # split hvs of current frame
     current_hsv = cv2.cvtColor(current, cv2.COLOR_BGR2HSV)
     current_h, current_s, current_v = cv2.split(current_hsv)
-    current_h = cv2.convertScaleAbs(current_h, alpha=255/179) # converts hue to full spectrum
-    current_h = cv2.morphologyEx(current_h, cv2.MORPH_OPEN, np.ones((5, 5), np.uint8)) # noise removal
+    current_h = cv2.convertScaleAbs(current_h, alpha=255/179)  # converts hue to full spectrum
+    current_h = cv2.morphologyEx(current_h, cv2.MORPH_OPEN, np.ones((5, 5), np.uint8))  # noise removal
     # cv2.imshow("real_h_mod", real_h)
 
     # split hvs of background
     back_hsv = cv2.cvtColor(back, cv2.COLOR_BGR2HSV)
     back_h, _, back_v = cv2.split(back_hsv)
-    back_h = cv2.convertScaleAbs(back_h, alpha=255/179) # converts hue to full spectrum
-    back_h = cv2.morphologyEx(back_h, cv2.MORPH_OPEN, np.ones((5, 5), np.uint8)) # noise removal
+    back_h = cv2.convertScaleAbs(back_h, alpha=255/179)  # converts hue to full spectrum
+    back_h = cv2.morphologyEx(back_h, cv2.MORPH_OPEN, np.ones((5, 5), np.uint8))  # noise removal
 
     # find value change
     # print(real_v.shape, back_v.shape)
@@ -42,19 +41,19 @@ def fruit_detection(frame, background, contour_area_thresh):
     # cv2.imshow("sub_v", subtract_v)
 
     # find hue change (with attention to cyclic scaling), amplify hue
-    subtract_h = cv2.absdiff(current_h, back_h) # first cyclic option
+    subtract_h = cv2.absdiff(current_h, back_h)  # first cyclic option
     # cv2.imshow("sub_h_bef", subtract_h)
     white_img = 255*np.ones(current_h.shape, np.uint8)
-    complement_subtract_h = cv2.subtract(white_img, subtract_h) # second cyclic option
-    final_sub_h = cv2.min(subtract_h, complement_subtract_h) # modification to cyclic scaling
-    subtract_h_mod = cv2.convertScaleAbs(final_sub_h, alpha=1.3) # amplify hue
+    complement_subtract_h = cv2.subtract(white_img, subtract_h)  # second cyclic option
+    final_sub_h = cv2.min(subtract_h, complement_subtract_h)  # modification to cyclic scaling
+    subtract_h_mod = cv2.convertScaleAbs(final_sub_h, alpha=1.3)  # amplify hue
     # cv2.imshow("sub_h", subtract_h_mod)
 
     # calc total change (value + hue) and remove noise
     sub_add = cv2.add(subtract_v, subtract_h_mod)
     # cv2.imshow("sub_add", sub_add)
     ret3, add_thresh = cv2.threshold(sub_add, 80, 255, cv2.THRESH_BINARY)
-    add_thresh = cv2.morphologyEx(add_thresh, cv2.MORPH_OPEN, np.ones((5, 5), np.uint8)) # remove noise
+    add_thresh = cv2.morphologyEx(add_thresh, cv2.MORPH_OPEN, np.ones((5, 5), np.uint8))  # remove noise
 
     # mask that removes very bright noises (blade)
     # ret, mask_s = cv2.threshold(real_s, 31, 255, cv2.THRESH_BINARY)
