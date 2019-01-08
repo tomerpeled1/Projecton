@@ -1,5 +1,6 @@
 """
-TODO add documentation to all file
+Implementation of fruit detection algorithm.
+With a given frame, should return all fruit elements found in it.
 """
 
 import numpy as np
@@ -7,52 +8,53 @@ import cv2
 import time
 import DetectionResults
 
-UP_LEFT = 1
-BOTTOM_RIGHT = 2
-CONT = 0
-RECT = 1
-CENTER = 2
 
 
 def fruit_detection(frame, background, contour_area_thresh):
+    """
+    fruit detection algorithm. based on background reduction and hsv color format
+    :param frame: current frame to find fruits in
+    :param background: according background to frame
+    :param contour_area_thresh: minimal size of fruit
+    :return: Detection result object - containing 3 list (every fruit has contour, surrounding rectangle and center)
+    """
     t = time.perf_counter()
 
-    real = frame
+    current = frame
     back = background
 
-    # split hvs of frame
-    real_hsv = cv2.cvtColor(real, cv2.COLOR_BGR2HSV)
-    real_h, real_s, real_v = cv2.split(real_hsv)
-    real_h = cv2.convertScaleAbs(real_h, alpha=255/179)
-    real_h = cv2.morphologyEx(real_h, cv2.MORPH_OPEN, np.ones((5, 5), np.uint8))
+    # split hvs of current frame
+    current_hsv = cv2.cvtColor(current, cv2.COLOR_BGR2HSV)
+    current_h, current_s, current_v = cv2.split(current_hsv)
+    current_h = cv2.convertScaleAbs(current_h, alpha=255/179) # converts hue to full spectrum
+    current_h = cv2.morphologyEx(current_h, cv2.MORPH_OPEN, np.ones((5, 5), np.uint8)) # noise removal
     # cv2.imshow("real_h_mod", real_h)
 
     # split hvs of background
     back_hsv = cv2.cvtColor(back, cv2.COLOR_BGR2HSV)
     back_h, _, back_v = cv2.split(back_hsv)
-    back_h = cv2.convertScaleAbs(back_h, alpha=255/179)
-    back_h = cv2.morphologyEx(back_h, cv2.MORPH_OPEN, np.ones((5, 5), np.uint8))
+    back_h = cv2.convertScaleAbs(back_h, alpha=255/179) # converts hue to full spectrum
+    back_h = cv2.morphologyEx(back_h, cv2.MORPH_OPEN, np.ones((5, 5), np.uint8)) # noise removal
 
     # find value change
     # print(real_v.shape, back_v.shape)
-    subtract_v = cv2.absdiff(real_v, back_v)
+    subtract_v = cv2.absdiff(current_v, back_v)
     # cv2.imshow("sub_v", subtract_v)
 
-    # find hue change, amplify hue
-    subtract_h = cv2.absdiff(real_h, back_h)
+    # find hue change (with attention to cyclic scaling), amplify hue
+    subtract_h = cv2.absdiff(current_h, back_h) # first cyclic option
     # cv2.imshow("sub_h_bef", subtract_h)
-    white_img = 255*np.ones(real_h.shape, np.uint8)
-    complement_substract_h = cv2.subtract(white_img, subtract_h)
-    final_sub_h = cv2.min(subtract_h, complement_substract_h)
-    subtract_h_mod = cv2.convertScaleAbs(final_sub_h, alpha=1.3)
+    white_img = 255*np.ones(current_h.shape, np.uint8)
+    complement_subtract_h = cv2.subtract(white_img, subtract_h) # second cyclic option
+    final_sub_h = cv2.min(subtract_h, complement_subtract_h) # modification to cyclic scaling
+    subtract_h_mod = cv2.convertScaleAbs(final_sub_h, alpha=1.3) # amplify hue
     # cv2.imshow("sub_h", subtract_h_mod)
 
     # calc total change (value + hue) and remove noise
     sub_add = cv2.add(subtract_v, subtract_h_mod)
     # cv2.imshow("sub_add", sub_add)
     ret3, add_thresh = cv2.threshold(sub_add, 80, 255, cv2.THRESH_BINARY)
-
-    add_thresh = cv2.morphologyEx(add_thresh, cv2.MORPH_OPEN, np.ones((5, 5), np.uint8))
+    add_thresh = cv2.morphologyEx(add_thresh, cv2.MORPH_OPEN, np.ones((5, 5), np.uint8)) # remove noise
 
     # mask that removes very bright noises (blade)
     # ret, mask_s = cv2.threshold(real_s, 31, 255, cv2.THRESH_BINARY)
@@ -67,7 +69,7 @@ def fruit_detection(frame, background, contour_area_thresh):
     # cv2.imshow("mask", mask)
 
     # apply mask
-    masked = cv2.bitwise_and(real, real, mask=mask)
+    masked = cv2.bitwise_and(current, current, mask=mask)
     # cv2.imshow("masked", masked)
     # cv2.waitKey(0)
 
@@ -113,6 +115,11 @@ def fruit_detection(frame, background, contour_area_thresh):
 
 
 def center_of_contour(c):
+    """
+    given contour, calc its center of mass (opencv standard)
+    :param c: contour object
+    :return: center of mass in pixels (height, width)
+    """
     m = cv2.moments(c)
     c_x = int(m["m10"] / m["m00"])
     c_y = int(m["m01"] / m["m00"])
