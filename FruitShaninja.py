@@ -12,6 +12,7 @@ import cv2
 
 
 SAVED_VIDEO_NAME = "sundayNoon.flv"
+BACKGROUND_FILE_NAME = "bg.png"
 LIVE = True
 CROP = True
 FLIP = True
@@ -19,6 +20,7 @@ CALIBRATE = True
 IMAGE_PROCESSING_ALGORITHMICS_INTEGRATION = True
 ALGORITHMICS_MECHANICS_INTEGRATION = True
 SIMULATION = False
+BACKGROUND = True
 
 IMAGE_PROCESSING_FEATURES = (FLIP, CROP, LIVE, CALIBRATE)
 INTEGRATION = (IMAGE_PROCESSING_ALGORITHMICS_INTEGRATION, ALGORITHMICS_MECHANICS_INTEGRATION)
@@ -51,11 +53,18 @@ def fruit_shaninja(src, settings, image_processing_features=IMAGE_PROCESSING_FEA
     if camera.LIVE:
         camera.set_camera_settings(settings)
 
-    # Allows user to click in order to capture background.
-    print("choose background")
-    bg = camera.background_and_wait()
-    current = bg
+    bg = cv2.imread(BACKGROUND_FILE_NAME)
+    if BACKGROUND:
+        # Allows user to click in order to capture background.
+        print("choose background")
+        bg = camera.background_and_wait()
+        cv2.imwrite(BACKGROUND_FILE_NAME, bg)
+    else:
+        cv2.imshow("Saved Background", bg)
+        print("press any key to continue.")
+        cv2.waitKey(0)
 
+    current = bg
     counter = 0
     buffer = []  # Buffer of images for debugging purposes.
 
