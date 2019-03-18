@@ -72,6 +72,7 @@ def fruit_shaninja(src, settings, image_processing_features=IMAGE_PROCESSING_FEA
     buffer = []  # Buffer of images for debugging purposes.
 
     # Main while loop.
+
     while camera.is_opened() and counter < 90000:
         t1 = time.perf_counter()
         counter += 1
