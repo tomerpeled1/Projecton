@@ -3,6 +3,7 @@ the main image processing file - does the tracking and gets detection from Fruit
 works in pixels coordinates - (0,0) is top left of the frame.
 """
 
+
 # import FruitDetection as Fd
 import RealTimeTracker as Rtt
 # from CameraInterface import Camera
@@ -13,6 +14,8 @@ import cv2
 import numpy as np
 from Fruit import Fruit
 
+
+forcheck = 0
 
 MINIMUM_NUM_OF_CENTERS_TO_EXTRACT = 4  # Minimal number of centers for fruit to create good fit.
 
@@ -85,15 +88,27 @@ def draw_trajectory(fruit, frame):
 
     # -------draw fitted trajectory----------#
     for i in times_trajectory:
+        if i==90:
+            k=0
         xy_cm[0][i], xy_cm[1][i] = route(dt * i)
         xy_pixels[1][i], xy_pixels[0][i], t = Sc.cm2pixel((xy_cm[0][i], xy_cm[1][i], dt * i))
-        cv2.circle(frame, (int(xy_pixels[0][i]), int(xy_pixels[1][i])), 2, (255, 0, 0), -1)
+        xy_pixels[1][i] = Sc.FRAME_SIZE[0] - xy_pixels[1][i]
+        xy_pixels[0][i] = Sc.FRAME_SIZE[1] - xy_pixels[0][i]
+        cv2.circle(frame, (int(xy_pixels[0][i]), int(xy_pixels[1][i])), 2, (255, 0, 255), -1)
 
     # ---------draw the centers of the fruits------------#
     xy_centers = [[0 for _ in times_centers], [0 for _ in times_centers]]
+    cens_original = []
+    for cen in fruit.centers:
+        cens_original.append(cen[:-1])
     for i in times_centers:
         xy_centers[1][i], xy_centers[0][i], t = Sc.cm2pixel((x_coords[i], y_coords[i], dt * i))
-        cv2.circle(frame, (int(xy_centers[0][i]), int(xy_centers[1][i])), 5, (0, 0, 255), -1)
+        xy_centers[1][i] = Sc.FRAME_SIZE[0] - xy_centers[1][i]
+        xy_centers[0][i] = Sc.FRAME_SIZE[1] - xy_centers[0][i]
+        cv2.circle(frame, (int(xy_centers[0][i]), int(xy_centers[1][i])), 3, (0, 255, 255), -1)
+        if (i==times_centers[-1]):
+            K=0
+
 
 
 def calculate_hist_window(window, img_hsv):
@@ -161,18 +176,21 @@ def print_and_extract_centers(fruits_to_extract):
     for fruit in fruits_to_extract:
         fruit.centers = fruit.centers[1:-1]
     if fruits_to_extract:
+
         # # ---------Add trajectory to fruit object ------- #
-        # global fruits_for_debug_trajectories
-        # for fruit in fruits_to_extract:
-        #     centers_cm = [Sc.pixel2cm(center) for center in fruit.centers]
-        #     fruit.trajectory = Sc.get_trajectory(centers_cm)
-        #     # --- add first fruit to debug fruits buffer ---#
-        #     fruits_for_debug_trajectories.append(fruit)
+        global fruits_for_debug_trajectories
+        for fruit in fruits_to_extract:
+            centers_cm = [Sc.pixel2cm(center) for center in fruit.centers]
+            fruit.trajectory = Sc.get_trajectory_by_fruit_locations(centers_cm)
+            # --- add first fruit to debug fruits buffer ---#
+            fruits_for_debug_trajectories.append(fruit)
+            # --- print the centers --- #
+            print("centers of:" + str([fruit.centers for fruit in fruits_to_extract]))
+
         if INTEGRATE_WITH_ALGORITHMICS:
             Sc.update_and_slice(fruits_to_extract)
         global FRUIT_TO_EXTRACT
         FRUIT_TO_EXTRACT[:] = []
-        print("centers of:" + str([fruit.centers for fruit in fruits_to_extract]))
 
 
 def get_fruits_info(detection_results, frame):
@@ -253,7 +271,7 @@ def debug_with_buffer(buffer):
     i = 0
     while True:
         for fruit in fruits_for_debug_trajectories:
-            draw_center(fruit, buffer[i])
+            # draw_center(fruit, buffer[i])
             draw_trajectory(fruit, buffer[i])
         cv2.imshow("debug", buffer[i])
         x = cv2.waitKey(1)

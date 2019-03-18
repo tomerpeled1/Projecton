@@ -11,16 +11,18 @@ import time
 import cv2
 
 
-SAVED_VIDEO_NAME = "sundayNoon.flv"
+SAVED_VIDEO_NAME = "2019-03-17 19-59-34.flv"
 LIVE = False
-CROP = False
-FLIP = True
+CROP = True
+FLIP = False
 CALIBRATE = False
 IMAGE_PROCESSING_ALGORITHMICS_INTEGRATION = True
-ALGORITHMICS_MECHANICS_INTEGRATION = True
-SIMULATION = True
+ALGORITHMICS_MECHANICS_INTEGRATION = False
+SIMULATION = False
+RESIZE = True
 
-IMAGE_PROCESSING_FEATURES = (FLIP, CROP, LIVE, CALIBRATE)
+
+IMAGE_PROCESSING_FEATURES = (FLIP, CROP, LIVE, CALIBRATE,RESIZE)
 INTEGRATION = (IMAGE_PROCESSING_ALGORITHMICS_INTEGRATION, ALGORITHMICS_MECHANICS_INTEGRATION)
 
 
@@ -47,9 +49,10 @@ def fruit_shaninja(src, settings, image_processing_features=IMAGE_PROCESSING_FEA
     fruits_info = []  # Initialize fruits known.
     # Create new camera object.
     camera = Camera(src, flip=image_processing_features[0], crop=image_processing_features[1],
-                    live=image_processing_features[2], calibrate=image_processing_features[3])
+                    live=image_processing_features[2], calibrate=image_processing_features[3], resize=image_processing_features[4])
     if camera.LIVE:
         camera.set_camera_settings(settings)
+
 
     # Allows user to click in order to capture background.
     print("choose background")
@@ -60,10 +63,13 @@ def fruit_shaninja(src, settings, image_processing_features=IMAGE_PROCESSING_FEA
     buffer = []  # Buffer of images for debugging purposes.
 
     # Main while loop.
-    while camera.is_opened() and counter < 90000:
+    while camera.is_opened() and counter < 100:
         t1 = time.perf_counter()
         counter += 1
         current = camera.next_frame(current)  # Retrieve next frame.
+
+        # current = cv2.resize(current,(480,640))
+
         temp_frame = current.copy()  # Copy the frame.
         detection_results = Fd.fruit_detection(temp_frame, bg, Ip.CONTOUR_AREA_THRESH)  # Run detection on fruits.
         cv2.drawContours(temp_frame, detection_results.conts, -1, (0, 255, 0), 2)  # Draw the fruits as detected.
@@ -78,10 +84,11 @@ def fruit_shaninja(src, settings, image_processing_features=IMAGE_PROCESSING_FEA
         buffer.append(temp_frame)  # Inserts frame to buffer.
         t2 = time.perf_counter()
         print("time for everything", abs(t1 - t2))
+        cv2.waitKey(0)
         if cv2.waitKey(1) == 27:
             break
-    Ip.debug_with_buffer(buffer)
-    # Ip.show_original(camera)
+    # Ip.debug_with_buffer(buffer)
+    Ip.show_original(camera)
 
 
 if __name__ == '__main__':

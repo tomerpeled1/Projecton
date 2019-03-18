@@ -1,6 +1,7 @@
 """
 Takes care of camera settings and interface.
 """
+import copy
 
 import cv2
 from imutils.video import WebcamVideoStream
@@ -28,7 +29,7 @@ WHITE_BALANCE = True
 
 class Camera:
 
-    def __init__(self, src=0, flip=True, crop=False, live=True, calibrate=False):
+    def __init__(self, src=0, flip=True, crop=False, live=True, calibrate=False, resize=False):
         """
         Constructor for camera object.
         :param src: The source for the camera. 0 for live and video name for saved video.
@@ -42,6 +43,7 @@ class Camera:
         self.CROP = crop
         self.LIVE = live
         self.CALIBRATE = calibrate
+        self.RESIZE = resize
         # Opens a stream for the camera.
         if self.LIVE:
             self.stream = WebcamVideoStream(src=src, name="Live Video").start()
@@ -63,17 +65,23 @@ class Camera:
         :return: the frame after being read.
         """
         frame = self.stream.read()
+        to_save = []
         # Option for calibration.
         if self.CALIBRATE:
             frame = self.crop_to_screen_size(frame)
         self.current = frame
+        if self.RESIZE:
+            frame = cv2.resize(frame, (640,480))
+            to_save = copy.deepcopy(frame)
         # Option for crop.
         if self.CROP:
             frame = self.crop_image(frame)
         # Option for flip.
         if self.FLIP:
             frame = Camera.flip(frame)
-        return frame
+            to_save = Camera.flip(to_save)
+
+        return frame,to_save
 
     @staticmethod
     def flip(frame):
@@ -98,14 +106,14 @@ class Camera:
         :return: The first frame from the stream which is different than current.
         """
         while True:
-            to_return = self.read()
+            (to_return, to_save) = self.read()
             dif = cv2.subtract(to_return, current)
             dif = cv2.cvtColor(dif, cv2.COLOR_BGR2GRAY)
             # Checks if there is a difference between current and to_return.
             if cv2.countNonZero(dif) > 0:
                 # Saves image to buffer.
                 if len(self.buffer) < self.MAX_SIZE_BUFFER:
-                    self.buffer.append(self.current)
+                    self.buffer.append(to_save)
                 return to_return
 
     def next_frame_for_bg(self, current):
@@ -115,7 +123,7 @@ class Camera:
         :return: next frame different from current.
         """
         while True:
-            to_return = self.read()
+            to_return,_ = self.read()
             dif = cv2.subtract(to_return, current)
             dif = cv2.cvtColor(dif, cv2.COLOR_BGR2GRAY)
             if cv2.countNonZero(dif) > 0:
@@ -166,6 +174,7 @@ class Camera:
         cam.set(14, settings[1])  # gain           min: 0   , max: 127 , increment:1
         cam.set(15, settings[2])  # exposure       min: -7  , max: -1  , increment:1
         cam.set(28, settings[3])  # focus
+
         if white_balance:
             cam.set(17, 2000)  # white_balance  min: 4000, max: 7000, increment:1
 
@@ -202,7 +211,7 @@ class Camera:
         Waits for click to capture image.
         :return: image captured.
         """
-        frame = self.read()
+        frame,_ = self.read()
         counter = 0
         while True:
             frame = self.next_frame_for_bg(frame)

@@ -17,7 +17,9 @@ import threading
 
 
 # ----------------- CONSTANTS -------------------
-RELATIVE_ACC = 1.478  # from experiences we did it tracker program
+#first acc is measured, second is from fazkanoot
+# RELATIVE_ACC = 1.478  # from experiences we did it tracker program
+RELATIVE_ACC = 1.1    # from experiences we did it tracker program
 CAMERA_FPS = 30  # frames per second
 TIME_BETWEEN_2_FRAMES = 1.0 / CAMERA_FPS  # in sec
 CROP_SIZE = (160, 480)  # (y,x) in pixels
@@ -27,7 +29,7 @@ ACC = RELATIVE_ACC * SCREEN_SIZE[0]
 INTEGRATE_WITH_MECHANICS = False  # make True to send slices to ArduinoCommunication
 
 on_screen_fruits = []
-SIMULATE = False  # make True to activate simulation
+SIMULATE = True  # make True to activate simulation
 slice_queue_lock = threading.Condition()
 simulation_thread = None
 slice_queue = []
@@ -42,11 +44,11 @@ def pixel2cm(pix_loc):
             and we look at it from the bottom
     """
     (j_coord_crop, i_coord_crop, t) = pix_loc
-    i_coord_frame = FRAME_SIZE[0] - CROP_SIZE[0] + i_coord_crop
+    i_coord_frame = FRAME_SIZE[0] + (- CROP_SIZE[0] + i_coord_crop)
     j_coord_frame = FRAME_SIZE[1] / 2 - CROP_SIZE[1] / 2 + j_coord_crop
     i_coord_screen = (float(i_coord_frame / FRAME_SIZE[0])) * SCREEN_SIZE[0]
     j_coord_screen = (1 - float(j_coord_frame / FRAME_SIZE[1])) * SCREEN_SIZE[1]
-    return j_coord_screen, i_coord_screen, t  # (x,y)
+    return j_coord_screen, i_coord_screen, t  # (x,y,t)
 
 
 def cm2pixel(cm_loc):
@@ -225,7 +227,7 @@ def get_trajectory_by_fruit_locations(fruit_locs):
     r_coords = get_r_coords_by_xy_coords(x_coords, y_coords)
 
     # plot the given fruit locations (not the trajectory)
-    # plt.plot(x_coords, y_coords)
+    # plt.plot(x_coords, y_coords, 'bo')
     # plt.show()
 
     # values between last location to first location
@@ -239,35 +241,30 @@ def get_trajectory_by_fruit_locations(fruit_locs):
     y0_mean = st.mean(y_coords)
     # x0_last = x_coords[-1]
     # y0_last = y_coords[-1]
-    x0 = x0_mean
-    y0 = y0_mean
-
-    # *****options for theta value*****
-    theta_array = [0 for _ in range(len(x_coords) - 1)]
-    for i in range(len(x_coords) - 1):
-        if (x_coords[i + 1] - x_coords[i]) != 0:  # to prevent division by zero
-            delta_x = (x_coords[i + 1] - x_coords[i])
-        else:
-            delta_x = 0.001
-        theta_array[i] = math.pi - math.atan((y_coords[i + 1] - y_coords[i]) / delta_x)
-    theta_median = st.median(theta_array)  # best theta
-    # theta_mean = st.mean(theta_array)
-    # theta_start_to_end = math.pi - math.atan(y_total / x_total)
-    theta = theta_median
+    # x0 = x_coords[0]
+    # y0 = y_coords[0]
 
     # *****options for v0 value*****
     # r_total_real = abs((SCREEN_SIZE[0] / 3 / math.sin(theta)))  # 3 is because the screen is croped to third
     v_array = [0 for _ in range(len(r_coords))]
     vy_array = [0 for _ in range(len(r_coords))]
+    vx_array = [0 for _ in range(len(r_coords))]
     for i in range(len(r_coords)):
-        v_array[i] = r_coords[i] / TIME_BETWEEN_2_FRAMES
-        vy_array[i] = (y_coords[i + 1] - y_coords[i]) / TIME_BETWEEN_2_FRAMES
+        # v_array[i] = r_coords[i] / TIME_BETWEEN_2_FRAMES
+        vx_array[i] = (x_coords[i + 1] - x_coords[i]) / TIME_BETWEEN_2_FRAMES
+
+        cur_vy = (y_coords[i + 1] - y_coords[i]) / TIME_BETWEEN_2_FRAMES
+        # now try to get the v_entry from current v
+        vy = cur_vy - ACC * i * TIME_BETWEEN_2_FRAMES
+        vy_array[i] = vy
 
     # v0_median = st.median(v_array)
-    v0_mean = st.mean(v_array)
+    # v0_mean = st.mean(v_array)
     # v0_rms = rms(v_array)
     # vy_median = st.median(vy_array)
-    # vy_mean = st.mean(vy_array)
+    vy_mean = st.mean(vy_array)
+    vx_mean = st.mean(vx_array)
+    v0_mean = math.sqrt(vy_mean ** 2 + vx_mean ** 2)
 
     # v0_by_vy_end_to_end = y_total / t_total / math.sin(theta)
     # v0_by_vy_mean = vy_mean / math.sin(theta)
@@ -277,11 +274,36 @@ def get_trajectory_by_fruit_locations(fruit_locs):
 
     v0 = v0_mean
 
+    # *****options for theta value*****
+    theta_array = [0 for _ in range(len(x_coords) - 1)]
+    for i in range(len(x_coords) - 1):
+        if (x_coords[i + 1] - x_coords[i]) != 0:  # to prevent division by zero
+            delta_x = (x_coords[i + 1] - x_coords[i])
+        else:
+            delta_x = 0.001
+        # theta_array[i] = math.pi - math.atan((y_coords[i + 1] - y_coords[i]) / delta_x)
+        if vx_mean == 0: vx_mean = 0.00000001
+        theta_array[i] = math.pi - math.atan(vy_mean/vx_mean)
+
+    # theta_median = st.median(theta_array)  # best theta
+    theta_mean = st.mean(theta_array)
+    # theta_start_to_end = math.pi - math.atan(y_total / x_total)
+    theta = theta_mean
+
+    # ***** more options for x0 and y0 values*****
+    x0_array, y0_array = [],[]
+    for i in range(len(x_coords) - 1):
+        x0_array.append(x_coords[i] - TIME_BETWEEN_2_FRAMES*i * vx_mean)
+        y0_array.append(y_coords[i] - TIME_BETWEEN_2_FRAMES * i * vy_mean)
+
+    x0 = st.mean(x0_array)
+    y0 = st.mean(y0_array)
+
     # the trajectory by the fitted values (the returned object)
     trajectory = Trajectory(x0, y0, v0, theta)
 
     # plot the trajectory
-    # draw_trajectory_matplotlib(trajectory, x_coords, y_coords)
+    draw_trajectory_matplotlib(trajectory, x_coords, y_coords)
 
     return trajectory
 
@@ -295,8 +317,8 @@ def draw_trajectory_matplotlib(trajectory, x_coords, y_coords):
     """
     t_tot = 3
     dt = 0.1
-    x_lim = 13
-    y_lim = 16
+    x_lim = 20
+    y_lim = 25
 
     times = range(-int(t_tot / dt), int(t_tot / dt))
     xy = [[0 for _ in times], [0 for _ in times]]
@@ -304,11 +326,11 @@ def draw_trajectory_matplotlib(trajectory, x_coords, y_coords):
     for i in times:
         xy[0][i], xy[1][i] = route(dt * i)
 
-    plt.plot(xy[0], xy[1], 'ro')
-    plt.plot(x_coords, y_coords, 'bo')
-    plt.ylim(0, x_lim)
-    plt.xlim(0, y_lim)
-    plt.show()
+    # plt.plot(xy[0], xy[1], 'ro')
+    # plt.plot(x_coords, y_coords, 'bo')
+    # plt.ylim(0, y_lim)
+    # plt.xlim(0, x_lim)
+    # plt.show()
 
 
 def calc_slice(fruit_trajectories_and_starting_times):

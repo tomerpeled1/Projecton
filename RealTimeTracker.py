@@ -73,13 +73,16 @@ def track_object(detection_results, fruit):
             # This means we tracked the fruit we were looking for.
             # removes the contour so we won't look for it again.
             detection_results.conts.pop(index)
-            old_track_window = rect2window(detection_results.rects.pop(index))
+            rect = detection_results.rects.pop(index)
+            old_track_window = rect2window(rect)
             detection_results.centers.pop(index)
             new_track_window = resize_track_window(old_track_window)
             # Updates the fruit track window with new frame. TODO - Try to take the meanshift window instead.
             fruit.track_window = new_track_window
             # At the end, we add another center.
             fruit.centers.append(min_cen)
+            # cent = (int(center(rect)[0]), int(center(rect)[1]), min_cen[2])
+            # fruit.centers.append(cent)
             # Update the fruit's falling status.
             update_falling(fruit)
             return True
