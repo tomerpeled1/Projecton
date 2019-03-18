@@ -20,7 +20,7 @@ GREEN = (0, 255, 0)
 # MECHANICS
 SCREEN = (16, 12)  # dimensions of 10'' screen
 ARMS = (15, 10)  # length of arm links in cm
-d = 18  # distance from screen in cm
+d = 15  # distance from screen in cm
 STEPS_ROUND = 200  # steps of the motor for full round
 MINIMAL_ANGLE = 2 * np.pi / STEPS_ROUND  # minimal angle step the motor can do
 STEPS_FRACTION = 8  # resolution of micro-stepping
@@ -144,7 +144,7 @@ def draw_graph(x, y, title, xlabel, ylabel):
     plt.show()
 
 
-# width anf height of the window of the pygame simulation
+# width and height of the window of the pygame simulation
 WIDTH = cm_to_pixels(2 * SCREEN[0])
 HEIGHT = cm_to_pixels(2 * (SCREEN[1] + d))
 
@@ -254,37 +254,43 @@ def duplicate_theta_and_phi_values_for_simulation(theta_vector, phi_vector, step
     :param steps_phi: steps for the phi motor - int list
     :return: tuple of 2 lists (theta vector, phi vector) in the right dt interval
     """
-    # the vectors for running the simulation - in the ideal dt
-    theta_simulation = [0 for _ in range(times_ideal)]
-    phi_simulation = [0 for _ in range(times_ideal)]
+    # # the vectors for running the simulation - in the ideal dt
+    # theta_simulation = [0 for _ in range(times_ideal)]
+    # phi_simulation = [0 for _ in range(times_ideal)]
+    #
+    # # initialize the first angles
+    # theta_simulation[0] = theta_vector[0]
+    # phi_simulation[0] = phi_vector[0]
+    #
+    # # make the delay between 2 moves - the delay is according to the time left to fill the dt_serial
+    # angle_move_index = 0
+    # times_ratio = int(times_ideal / times_serial)
+    # for i in range(times_ideal-1):
+    #     if i % times_ratio == 0 and angle_move_index < len(steps_theta):
+    #         if abs(steps_theta[angle_move_index]) == 0:
+    #             theta_simulation[i + 1] = theta_simulation[i]
+    #         else:
+    #             for j in range(abs(steps_theta[angle_move_index])):
+    #                 theta_simulation[i + j + 1] = theta_simulation[i + j] + \
+    #                             np.sign(steps_theta[angle_move_index]) * MINIMAL_ANGLE
+    #         if abs(steps_phi[angle_move_index]) == 0:
+    #             phi_simulation[i + 1] = phi_simulation[i]
+    #         else:
+    #             for j in range(abs(steps_phi[angle_move_index])):
+    #                 phi_simulation[i + j + 1] = phi_simulation[i + j] + \
+    #                             np.sign(steps_phi[angle_move_index]) * MINIMAL_ANGLE
+    #         angle_move_index += 1
+    #     else:
+    #         if theta_simulation[i + 1] == 0:
+    #             theta_simulation[i + 1] = theta_simulation[i]
+    #         if phi_simulation[i + 1] == 0:
+    #             phi_simulation[i + 1] = phi_simulation[i]
 
-    # initialize the first angles
-    theta_simulation[0] = theta_vector[0]
-    phi_simulation[0] = phi_vector[0]
-
-    # make the delay between 2 moves - the delay is according to the time left to fill the dt_serial
-    angle_move_index = 0
-    times_ratio = int(times_ideal / times_serial)
-    for i in range(times_ideal-1):
-        if i % times_ratio == 0 and angle_move_index < len(steps_theta):
-            if abs(steps_theta[angle_move_index]) == 0:
-                theta_simulation[i + 1] = theta_simulation[i]
-            else:
-                for j in range(abs(steps_theta[angle_move_index])):
-                    theta_simulation[i + j + 1] = theta_simulation[i + j] + \
-                                np.sign(steps_theta[angle_move_index]) * MINIMAL_ANGLE
-            if abs(steps_phi[angle_move_index]) == 0:
-                phi_simulation[i + 1] = phi_simulation[i]
-            else:
-                for j in range(abs(steps_phi[angle_move_index])):
-                    phi_simulation[i + j + 1] = phi_simulation[i + j] + \
-                                np.sign(steps_phi[angle_move_index]) * MINIMAL_ANGLE
-            angle_move_index += 1
-        else:
-            if theta_simulation[i + 1] == 0:
-                theta_simulation[i + 1] = theta_simulation[i]
-            if phi_simulation[i + 1] == 0:
-                phi_simulation[i + 1] = phi_simulation[i]
+    factor = int(times_ideal/times_serial)
+    theta_mul = [[angle]*factor for angle in theta_vector]
+    phi_mul = [[angle]*factor for angle in phi_vector]
+    theta_simulation = unite_vector(theta_mul)
+    phi_simulation = unite_vector(phi_mul)
 
     return theta_simulation, phi_simulation
 
@@ -346,6 +352,11 @@ def xy_by_fruit_trajectory(trajectory, total_time, dt):
         y_fruit[i] += d
     return x_fruit, y_fruit
 
+def unite_vector(a):
+    united = []
+    for i in a:
+        united += i
+    return united
 
 # ------------- CALCULATE LOCATIONS -------------
 def run_simulation(func, fruits_trajectories_and_starting_times):

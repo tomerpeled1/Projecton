@@ -23,16 +23,15 @@ STEPS_FRACTION = 8  # the number of steps to make a full step (full step is 1.8 
 MINIMAL_ANGLE = 2 * np.pi / (STEPS_PER_REVOLUTION * STEPS_FRACTION)  # the minimal angle step of the motor in rad (it is
 # 1.8 degrees divided by the steps fraction)
 ARMS = [15.0, 10.0]  # length of arm links in cm
-d = 18.0  # distance from motor to screen in cm
+d = 15.0  # distance from motor to screen in cm
 
 # SERIAL CONSTANTS
-END_WRITING = 'e'
-SLICE_END_SIGNAL = 'z'
-START_SLICE = 'd'
-LENGTH_OF_COMMAND = 6  # the length of a command to the serial that contains the number of steps for each motor and the
+END_WRITING = '}'
+START_SLICE = '~'
+LENGTH_OF_COMMAND = 2  # the length of a command to the serial that contains the number of steps for each motor and the
 SERIAL_BUFFER_SIZE = 64  # in bytes
 COMMAND_PACKAGE_SIZE = math.floor(SERIAL_BUFFER_SIZE/LENGTH_OF_COMMAND)  # number of commands to write at once
-MAX_COMMAND_IN_INVERT = 5  # number of steps to move at every command in inverse slice
+MAX_COMMAND_IN_INVERT = 10  # number of steps to move at every command in inverse slice
 
 # TIME CONSTANTS
 T = 1.0  # max value of parameter at slice
@@ -118,12 +117,13 @@ def quantize_trajectory(get_xy_by_t):
     return steps_theta, steps_phi
 
 
-def make_slice_by_trajectory(get_xy_by_t):
+def make_slice_by_trajectory(get_xy_by_t, time_to_slice):
     """
     Sends commands to Arduino according to the given route from the algorithmic module.
     :param get_xy_by_t: function given form algorithmic module
     """
     steps_theta, steps_phi = quantize_trajectory(get_xy_by_t)
+    wait(time_to_slice - calc_time_of_slice(steps_theta, steps_phi))
     move_2_motors(steps_theta, steps_phi)
     i_steps_theta, i_steps_phi = invert_slice(steps_theta, steps_phi)
     move_2_motors(i_steps_theta, i_steps_phi, True)
@@ -177,19 +177,9 @@ def encode_message(steps_theta, steps_phi):
     Builds the message to send to Arduino according to protocol.
     :param steps_theta: steps to move in theta motor
     :param steps_phi: steps to move in phi motor
-    :return: '[steps-theta][steps-phi][sign-theta][sign-phi]'
+    :return: '[steps-theta-bit][steps-phi-bit]'
     """
-    message = abs(steps_theta) * 10000 + abs(steps_phi) * 100
-    if steps_theta < 0:
-        message += 10
-    if steps_phi < 0:
-        message += 1
-
-    message = str(message)
-    len_message = len(message)
-    for _ in range(6 - len_message):
-        message = "0" + message
-    return message
+    return chr(steps_theta + 64) + chr(steps_phi + 64)
 
 
 def move_2_motors(steps_theta, steps_phi, inverse=False):  # WRITE MAXIMUM 41 STEPS PER SLICE
@@ -310,12 +300,13 @@ def calc_time_of_slice(steps_theta, steps_phi):
 
 if __name__ == '__main__':
     # ערס mode
-    steps_theta_main = 36 * [-5]
-    steps_phi_main = 36 * [0]
-    move_2_motors(steps_theta_main, steps_phi_main)
-    start_main = time.perf_counter()
-    i_steps_theta_main, i_steps_phi_main = invert_slice(steps_theta_main, steps_phi_main)
-    while 1000.0*(time.perf_counter() - start_main) < WAIT_FOR_STOP:
-        pass
-    move_2_motors(i_steps_theta_main, i_steps_phi_main)
-    wait(calc_time_of_slice(steps_theta_main, steps_phi_main))
+    while True:
+        steps_theta_main = 36 * [-5]
+        steps_phi_main = 36 * [-10]
+        move_2_motors(steps_theta_main, steps_phi_main)
+        start_main = time.perf_counter()
+        i_steps_theta_main, i_steps_phi_main = invert_slice(steps_theta_main, steps_phi_main)
+        while 1000.0*(time.perf_counter() - start_main) < WAIT_FOR_STOP:
+            pass
+        move_2_motors(i_steps_theta_main, i_steps_phi_main)
+        wait(calc_time_of_slice(steps_theta_main, steps_phi_main))

@@ -15,16 +15,45 @@ LIGHT_LAB_SETTINGS = (215, 75, -7, 10)  # order is (saturation, gain, exposure, 
 TABLE_ABOVE_SETTINGS = (255, 100, -6, 10)  # order is (saturation, gain, exposure, focus)
 MORNING_101_SETTINGS = (220, 40, -7, 5)  # order is (saturation, gain, exposure, focus)
 DARK_101_SETTINGS = (255, 144, -8, 16)  # order is (saturation, gain, exposure, focus)
-DARK_101_SETTINGS_BEESITO = (255, 127, -7, 5)
-MORNING_101_SETTINGS_BEESITO = (255, 127, -7, 10)
+DARK_101_SETTINGS_BEESITTO = (255, 127, -7, 5)
+MORNING_101_SETTINGS_BEESITTO = (255, 127, -7, 10)
 IPAD_NIGHT_LIT = (255, 24, -7, 10)
 IPAD_NIGHT_LIT_SILVER = (255, 37, -7, 10)
 IPAD_NIGHT_DARK = (255, 8, -6, 10)
 IPAD_B4_MIDDLE_LIGHTS_OFF_CLOSED_DRAPES = (255, 7, -6, 5)
 IPAD_B4_MIDDLE_LIGHTS_OFF_CLOSED_DRAPES_2 = (255, 18, -6, 10)
 
+CALIBRATE_FILE_NAME = "calibration data.txt"
+
 # Parameter whether or not set specific white balance - default is 2000.
 WHITE_BALANCE = True
+
+
+def calibrate_from_file():
+    """
+    Gets the calibration data from the saved file (in case CALIBRATE=False).
+    :return: tuple of (bl,tr)
+    """
+    with open(CALIBRATE_FILE_NAME, "r") as calibrate_file:
+        lines = calibrate_file.readlines()
+    lines = [int(arg) for arg in lines]
+    print("read calibration data:", lines)
+    return lines[0:2], lines[2:4]
+
+
+def set_calibrate_file(bl, tr):
+    """
+    re-writes the calibration data file with the new calibration.
+    :param bl: bottom-left corner of screen (list of [x,y])
+    :param tr: top-right corner of screen (list of [x,y])
+    :return:
+    """
+    print("writing calibration data:", bl, tr)
+    with open(CALIBRATE_FILE_NAME, "w") as calibrate_file:
+        calibrate_file.write(str(bl[0]) + "\n")
+        calibrate_file.write(str(bl[1]) + "\n")
+        calibrate_file.write(str(tr[0]) + "\n")
+        calibrate_file.write(str(tr[1]) + "\n")
 
 
 class Camera:
@@ -50,8 +79,7 @@ class Camera:
         else:
             self.stream = SavedVideoWrapper.SavedVideoWrapper(src)
         # Crop dimensions for automatic calibration.
-        self.bl_crop_dimensions = []
-        self.tr_crop_dimensions = []
+        self.bl_crop_dimensions, self.tr_crop_dimensions = calibrate_from_file()
         # Current frame taken.
         self.current = None
         # Buffer which saves the original frames to display for debug purposes.
@@ -67,8 +95,7 @@ class Camera:
         frame = self.stream.read()
         to_save = []
         # Option for calibration.
-        if self.CALIBRATE:
-            frame = self.crop_to_screen_size(frame)
+        frame = self.crop_to_screen_size(frame)
         self.current = frame
         if self.RESIZE:
             frame = cv2.resize(frame, (640,480))
@@ -193,6 +220,7 @@ class Camera:
                     (bl, tr) = calib(frame)
                     self.bl_crop_dimensions = bl
                     self.tr_crop_dimensions = tr
+                    set_calibrate_file(bl, tr)
                     return
 
     def wait(self, x):
