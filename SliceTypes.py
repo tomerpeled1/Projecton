@@ -8,11 +8,14 @@ import Algorithmics
 
 LINE_LENGTH = 10
 
-r = 9.9  # second arm length in cm
-R = 14.9  # first arm length in cm
-d = 17.9  # distance of major axis from screen in cm
+r = 10  # second arm length in cm
+R = 15  # first arm length in cm
+d = 15  # distance of major axis from screen in cm
 SCREEN = [16, 12]  # (x,y) dimensions of screen in cm
+AVERAGE_TIME_UNTIL_PEAK = 0.8
 
+def distance(a, b):
+    return math.sqrt((a[0] - b[0])**2 + (a[1] - b[1])**2)
 
 def tuple_add(tup1, tup2):
     """
@@ -57,9 +60,11 @@ def slice_to_peak(arm_loc, fruit_trajectories_and_starting_times):
     chosen_fruit = fruit_trajectories_and_starting_times[0]
     # fruits to show their trajectory and than to delete by Algorithmics.remove_sliced_fruits(chosen_fruits)
     chosen_fruits = [chosen_fruit]
-    chosen_trajectory, timer = chosen_fruit
+    chosen_trajectory, time_created = chosen_fruit
     # the coordinates of the peak
     t_peak, (x_peak, y_peak) = chosen_trajectory.calc_peak()
+    if distance((SCREEN[0]/2, -d), (x_peak, y_peak)) > R + r:
+        return radius_slice(arm_loc, fruit_trajectories_and_starting_times)
     # converting the int to the right coordinate system
     x_peak = x_algorithmics_to_mechanics(x_peak)
 
@@ -70,14 +75,17 @@ def slice_to_peak(arm_loc, fruit_trajectories_and_starting_times):
         :return: the location (x, y) of the pen in cm
         """
         # TODO need to check the factor 2:
-        x_slice = x_arm_loc + (x_peak - x_arm_loc) * t * 2
-        y_slice = y_arm_loc + (y_peak - y_arm_loc) * t * 2
+        x_slice = x_arm_loc + (x_peak - x_arm_loc) * t * 1.1
+        y_slice = y_arm_loc + (y_peak - y_arm_loc) * t * 1.1
         return x_slice, y_slice
 
     fruit_trajectories_and_starting_times_copy = fruit_trajectories_and_starting_times.copy()
     # delete the chosen fruit
     Algorithmics.remove_sliced_fruits(chosen_fruits)
-    return slice_trajectory, timer, t_peak, fruit_trajectories_and_starting_times_copy
+
+    ## TODO sleep until slice
+
+    return slice_trajectory, time_created, t_peak, fruit_trajectories_and_starting_times_copy
 
 
 def line_constant_speed(arm_loc, _):
@@ -203,7 +211,12 @@ def radius_slice(_, fruit_trajectories_and_starting_times):
     :return: function of (x, y) by t of the pen, None, None, None
     """
     Algorithmics.on_screen_fruits = []
+    chosen_fruit = fruit_trajectories_and_starting_times[0]
+    chosen_trajectory, time_created = chosen_fruit
+    t_peak = AVERAGE_TIME_UNTIL_PEAK
     theta_0 = math.acos(SCREEN[0] / (2 * (R + r))) + 0.07
+    # print("Tetha 0 is: " , theta_0)
+    # theta_0 = 70.0 / 180 * math.pi
 
     def ret_slice(t):
         # not normalized x and y
@@ -217,4 +230,15 @@ def radius_slice(_, fruit_trajectories_and_starting_times):
         #                             (math.cos(theta_0 + (math.pi - 2 * theta_0) * (1 - t)),
         #                              math.sin(theta_0 + (math.pi - 2 * theta_0) * (1 - t)) - d / (R + r)))), \
         #        None, None, fruit_trajectories_and_starting_times
-    return ret_slice, None,  None, fruit_trajectories_and_starting_times
+    return ret_slice, time_created,  t_peak, fruit_trajectories_and_starting_times
+
+def linear_slice(arm_loc, fruit_trajectories_and_starting_times):
+    x_arm_loc = arm_loc[0]
+    y_arm_loc = arm_loc[1]
+    x_final = x_arm_loc + 5
+    def xy_by_t(t):
+        x_slice = x_arm_loc + (x_final - x_arm_loc) * t * 2
+        y_slice = y_arm_loc
+        return x_slice, y_slice
+    return xy_by_t, None, None, fruit_trajectories_and_starting_times
+

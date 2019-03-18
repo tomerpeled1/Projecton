@@ -58,7 +58,7 @@ def draw_center(fruit, frame):
     :param frame: the frame in which we want to draw.
     """
     for cen in fruit.centers:
-        cv2.circle(frame, cen[:-1], 2, (0, 0, 255), -1)
+        cv2.circle(frame, cen[0][0:2], 2, (0, 0, 255), -1)
 
 
 def draw_trajectory(fruit, frame):
@@ -69,7 +69,7 @@ def draw_trajectory(fruit, frame):
     :param frame: a single frame
     """
     # ---------get the centers and transfer to cm.-------#
-    centers_cm = [Sc.pixel2cm(center) for center in fruit.centers]
+    centers_cm = [Sc.pixel2cm(center[0]) for center in fruit.centers]
     x_coords = [center[0] for center in centers_cm]
     y_coords = [center[1] for center in centers_cm]
     # t_coords = [center[2] for center in centers_cm]
@@ -143,6 +143,9 @@ def calc_meanshift_all_fruits(fruits_info, img_hsv):
         if (abs(correlation) > HISTS_THRESH) and fruit.counter < MAX_NUM_OF_FRAMES_ON_SCREEN:  # threshold for histogram
             # resemblance
             fruit.track_window = track_window
+            fruit.hist = new_hist
+            fruit.correlation = correlation
+            # fruit.centers[fruit.counter] = fruit.centers[fruit.counter][:-1] + (correlation,)
             fruit.counter += 1
         else:  # Otherwise the fruit is gone and we remove it from fruits_info and add it to FRUIT_TO_EXTRACT
             print("correlation: " + str(correlation))
@@ -160,6 +163,7 @@ def print_and_extract_centers(fruits_to_extract):
     """
     for fruit in fruits_to_extract:
         fruit.centers = fruit.centers[1:-1]
+        fruit.counter -= 2 ## TODO maybe huge bug!
     if fruits_to_extract:
         # # ---------Add trajectory to fruit object ------- #
         # global fruits_for_debug_trajectories
@@ -196,7 +200,7 @@ def get_fruits_info(detection_results, frame):
         crop_hist = calculate_hist_window(track_window, hsv_frame)
         # After calculating the histogram of the fruit, we add it to the list of fruits.
         fruits_info.append(Fruit(track_window, crop_hist, 0,
-                                 [detection_results.centers[0]], detection_results.time_created))
+                                 [(detection_results.centers[0], 1)], detection_results.time_created))
         # Finished dealing with box, now free it.
         detection_results.pop_element(0)
     return fruits_info
@@ -220,12 +224,13 @@ def track_known_fruits(fruits_info, current_frame, detection_results):
         to_delete = []
         for fruit in fruits_info:
             # Try to track fruit and if found update its histogram.
-            if Rtt.track_object(detection_results, fruit):  # update tracker using the detection results.
-                if fruit.counter <= MAX_NUM_OF_FRAMES_ON_SCREEN:
-                    fruit.hist = calculate_hist_window(fruit.track_window, img_hsv)
+            if not Rtt.track_object(detection_results, fruit):
+                to_delete.append(fruit) # update tracker using the detection results.
+                # if fruit.counter <= MAX_NUM_OF_FRAMES_ON_SCREEN:
+                    # fruit.hist = calculate_hist_window(fruit.track_window, img_hsv) ## TODO remove first fruits for trajectory fit
             # If fruit not found extract it.
-            else:
-                to_delete.append(fruit)
+            # else:
+            #     to_delete.append(fruit)
         # Extract all fruits not tracked.
         global FRUIT_TO_EXTRACT
         for deleted_fruit in to_delete:

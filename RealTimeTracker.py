@@ -37,7 +37,7 @@ def update_falling(fruit):
     :param fruit: The fruit which we want to update.
     """
     assert len(fruit.centers) > 1
-    if fruit.centers[0][1] < fruit.centers[1][1]:
+    if fruit.centers[0][0][1] < fruit.centers[1][0][1]:
         fruit.is_falling = True
 
 
@@ -67,7 +67,7 @@ def track_object(detection_results, fruit):
                 index = i
         # Threshold - if the fruit found is too far from original fruit.
         if min_dis > MOVEMENT_RADIUS:
-            print("min dis: " + str(min_dis))
+            # print("min dis: " + str(min_dis))
             return False
         else:
             # This means we tracked the fruit we were looking for.
@@ -79,7 +79,7 @@ def track_object(detection_results, fruit):
             # Updates the fruit track window with new frame. TODO - Try to take the meanshift window instead.
             fruit.track_window = new_track_window
             # At the end, we add another center.
-            fruit.centers.append(min_cen)
+            fruit.centers.append((min_cen, fruit.correlation))
             # Update the fruit's falling status.
             update_falling(fruit)
             return True

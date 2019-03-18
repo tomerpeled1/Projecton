@@ -12,6 +12,8 @@ class Fruit:
         self.hist = hist
         self.counter = counter
         self.centers = centers
+        self.correlation = 1
+        # self.centers = [tuple(center) + (1,) for center in centers]
         self.time_created = time_created
         self.is_falling = False
         self.trajectory = None

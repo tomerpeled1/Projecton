@@ -23,7 +23,7 @@ STEPS_FRACTION = 8  # the number of steps to make a full step (full step is 1.8 
 MINIMAL_ANGLE = 2 * np.pi / (STEPS_PER_REVOLUTION * STEPS_FRACTION)  # the minimal angle step of the motor in rad (it is
 # 1.8 degrees divided by the steps fraction)
 ARMS = [15.0, 10.0]  # length of arm links in cm
-d = 18.0  # distance from motor to screen in cm
+d = 15.0  # distance from motor to screen in cm
 
 # SERIAL CONSTANTS
 END_WRITING = '}'
@@ -41,7 +41,7 @@ BITS_PER_BYTE = 8  # the number of bits in one byte
 WRITE_DELAY = 1000/(SERIAL_BPS/BITS_PER_BYTE/LENGTH_OF_COMMAND)  # delay in ms after writing to prevent buffer overload
 TRAJECTORY_DIVISION_NUMBER = 20  # the number of parts that the trajectory of the arm is divided to
 DT_DIVIDE_TRAJECTORY = float(T) / TRAJECTORY_DIVISION_NUMBER  # size of step in parameter
-WANTED_RPS = 0.5  # speed of motors in revolutions per second
+WANTED_RPS = 0.6  # speed of motors in revolutions per second
 ONE_STEP_DELAY = 5.0 / WANTED_RPS / STEPS_FRACTION  # in ms
 WAIT_FOR_STOP = 50.0  # time to wait after slice until committing invert slice in ms
 
@@ -117,12 +117,13 @@ def quantize_trajectory(get_xy_by_t):
     return steps_theta, steps_phi
 
 
-def make_slice_by_trajectory(get_xy_by_t):
+def make_slice_by_trajectory(get_xy_by_t, time_to_slice):
     """
     Sends commands to Arduino according to the given route from the algorithmic module.
     :param get_xy_by_t: function given form algorithmic module
     """
     steps_theta, steps_phi = quantize_trajectory(get_xy_by_t)
+    wait(time_to_slice - calc_time_of_slice(steps_theta, steps_phi))
     move_2_motors(steps_theta, steps_phi)
     i_steps_theta, i_steps_phi = invert_slice(steps_theta, steps_phi)
     move_2_motors(i_steps_theta, i_steps_phi, True)
