@@ -12,7 +12,7 @@ r = 10  # second arm length in cm
 R = 15  # first arm length in cm
 d = 15  # distance of major axis from screen in cm
 SCREEN = [16, 12]  # (x,y) dimensions of screen in cm
-AVERAGE_TIME_UNTIL_PEAK = 0.8
+AVERAGE_TIME_UNTIL_PEAK = 0.6
 
 def distance(a, b):
     return math.sqrt((a[0] - b[0])**2 + (a[1] - b[1])**2)
@@ -236,9 +236,12 @@ def linear_slice(arm_loc, fruit_trajectories_and_starting_times):
     x_arm_loc = arm_loc[0]
     y_arm_loc = arm_loc[1]
     x_final = x_arm_loc + 5
+    chosen_fruit = fruit_trajectories_and_starting_times[0]
+    chosen_trajectory, time_created = chosen_fruit
+    t_peak = AVERAGE_TIME_UNTIL_PEAK
     def xy_by_t(t):
         x_slice = x_arm_loc + (x_final - x_arm_loc) * t * 2
         y_slice = y_arm_loc
         return x_slice, y_slice
-    return xy_by_t, None, None, fruit_trajectories_and_starting_times
+    return xy_by_t, time_created, t_peak, fruit_trajectories_and_starting_times
 

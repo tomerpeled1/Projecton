@@ -54,7 +54,7 @@ WAIT_FOR_STOP = 50.0  # time to wait after slice until committing invert slice i
 # times = int(T / dt)  # the size of the vectors for the simulation
 
 try:
-    ser = serial.Serial('com6', SERIAL_BPS)  # Create Serial port object
+    ser = serial.Serial('com4', SERIAL_BPS)  # Create Serial port object
     time.sleep(2)  # wait for 2 seconds for the communication to get established
 except SerialException:
     print("Didn't create serial.")

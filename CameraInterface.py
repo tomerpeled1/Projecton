@@ -23,6 +23,8 @@ IPAD_NIGHT_DARK = (255, 8, -6, 10)
 IPAD_B4_MIDDLE_LIGHTS_OFF_CLOSED_DRAPES = (255, 7, -6, 5)
 IPAD_B4_MIDDLE_LIGHTS_OFF_CLOSED_DRAPES_2 = (255, 18, -6, 10)
 
+DARK_101_SETTINGS_new = (255, 122, -9, 10)  # order is (saturation, gain, exposure, focus)
+
 CALIBRATE_FILE_NAME = "calibration data.txt"
 
 # Parameter whether or not set specific white balance - default is 2000.
@@ -95,10 +97,15 @@ class Camera:
         frame = self.stream.read()
         to_save = []
         # Option for calibration.
-        frame = self.crop_to_screen_size(frame)
+        if(self.LIVE):
+            frame = self.crop_to_screen_size(frame)
         self.current = frame
         if self.RESIZE:
+            # cv2.imshow("before resized", frame)
+            # cv2.waitKey(0)
             frame = cv2.resize(frame, (640,480))
+            # cv2.imshow("resized", frame)
+            # cv2.waitKey(0)
             to_save = copy.deepcopy(frame)
         # Option for crop.
         if self.CROP:
@@ -201,6 +208,7 @@ class Camera:
         cam.set(14, settings[1])  # gain           min: 0   , max: 127 , increment:1
         cam.set(15, settings[2])  # exposure       min: -7  , max: -1  , increment:1
         cam.set(28, settings[3])  # focus
+        cam.set(cv2.CAP_PROP_SHARPNESS, 255)
 
         if white_balance:
             cam.set(17, 2000)  # white_balance  min: 4000, max: 7000, increment:1

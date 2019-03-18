@@ -11,12 +11,12 @@ import time
 import cv2
 
 
-SAVED_VIDEO_NAME = "sundayNoon.flv"
-BACKGROUND_FILE_NAME = "bg.png"
+SAVED_VIDEO_NAME = "2019-03-17 19-59-34.flv "
 LIVE = True
+BACKGROUND_FILE_NAME = "bg.png"
 CROP = True
 FLIP = True
-CALIBRATE = True
+CALIBRATE = False
 IMAGE_PROCESSING_ALGORITHMICS_INTEGRATION = True
 ALGORITHMICS_MECHANICS_INTEGRATION = True
 SIMULATION = False
@@ -24,7 +24,7 @@ BACKGROUND = True
 RESIZE = True
 
 
-IMAGE_PROCESSING_FEATURES = (FLIP, CROP, LIVE, CALIBRATE,RESIZE)
+IMAGE_PROCESSING_FEATURES = (FLIP, CROP, LIVE, CALIBRATE, RESIZE)
 INTEGRATION = (IMAGE_PROCESSING_ALGORITHMICS_INTEGRATION, ALGORITHMICS_MECHANICS_INTEGRATION)
 
 
@@ -51,7 +51,8 @@ def fruit_shaninja(src, settings, image_processing_features=IMAGE_PROCESSING_FEA
     fruits_info = []  # Initialize fruits known.
     # Create new camera object.
     camera = Camera(src, flip=image_processing_features[0], crop=image_processing_features[1],
-                    live=image_processing_features[2], calibrate=image_processing_features[3])
+                    live=image_processing_features[2], calibrate=image_processing_features[3],
+                    resize=image_processing_features[4])
     if camera.LIVE:
         camera.set_camera_settings(settings)
 
@@ -98,4 +99,4 @@ def fruit_shaninja(src, settings, image_processing_features=IMAGE_PROCESSING_FEA
 
 
 if __name__ == '__main__':
-    fruit_shaninja(SAVED_VIDEO_NAME, Ci.IPAD_B4_MIDDLE_LIGHTS_OFF_CLOSED_DRAPES)
+    fruit_shaninja(0, Ci.DARK_101_SETTINGS)

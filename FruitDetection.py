@@ -163,7 +163,7 @@ def fruit_detection(frame, background, contour_area_thresh):
         rects.append(rect)
         centers.append(center)
 
-    print("time for detection: " + str(time.perf_counter()-t))
+    # print("time for detection: " + str(time.perf_counter()-t))
 
     return DetectionResults.DetectionResults(conts, rects, centers)  # list of lists, representing all fruits found
 

@@ -184,7 +184,7 @@ def print_and_extract_centers(fruits_to_extract):
         # # ---------Add trajectory to fruit object ------- #
         global fruits_for_debug_trajectories
         for fruit in fruits_to_extract:
-            centers_cm = [Sc.pixel2cm(center) for center in fruit.centers]
+            centers_cm = [Sc.pixel2cm(center[0]) for center in fruit.centers]
             fruit.trajectory = Sc.get_trajectory_by_fruit_locations(centers_cm)
             # --- add first fruit to debug fruits buffer ---#
             fruits_for_debug_trajectories.append(fruit)
