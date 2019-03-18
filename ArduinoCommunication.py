@@ -301,8 +301,8 @@ def calc_time_of_slice(steps_theta, steps_phi):
 if __name__ == '__main__':
     # ערס mode
     while True:
-        steps_theta_main = 36 * [10]
-        steps_phi_main = 36 * [0]
+        steps_theta_main = 36 * [-5]
+        steps_phi_main = 36 * [-10]
         move_2_motors(steps_theta_main, steps_phi_main)
         start_main = time.perf_counter()
         i_steps_theta_main, i_steps_phi_main = invert_slice(steps_theta_main, steps_phi_main)
