@@ -11,16 +11,16 @@ import time
 import cv2
 
 
-SAVED_VIDEO_NAME = "2019-03-17 19-59-34.flv "
-LIVE = True
+SAVED_VIDEO_NAME = "section 3.mp4"
+LIVE = False
 BACKGROUND_FILE_NAME = "bg.png"
 CROP = True
-FLIP = True
+FLIP = False
 CALIBRATE = False
 IMAGE_PROCESSING_ALGORITHMICS_INTEGRATION = True
 ALGORITHMICS_MECHANICS_INTEGRATION = True
 SIMULATION = False
-BACKGROUND = True
+BACKGROUND = False
 RESIZE = True
 
 
@@ -73,8 +73,8 @@ def fruit_shaninja(src, settings, image_processing_features=IMAGE_PROCESSING_FEA
     buffer = []  # Buffer of images for debugging purposes.
 
     # Main while loop.
-
-    while camera.is_opened() and counter < 90000:
+    bool = False
+    while camera.is_opened() and counter < 100:
         t1 = time.perf_counter()
         counter += 1
         current = camera.next_frame(current)  # Retrieve next frame.
@@ -91,12 +91,16 @@ def fruit_shaninja(src, settings, image_processing_features=IMAGE_PROCESSING_FEA
         cv2.imshow("temp_frame", temp_frame)
         buffer.append(temp_frame)  # Inserts frame to buffer.
         t2 = time.perf_counter()
+        if (Ip.fruits_for_debug_trajectories):
+            # for i in range(1 ,min(len(Ip.fruits_for_debug_trajectories), 3)):
+            Ip.draw_trajectory(Ip.fruits_for_debug_trajectories[-1], camera.last_big_frame)
+        cv2.imshow("please work", camera.last_big_frame)
         print("time for everything", abs(t1 - t2))
         if cv2.waitKey(1) == 27:
             break
-    Ip.debug_with_buffer(buffer)
-    # Ip.show_original(camera)
+    # Ip.debug_with_buffer(buffer)
+    Ip.show_original(camera)
 
 
 if __name__ == '__main__':
-    fruit_shaninja(0, Ci.DARK_101_SETTINGS)
+    fruit_shaninja(SAVED_VIDEO_NAME, Ci.DARK_101_SETTINGS_new)

@@ -17,8 +17,8 @@ import threading
 
 # ----------------- CONSTANTS -------------------
 #first acc is measured, second is from fazkanoot
-# RELATIVE_ACC = 1.478  # from experiences we did it tracker program
-RELATIVE_ACC = 1.1    # from experiences we did it tracker program
+RELATIVE_ACC = 1.478  # from experiences we did it tracker program
+# RELATIVE_ACC = 1.1    # from experiences we did it tracker program
 CAMERA_FPS = 30  # frames per second
 TIME_BETWEEN_2_FRAMES = 1.0 / CAMERA_FPS  # in sec
 CROP_SIZE = (160, 480)  # (y,x) in pixels

@@ -86,8 +86,12 @@ class Camera:
         self.current = None
         # Buffer which saves the original frames to display for debug purposes.
         self.buffer = []
+        self.last_big_frame = []
         # Maximal size for buffer to avoid using too much memory.
         self.MAX_SIZE_BUFFER = 500
+
+        # fourcc = cv2.VideoWriter_fourcc(*'MJPG')
+        # self.out = cv2.VideoWriter('output.avi', fourcc, 30.0, (640, 480))
 
     def read(self):
         """
@@ -146,8 +150,10 @@ class Camera:
             # Checks if there is a difference between current and to_return.
             if cv2.countNonZero(dif) > 0:
                 # Saves image to buffer.
+                self.last_big_frame = to_save
                 if len(self.buffer) < self.MAX_SIZE_BUFFER:
                     self.buffer.append(to_save)
+                    # self.out.write(to_save)
                 return to_return
 
     def next_frame_for_bg(self, current):
