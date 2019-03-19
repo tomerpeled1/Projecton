@@ -4,9 +4,11 @@ With a given frame, should return all fruit elements found in it.
 """
 
 import numpy as np
+import scipy.signal
 import cv2
 import time
 import DetectionResults
+import matplotlib.pyplot as plt
 
 
 def fruit_detection(frame, background, contour_area_thresh):
@@ -149,24 +151,45 @@ def fruit_detection(frame, background, contour_area_thresh):
     centers = []
     for i in range(len(new_cont)):
         c = new_cont[i]
-        x_min = c[c[:, :, 0].argmin()][0][0]
-        x_max = c[c[:, :, 0].argmax()][0][0]
-        y_min = c[c[:, :, 1].argmin()][0][1]
-        y_max = c[c[:, :, 1].argmax()][0][1]
-        bot_left = (x_min, y_min)
-        # up_left = (x_min, y_max)
-        # bot_right = (x_max, y_min)
-        up_right = (x_max, y_max)
-        rect = [bot_left, up_right]
+        rect = extract_rect(c)
         center = center_of_contour(c)
-        conts.append(c)
-        rects.append(rect)
-        centers.append(center)
 
-    # print("time for detection: " + str(time.perf_counter()-t))
+        new_conts, new_rects, new_centers = separate_overlap(masked, c, rect, center)
+        conts.extend(new_conts)
+        rects.extend(new_rects)
+        centers.extend(new_centers)
+
+
+    print("time for detection: " + str(time.perf_counter()-t))
 
     return DetectionResults.DetectionResults(conts, rects, centers)  # list of lists, representing all fruits found
 
+def separate_overlap(detection_frame, cont, rect, cent):
+    [bot_left, up_right] = rect
+    (x_min, y_min) = bot_left
+    (x_max, y_max) = up_right
+    crop_by_rect = detection_frame[y_min:y_max, x_min:x_max]
+    crop_hist = cv2.calcHist([crop_by_rect], [0], None, [180],[0, 180])
+    crop_hist = [int(x) for x in crop_hist]
+    plt.bar(np.arange(1,180), crop_hist[1:], align='center', alpha=0.5)
+    plt.show()
+    cv2.imshow("a",crop_by_rect)
+    cv2.waitKey(0)
+    peaks, _ = scipy.signal.find_peaks(crop_hist)
+    if len(peaks) == 1:
+        return [cont], [rect], [cent]
+
+def extract_rect(c):
+    x_min = c[c[:, :, 0].argmin()][0][0]
+    x_max = c[c[:, :, 0].argmax()][0][0]
+    y_min = c[c[:, :, 1].argmin()][0][1]
+    y_max = c[c[:, :, 1].argmax()][0][1]
+    bot_left = (x_min, y_min)
+    # up_left = (x_min, y_max)
+    # bot_right = (x_max, y_min)
+    up_right = (x_max, y_max)
+    rect = [bot_left, up_right]
+    return rect
 
 def move_back_contour(contour, original_rect):
     x,y,w,h = original_rect
@@ -191,14 +214,14 @@ def center_of_contour(c):
 
 
 if __name__ == "__main__":
-    frame_main = cv2.imread("pic1.jpg")
+    frame_main = cv2.imread("img&vid\pic3.jpg")
     frame_main = cv2.resize(frame_main, None, fx=0.3, fy=0.3)
     (height, width, depth) = frame_main.shape
-    back_main = cv2.imread("pic2.jpg")
+    back_main = cv2.imread("img&vid\pic2.jpg")
     back_main = cv2.resize(back_main, None, fx=0.3, fy=0.3)
 
-    conts_main, rects_main = fruit_detection(frame_main, back_main, 1000)
-    cv2.drawContours(frame_main, conts_main, -1, (0, 255, 0), 2)
+    dr = fruit_detection(frame_main, back_main, 1000)
+    cv2.drawContours(frame_main, dr.conts, -1, (0, 255, 0), 2)
     # for i in range(len(rects)):
     #     frame = cv2.rectangle(frame, rects[i][UP_LEFT], rects[i][BOTTOM_RIGHT],
     #                       (255, 0, 0), 2)
