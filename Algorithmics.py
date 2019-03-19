@@ -14,6 +14,7 @@ import ArduinoCommunication
 import Simulation as Slm
 from threading import Thread
 import threading
+import numpy as np
 
 # ----------------- CONSTANTS -------------------
 #first acc is measured, second is from fazkanoot
@@ -217,10 +218,11 @@ def get_r_coords_by_xy_coords(x_coords, y_coords):
 def get_trajectory_by_fruit_locations(fruit_locs):
     """
     creating a trajectory according to the locations of the fruit by fitting speed v0 and initial angle theta
-    :param fruit_locs: 2d list of [x, y, t] of the fruit (locations of 1 fruit)
+    :param fruit_locs: 2d list of [x, y, t,correlation] of the fruit (locations of 1 fruit)
     :return: trajectory object with the fitted values for speed (v0) and angle (theta)
     """
 
+    print("fruit locs : " , fruit_locs)
     x_coords = [fruit_loc[0] for fruit_loc in fruit_locs]
     y_coords = [fruit_loc[1] for fruit_loc in fruit_locs]
     # t_coords = [fruit_loc[2] for fruit_loc in fruit_locs]  # times from image processing are not accurate for sure
@@ -249,13 +251,25 @@ def get_trajectory_by_fruit_locations(fruit_locs):
     v_array = [0 for _ in range(len(r_coords))]
     vy_array = [0 for _ in range(len(r_coords))]
     vx_array = [0 for _ in range(len(r_coords))]
+    r_mean = st.mean(r_coords)
+    r_std = np.std(r_coords)
+    r_fixed = []
     for i in range(len(r_coords)):
-        # v_array[i] = r_coords[i] / TIME_BETWEEN_2_FRAMES
-        vx_array[i] = (x_coords[i + 1] - x_coords[i]) / TIME_BETWEEN_2_FRAMES
+        if abs(r_coords[i] - r_mean) < r_std:
+            r_fixed.append(r_coords[i])
+    r_mean_fixed = st.mean(r_fixed)
+    for i in range(len(r_coords)):
+        time_with_fix = fruit_locs[i+1][2] - fruit_locs[i][2]
+        print("time with fix: ", time_with_fix)
+        # if abs(r_coords[i] - r_mean) > r_std:
+            # time_with_fix = TIME_BETWEEN_2_FRAMES * (r_coords[i] / r_mean_fixed)
 
-        cur_vy = (y_coords[i + 1] - y_coords[i]) / TIME_BETWEEN_2_FRAMES
+        # v_array[i] = r_coords[i] / TIME_BETWEEN_2_FRAMES
+        vx_array[i] = (x_coords[i + 1] - x_coords[i]) / time_with_fix
+
+        cur_vy = (y_coords[i + 1] - y_coords[i]) / time_with_fix
         # now try to get the v_entry from current v
-        vy = cur_vy - ACC * i * TIME_BETWEEN_2_FRAMES
+        vy = cur_vy - ACC * i * time_with_fix
         vy_array[i] = vy
 
     # v0_median = st.median(v_array)

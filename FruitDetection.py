@@ -9,7 +9,7 @@ import time
 import DetectionResults
 
 
-def fruit_detection(frame, background, contour_area_thresh):
+def fruit_detection(frame, background, contour_area_thresh, time_of_frame):
     """
     fruit detection algorithm. based on background reduction and hsv color format
     :param frame: current frame to find fruits in
@@ -165,7 +165,7 @@ def fruit_detection(frame, background, contour_area_thresh):
 
     # print("time for detection: " + str(time.perf_counter()-t))
 
-    return DetectionResults.DetectionResults(conts, rects, centers)  # list of lists, representing all fruits found
+    return DetectionResults.DetectionResults(conts, rects, centers, time_of_frame)  # list of lists, representing all fruits found
 
 
 def move_back_contour(contour, original_rect):

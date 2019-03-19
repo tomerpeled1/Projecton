@@ -19,7 +19,7 @@ FLIP = False
 CALIBRATE = False
 IMAGE_PROCESSING_ALGORITHMICS_INTEGRATION = True
 ALGORITHMICS_MECHANICS_INTEGRATION = True
-SIMULATION = False
+SIMULATION = True
 BACKGROUND = False
 RESIZE = True
 
@@ -73,13 +73,13 @@ def fruit_shaninja(src, settings, image_processing_features=IMAGE_PROCESSING_FEA
     buffer = []  # Buffer of images for debugging purposes.
 
     # Main while loop.
-    bool = False
     while camera.is_opened() and counter < 100:
         t1 = time.perf_counter()
         counter += 1
-        current = camera.next_frame(current)  # Retrieve next frame.
+        current = camera.next_frame(current) # Retrieve next frame.
+        time_of_frame = time.perf_counter()
         temp_frame = current.copy()  # Copy the frame.
-        detection_results = Fd.fruit_detection(temp_frame, bg, Ip.CONTOUR_AREA_THRESH)  # Run detection on fruits.
+        detection_results = Fd.fruit_detection(temp_frame, bg, Ip.CONTOUR_AREA_THRESH, time_of_frame)  # Run detection on fruits.
         cv2.drawContours(temp_frame, detection_results.conts, -1, (0, 255, 0), 2)  # Draw the fruits as detected.
         Ip.track_known_fruits(fruits_info, temp_frame, detection_results)  # Track known fruits in current frame and
         # remove them for fruits_info.
