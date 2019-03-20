@@ -204,16 +204,16 @@ def run_detection(video_name):
         for fruit in fruits_info:
             if not fruit.is_falling:
                 draw(fruit, current)
-        print("len of fruits: " + str(len(fruits_info)))
+        # print("len of fruits: " + str(len(fruits_info)))
         t1 = time.perf_counter()
         times.append(abs(t2 - t1))
         cv2.imshow("frame", current)
         if len(times) == 200:
             break
-        print("time for thing we check now: " + str(abs(t2 - t1)))
+        # print("time for thing we check now: " + str(abs(t2 - t1)))
         cv2.waitKey(0)
-    print("avg : " + str(sum(times)/len(times)))
-    print("max : " + str(max(times)))
+    # print("avg : " + str(sum(times)/len(times)))
+    # print("max : " + str(max(times)))
 
 
 def draw(fruit, frame):

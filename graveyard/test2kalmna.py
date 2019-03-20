@@ -110,8 +110,8 @@ kalman.processNoiseCov = np.array([[1,0,0,0],
 measurement = np.array((2,1), np.float32)
 # prediction = np.zeros((2,1), np.float32)
 
-print("\nObservation in image: BLUE")
-print("Prediction from Kalman: GREEN\n")
+# print("\nObservation in image: BLUE")
+# print("Prediction from Kalman: GREEN\n")
 
 # if command line arguments are provided try to read video_name
 # otherwise default to capture from attached H/W camera
@@ -259,7 +259,7 @@ if (((args.video_file) and (cap.open(str(args.video_file))))
         # stop the timer and convert to ms. (to see how long processing and display takes)
 
         stop_t = ((cv2.getTickCount() - start_t)/cv2.getTickFrequency())
-        print(stop_t)
+        # print(stop_t)
 
         # start the event loop - essential
 

@@ -163,7 +163,7 @@ def calc_meanshift_all_fruits(fruits_info, img_hsv):
             # fruit.centers[fruit.counter] = fruit.centers[fruit.counter][:-1] + (correlation,)
             fruit.counter += 1
         else:  # Otherwise the fruit is gone and we remove it from fruits_info and add it to FRUIT_TO_EXTRACT
-            print("correlation: " + str(correlation))
+            # print("correlation: " + str(correlation))
             fruits_info.remove(fruit)
             if not fruit.is_falling and len(fruit.centers) > MINIMUM_NUM_OF_CENTERS_TO_EXTRACT:
                 FRUIT_TO_EXTRACT.append(fruit)
@@ -189,7 +189,7 @@ def print_and_extract_centers(fruits_to_extract):
             # --- add first fruit to debug fruits buffer ---#
             fruits_for_debug_trajectories.append(fruit)
             # --- print the centers --- #
-            print("centers of:" + str([fruit.centers for fruit in fruits_to_extract]))
+            # print("centers of:" + str([fruit.centers for fruit in fruits_to_extract]))
 
         if INTEGRATE_WITH_ALGORITHMICS:
             Sc.update_and_slice(fruits_to_extract)

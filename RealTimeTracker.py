@@ -67,7 +67,7 @@ def track_object(detection_results, fruit):
                 index = i
         # Threshold - if the fruit found is too far from original fruit.
         if min_dis > MOVEMENT_RADIUS:
-            print("min dis: " + str(min_dis))
+            # print("min dis: " + str(min_dis))
             return False
         else:
             # This means we tracked the fruit we were looking for.

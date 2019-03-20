@@ -38,20 +38,20 @@ def fruit_detection(frame, background, contour_area_thresh, time_of_frame):
     # find value change
     # print(real_v.shape, back_v.shape)
     subtract_v = cv2.absdiff(current_v, back_v)
-    # cv2.imshow("sub_v", subtract_v)
+    cv2.imshow("sub_v", subtract_v)
 
     # find hue change (with attention to cyclic scaling), amplify hue
     subtract_h = cv2.absdiff(current_h, back_h)  # first cyclic option
-    # cv2.imshow("sub_h_bef", subtract_h)
+    cv2.imshow("sub_h_bef", subtract_h)
     white_img = 255*np.ones(current_h.shape, np.uint8)
     complement_subtract_h = cv2.subtract(white_img, subtract_h)  # second cyclic option
     final_sub_h = cv2.min(subtract_h, complement_subtract_h)  # modification to cyclic scaling
     subtract_h_mod = cv2.convertScaleAbs(final_sub_h, alpha=1.3)  # amplify hue
-    # cv2.imshow("sub_h", subtract_h_mod)
+    cv2.imshow("sub_h", subtract_h_mod)
 
     # calc total change (value + hue) and remove noise
     sub_add = cv2.add(subtract_v, subtract_h_mod)
-    # cv2.imshow("sub_add", sub_add)
+    cv2.imshow("sub_add", sub_add)
     ret3, add_thresh = cv2.threshold(sub_add, 80, 255, cv2.THRESH_BINARY)
     add_thresh = cv2.morphologyEx(add_thresh, cv2.MORPH_OPEN, np.ones((5, 5), np.uint8))  # remove noise
 
@@ -63,15 +63,15 @@ def fruit_detection(frame, background, contour_area_thresh, time_of_frame):
     mask = add_thresh
 
     # connect pieces of fruit and remove noises
-    # cv2.imshow("tt1", mask)
-    y = cv2.getStructuringElement(cv2.MORPH_ELLIPSE,(5,5))
+    cv2.imshow("mask", mask)
+    # y = cv2.getStructuringElement(cv2.MORPH_ELLIPSE,(5,5))
     z = np.ones((5, 5), np.uint8)
     mask = cv2.morphologyEx(mask, cv2.MORPH_CLOSE, z)
-    # cv2.imshow("tt2", mask)
-    y2 = cv2.getStructuringElement(cv2.MORPH_ELLIPSE,(10,10))
+    cv2.imshow("close", mask)
+    # y2 = cv2.getStructuringElement(cv2.MORPH_ELLIPSE,(10,10))
     z2 = np.ones((10, 10), np.uint8)
     mask = cv2.morphologyEx(mask, cv2.MORPH_OPEN, z2)
-    # cv2.imshow("tt3", mask)
+    cv2.imshow("open", mask)
 
 
 
@@ -95,38 +95,35 @@ def fruit_detection(frame, background, contour_area_thresh, time_of_frame):
     gray_masked = cv2.cvtColor(masked, cv2.COLOR_BGR2GRAY)
     im2, cont, hier = cv2.findContours(gray_masked, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
     cont = [c for c in cont if cv2.contourArea(c) > contour_area_thresh]
-    if len(cont) !=0:
-          a=0
 
-
-    copy = frame.copy()
-    stencil = np.zeros(copy.shape).astype(copy.dtype)
-    color = [255, 255, 255]
-    cv2.fillPoly(stencil, cont, color)
-    res = cv2.bitwise_and(copy, stencil)
-    # cv2.imshow("res", res)
-
-    new_cont = []
-    for cnt in cont:
-        x, y, w, h = cv2.boundingRect(cnt)
-        work = res.copy()
-        to_show = work[y:y + h, x:x + w]
-        gry = cv2.cvtColor(to_show, cv2.COLOR_BGR2GRAY)
-        ret, th = cv2.threshold(gry, 0, 255, cv2.THRESH_BINARY+cv2.THRESH_OTSU)
-        z = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (6, 6))
-        close = cv2.morphologyEx(th, cv2.MORPH_CLOSE, z)
-        im2, contour, hier = cv2.findContours(close, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
-        for c in contour:
-            new_cont.append(move_back_contour(c, (x,y,w,h)))
-
-        # z = np.ones((5, 5), np.uint8)
-        # close = cv2.morphologyEx(th, cv2.MORPH_CLOSE, z)
-        #
-        # cv2.imshow("th", th)
-
-
-    # im2, cont, hier = cv2.findContours(close, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
-    new_cont = [c for c in new_cont if cv2.contourArea(c) > contour_area_thresh]
+    # copy = frame.copy()
+    # stencil = np.zeros(copy.shape).astype(copy.dtype)
+    # color = [255, 255, 255]
+    # cv2.fillPoly(stencil, cont, color)
+    # res = cv2.bitwise_and(copy, stencil)
+    # # cv2.imshow("res", res)
+    #
+    # new_cont = []
+    # for cnt in cont:
+    #     x, y, w, h = cv2.boundingRect(cnt)
+    #     work = res.copy()
+    #     to_show = work[y:y + h, x:x + w]
+    #     gry = cv2.cvtColor(to_show, cv2.COLOR_BGR2GRAY)
+    #     ret, th = cv2.threshold(gry, 0, 255, cv2.THRESH_BINARY+cv2.THRESH_OTSU)
+    #     z = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (6, 6))
+    #     close = cv2.morphologyEx(th, cv2.MORPH_CLOSE, z)
+    #     im2, contour, hier = cv2.findContours(close, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
+    #     for c in contour:
+    #         new_cont.append(move_back_contour(c, (x,y,w,h)))
+    #
+    #     # z = np.ones((5, 5), np.uint8)
+    #     # close = cv2.morphologyEx(th, cv2.MORPH_CLOSE, z)
+    #     #
+    #     # cv2.imshow("th", th)
+    #
+    #
+    # # im2, cont, hier = cv2.findContours(close, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
+    # new_cont = [c for c in new_cont if cv2.contourArea(c) > contour_area_thresh]
 
     # # try to improve detection and remove spreading
     # for cnt in cont:
@@ -147,8 +144,7 @@ def fruit_detection(frame, background, contour_area_thresh, time_of_frame):
     conts = []
     rects = []
     centers = []
-    for i in range(len(new_cont)):
-        c = new_cont[i]
+    for c in cont:
         x_min = c[c[:, :, 0].argmin()][0][0]
         x_max = c[c[:, :, 0].argmax()][0][0]
         y_min = c[c[:, :, 1].argmin()][0][1]
@@ -172,7 +168,7 @@ def move_back_contour(contour, original_rect):
     x,y,w,h = original_rect
     for point in contour:
         point[0][0] += x
-        point[0]  [1] += y
+        point[0][1] += y
     return contour
 
 def center_of_contour(c):
@@ -191,14 +187,14 @@ def center_of_contour(c):
 
 
 if __name__ == "__main__":
-    frame_main = cv2.imread("pic1.jpg")
+    frame_main = cv2.imread("pic4.jpg")
     frame_main = cv2.resize(frame_main, None, fx=0.3, fy=0.3)
     (height, width, depth) = frame_main.shape
     back_main = cv2.imread("pic2.jpg")
     back_main = cv2.resize(back_main, None, fx=0.3, fy=0.3)
 
-    conts_main, rects_main = fruit_detection(frame_main, back_main, 1000)
-    cv2.drawContours(frame_main, conts_main, -1, (0, 255, 0), 2)
+    detection_results = fruit_detection(frame_main, back_main, 1000)
+    cv2.drawContours(frame_main, detection_results.conts, -1, (0, 255, 0), 2)
     # for i in range(len(rects)):
     #     frame = cv2.rectangle(frame, rects[i][UP_LEFT], rects[i][BOTTOM_RIGHT],
     #                       (255, 0, 0), 2)

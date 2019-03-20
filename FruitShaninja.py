@@ -11,7 +11,7 @@ import time
 import cv2
 
 
-SAVED_VIDEO_NAME = "2019-03-17 19-59-34.flv.mp4"
+SAVED_VIDEO_NAME = "2019-03-17 19-59-34.flv "
 LIVE = True
 BACKGROUND_FILE_NAME = "bg.png"
 CROP = True
@@ -75,6 +75,7 @@ def fruit_shaninja(src, settings, image_processing_features=IMAGE_PROCESSING_FEA
     # Main while loop.
     while camera.is_opened() and counter < 10000000:
         t1 = time.perf_counter()
+        # print("********************************************************************")
         counter += 1
         current = camera.next_frame(current) # Retrieve next frame.
         time_of_frame = time.perf_counter()
@@ -95,7 +96,7 @@ def fruit_shaninja(src, settings, image_processing_features=IMAGE_PROCESSING_FEA
             # for i in range(1 ,min(len(Ip.fruits_for_debug_trajectories), 3)):
             Ip.draw_trajectory(Ip.fruits_for_debug_trajectories[-1], camera.last_big_frame)
         cv2.imshow("please work", camera.last_big_frame)
-        print("time for everything", abs(t1 - t2))
+        # print("time for everything", abs(t1 - t2))
         if cv2.waitKey(1) == 27:
             break
     # Ip.debug_with_buffer(buffer)

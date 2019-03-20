@@ -26,7 +26,7 @@ def show_webcam(mirror=False):
         if cv2.waitKey(1) == 27:
             break  # esc to quit
         t2 = time.perf_counter()
-        print("time for frame: " + str(t2 - t1))
+        # print("time for frame: " + str(t2 - t1))
     cv2.destroyAllWindows()
 
 

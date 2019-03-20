@@ -25,6 +25,7 @@ TIME_BETWEEN_2_FRAMES = 1.0 / CAMERA_FPS  # in sec
 CROP_SIZE = (160, 480)  # (y,x) in pixels
 FRAME_SIZE = (480, 640)  # (y,x) in pixels
 SCREEN_SIZE = (12, 16)  # (y,x) in cm
+DISTANCE_FROM_TABLET = ArduinoCommunication.d
 ACC = RELATIVE_ACC * SCREEN_SIZE[0]
 INTEGRATE_WITH_MECHANICS = False  # make True to send slices to ArduinoCommunication
 
@@ -222,7 +223,7 @@ def get_trajectory_by_fruit_locations(fruit_locs):
     :return: trajectory object with the fitted values for speed (v0) and angle (theta)
     """
 
-    print("fruit locs : " , fruit_locs)
+    # print("fruit locs : " , fruit_locs)
     x_coords = [fruit_loc[0] for fruit_loc in fruit_locs]
     y_coords = [fruit_loc[1] for fruit_loc in fruit_locs]
     # t_coords = [fruit_loc[2] for fruit_loc in fruit_locs]  # times from image processing are not accurate for sure
@@ -267,12 +268,15 @@ def get_trajectory_by_fruit_locations(fruit_locs):
         times_with_fix.append(TIME_BETWEEN_2_FRAMES)
         if abs(r_coords[i] - r_mean) > abs(r_std) and r_mean_fixed != 0:
             times_with_fix[i] = TIME_BETWEEN_2_FRAMES * (r_coords[i] / r_mean_fixed)
-        print("time with fix: ", times_with_fix[i])
+        # print("time with fix: ", times_with_fix[i])
 
         # v_array[i] = r_coords[i] / TIME_BETWEEN_2_FRAMES
-        vx_array[i] = (x_coords[i + 1] - x_coords[i]) / times_with_fix[i]
+        time_fixed = times_with_fix[i]
+        if time_fixed == 0:
+            time_fixed = 0.0000001
+        vx_array[i] = (x_coords[i + 1] - x_coords[i]) / time_fixed
 
-        cur_vy = (y_coords[i + 1] - y_coords[i]) / times_with_fix[i]
+        cur_vy = (y_coords[i + 1] - y_coords[i]) / time_fixed
         # now try to get the v_entry from current v
         vy = cur_vy - ACC * i * times_with_fix[i]
         vy_array[i] = vy
@@ -365,9 +369,9 @@ def get_pen_loc():
     """
     :return: the location of the pen (x, y) in cm
     """
-    # location (3cm, 3cm) from the bottom-left corner
-    x_location = -SCREEN_SIZE[1] / 2 + 3
-    y_location = 3
+    # location (2cm, 5cm) from the bottom-left corner
+    x_location = -SCREEN_SIZE[1] / 2 + 2
+    y_location = 4
     return x_location, y_location
     # return -SCREEN_SIZE[1]/2+3, 3  # location (3cm, 3cm) from the bottom-left corner
 
@@ -377,8 +381,6 @@ def time_until_peak(time_created, time_of_slice):
     :param fruit: fruit to calculate when to slice.
     :return: the time until the slice in secs.
     """
-    if time_created is None:
-        print ("a")
     return time_created + time_of_slice - time.perf_counter()
 
 def time_until_slice(time_created, time_of_slice):
@@ -449,6 +451,8 @@ def init_everything(integrate_with_mechanics=INTEGRATE_WITH_MECHANICS, simulate=
         simulation_thread.start()
     else:
         pass
+
+
 
 
 if __name__ == "__main__":
