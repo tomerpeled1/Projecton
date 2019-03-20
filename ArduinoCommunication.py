@@ -54,7 +54,7 @@ WAIT_FOR_STOP = 50.0  # time to wait after slice until committing invert slice i
 # times = int(T / dt)  # the size of the vectors for the simulation
 
 try:
-    ser = serial.Serial('com4', SERIAL_BPS)  # Create Serial port object
+    ser = serial.Serial('com3', SERIAL_BPS)  # Create Serial port object
     time.sleep(2)  # wait for 2 seconds for the communication to get established
 except SerialException:
     print("Didn't create serial.")
@@ -123,9 +123,10 @@ def make_slice_by_trajectory(get_xy_by_t, time_to_slice):
     :param get_xy_by_t: function given form algorithmic module
     """
     steps_theta, steps_phi = quantize_trajectory(get_xy_by_t)
-    wait(time_to_slice - calc_time_of_slice(steps_theta, steps_phi))
+    wait((time_to_slice - calc_time_of_slice(steps_theta, steps_phi))*1000)
     move_2_motors(steps_theta, steps_phi)
     i_steps_theta, i_steps_phi = invert_slice(steps_theta, steps_phi)
+    wait(50)
     move_2_motors(i_steps_theta, i_steps_phi, True)
 
 

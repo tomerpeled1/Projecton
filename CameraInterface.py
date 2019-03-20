@@ -24,6 +24,8 @@ IPAD_B4_MIDDLE_LIGHTS_OFF_CLOSED_DRAPES = (255, 7, -6, 5)
 IPAD_B4_MIDDLE_LIGHTS_OFF_CLOSED_DRAPES_2 = (255, 18, -6, 10)
 
 DARK_101_SETTINGS_new = (255, 122, -9, 10)  # order is (saturation, gain, exposure, focus)
+DARK_101_SETTINGS_new2 = (255, 122, -8, 10)  # order is (saturation, gain, exposure, focus)
+MORNING_101_SETTINGS_new2 = (255, 122, -9, 10)  # order is (saturation, gain, exposure, focus)
 
 CALIBRATE_FILE_NAME = "calibration data.txt"
 

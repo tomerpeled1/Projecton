@@ -11,16 +11,16 @@ import time
 import cv2
 
 
-SAVED_VIDEO_NAME = "section 3.mp4"
-LIVE = False
+SAVED_VIDEO_NAME = "2019-03-17 19-59-34.flv.mp4"
+LIVE = True
 BACKGROUND_FILE_NAME = "bg.png"
 CROP = True
-FLIP = False
+FLIP = True
 CALIBRATE = False
 IMAGE_PROCESSING_ALGORITHMICS_INTEGRATION = True
 ALGORITHMICS_MECHANICS_INTEGRATION = True
-SIMULATION = True
-BACKGROUND = False
+SIMULATION = False
+BACKGROUND = True
 RESIZE = True
 
 
@@ -73,7 +73,7 @@ def fruit_shaninja(src, settings, image_processing_features=IMAGE_PROCESSING_FEA
     buffer = []  # Buffer of images for debugging purposes.
 
     # Main while loop.
-    while camera.is_opened() and counter < 100:
+    while camera.is_opened() and counter < 10000000:
         t1 = time.perf_counter()
         counter += 1
         current = camera.next_frame(current) # Retrieve next frame.
@@ -103,4 +103,7 @@ def fruit_shaninja(src, settings, image_processing_features=IMAGE_PROCESSING_FEA
 
 
 if __name__ == '__main__':
-    fruit_shaninja(SAVED_VIDEO_NAME, Ci.DARK_101_SETTINGS_new)
+    if LIVE:
+        fruit_shaninja(0, Ci.MORNING_101_SETTINGS_new2)
+    else:
+        fruit_shaninja(SAVED_VIDEO_NAME, Ci.DARK_101_SETTINGS_new2)
