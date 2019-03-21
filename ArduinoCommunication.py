@@ -114,6 +114,9 @@ def quantize_trajectory(get_xy_by_t):
         steps_phi_decimal[i + 1] += modulo(steps_phi_decimal[i], 1)
     steps_theta = steps_theta_decimal.astype(int)
     steps_phi = steps_phi_decimal.astype(int)
+    for i in range(len(steps_phi)):
+        if steps_phi[i] > 50 or steps_theta[i] > 50:
+            a=0
     return steps_theta, steps_phi
 
 
@@ -125,16 +128,16 @@ def make_slice_by_trajectory(get_xy_by_t, time_to_slice):
     steps_theta, steps_phi = quantize_trajectory(get_xy_by_t)
     # wait((time_to_slice - calc_time_of_slice(steps_theta, steps_phi))*1000)
     i_steps_theta, i_steps_phi = invert_slice(steps_theta, steps_phi)
-    total_steps_theta = []
-    total_steps_phi = []
-    total_steps_theta += steps_theta.tolist()
-    total_steps_theta += i_steps_theta
-    total_steps_phi += steps_phi.tolist()
-    total_steps_phi += i_steps_phi
-    move_2_motors(total_steps_theta, total_steps_phi)
+    # total_steps_theta = []
+    # total_steps_phi = []
+    # total_steps_theta += steps_theta.tolist()
+    # total_steps_theta += i_steps_theta
+    # total_steps_phi += steps_phi.tolist()
+    # total_steps_phi += i_steps_phi
+    move_2_motors(steps_theta, steps_phi)
     # i_steps_theta, i_steps_phi = invert_slice(steps_theta, steps_phi)
     # wait(50)
-    # move_2_motors(i_steps_theta, i_steps_phi, True)
+    move_2_motors(i_steps_theta, i_steps_phi, True)
 
 
 def get_angles_by_xy_and_dt(get_xy_by_t, dt):
@@ -166,6 +169,10 @@ def get_angles_by_xy_and_dt(get_xy_by_t, dt):
     delta = np.arccos(b)  # angle between r and 1st arm
     theta = alpha + delta  # angle between 1st arm and x axis
     phi = theta - beta  # angle between 2nd arm and x axis
+
+    for i in range(len(theta)-1):
+        if abs(theta[i+1]-theta[i]) > 0.2 or abs(phi[i+1]-phi[i]) > 0.2:
+            pass
 
     return theta, phi
 
@@ -229,9 +236,9 @@ def move_2_motors(steps_theta, steps_phi, inverse=False):  # WRITE MAXIMUM 41 ST
     ser.write(str.encode(START_SLICE))
     # wait for slice to end
     time_of_slice = calc_time_of_slice(steps_theta, steps_phi)
-    time.sleep(0.001 * time_of_slice)
+    # time.sleep(0.001 * time_of_slice)
     # additional sleep
-    time.sleep(0.6)
+    time.sleep(0.01)
 
     # print steps made
     print("Theta steps:")
