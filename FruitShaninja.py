@@ -7,6 +7,7 @@ import ImageProcessing as Ip
 from CameraInterface import Camera
 import CameraInterface as Ci
 import FruitDetection as Fd
+import AutomaticStart as As
 import time
 import cv2
 
@@ -55,6 +56,8 @@ def fruit_shaninja(src, settings, image_processing_features=IMAGE_PROCESSING_FEA
                     resize=image_processing_features[4])
     if camera.LIVE:
         camera.set_camera_settings(settings)
+
+    As.automatic_start()
 
     bg = cv2.imread(BACKGROUND_FILE_NAME)
     if BACKGROUND:
