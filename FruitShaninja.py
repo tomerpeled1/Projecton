@@ -58,6 +58,11 @@ def fruit_shaninja(src, settings, image_processing_features=IMAGE_PROCESSING_FEA
         camera.set_camera_settings(settings)
 
     As.automatic_start()
+    first_time = time.perf_counter()
+    while time.perf_counter() - first_time < 2:
+        current = camera.read() # Retrieve next frame.
+        As.pass_ad(current)
+
 
     bg = cv2.imread(BACKGROUND_FILE_NAME)
     if BACKGROUND:
