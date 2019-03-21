@@ -24,6 +24,7 @@ MINIMAL_ANGLE = 2 * np.pi / (STEPS_PER_REVOLUTION * STEPS_FRACTION)  # the minim
 # 1.8 degrees divided by the steps fraction)
 ARMS = [15.0, 10.0]  # length of arm links in cm
 d = 15.0  # distance from motor to screen in cm
+START_SLICE_LENGTH = 4
 
 # SERIAL CONSTANTS
 END_WRITING = '}'
@@ -41,7 +42,7 @@ BITS_PER_BYTE = 8  # the number of bits in one byte
 WRITE_DELAY = 1000/(SERIAL_BPS/BITS_PER_BYTE/LENGTH_OF_COMMAND)  # delay in ms after writing to prevent buffer overload
 TRAJECTORY_DIVISION_NUMBER = 20  # the number of parts that the trajectory of the arm is divided to
 DT_DIVIDE_TRAJECTORY = float(T) / TRAJECTORY_DIVISION_NUMBER  # size of step in parameter
-WANTED_RPS = 0.4  # speed of motors in revolutions per second
+WANTED_RPS = 0.6  # speed of motors in revolutions per second
 ONE_STEP_DELAY = 5.0 / WANTED_RPS / STEPS_FRACTION  # in ms
 WAIT_FOR_STOP = 50.0  # time to wait after slice until committing invert slice in ms
 
@@ -54,7 +55,7 @@ WAIT_FOR_STOP = 50.0  # time to wait after slice until committing invert slice i
 # times = int(T / dt)  # the size of the vectors for the simulation
 
 try:
-    ser = serial.Serial('com4', SERIAL_BPS)  # Create Serial port object
+    ser = serial.Serial('com6', SERIAL_BPS)  # Create Serial port object
     time.sleep(2)  # wait for 2 seconds for the communication to get established
 except SerialException:
     print("Didn't create serial.")
@@ -124,19 +125,12 @@ def make_slice_by_trajectory(get_xy_by_t, time_to_slice):
     """
     Sends commands to Arduino according to the given route from the algorithmic module.
     :param get_xy_by_t: function given form algorithmic module
+    :param time_to_slice: time to wait until the slice should be executed
     """
     steps_theta, steps_phi = quantize_trajectory(get_xy_by_t)
-    # wait((time_to_slice - calc_time_of_slice(steps_theta, steps_phi))*1000)
-    i_steps_theta, i_steps_phi = invert_slice(steps_theta, steps_phi)
-    # total_steps_theta = []
-    # total_steps_phi = []
-    # total_steps_theta += steps_theta.tolist()
-    # total_steps_theta += i_steps_theta
-    # total_steps_phi += steps_phi.tolist()
-    # total_steps_phi += i_steps_phi
+    wait(time_to_slice - calc_time_of_slice(steps_theta, steps_phi))
     move_2_motors(steps_theta, steps_phi)
-    # i_steps_theta, i_steps_phi = invert_slice(steps_theta, steps_phi)
-    # wait(50)
+    i_steps_theta, i_steps_phi = invert_slice(steps_theta, steps_phi)
     move_2_motors(i_steps_theta, i_steps_phi, True)
 
 
@@ -264,12 +258,22 @@ def invert_slice(steps_theta, steps_phi):
     :return: (i_steps_theta, i_steps_phi), steps of returning-to-start slice
     """
     # print("INVERT SLICE")
-    delta_theta, delta_phi = sum(steps_theta), sum(steps_phi)  # total movement in theta and phi
-    i_steps_theta = [-1*sign(delta_theta)*a for a in break_into_steps(abs(delta_theta), MAX_COMMAND_IN_INVERT)]
-    i_steps_phi = [-1*sign(delta_phi)*a for a in break_into_steps(abs(delta_phi), MAX_COMMAND_IN_INVERT)]
-    i_steps_theta = add_zeros_at_end(i_steps_theta, len(i_steps_phi))
-    i_steps_phi = add_zeros_at_end(i_steps_phi, len(i_steps_theta))
-    return i_steps_theta, i_steps_phi
+    return generate_steps_list(-sum(steps_theta), -sum(steps_phi))
+
+
+def generate_steps_list(delta_theta, delta_phi):
+    """
+    Generates lists of steps to move in each angle, given the total delta.
+    :param delta_theta: total delta to move in theta
+    :param delta_phi: total delta to move in phi
+    :return: (steps_theta, steps_phi), tuple of lists of steps in each motor
+    """
+    steps_theta = [sign(delta_theta) * a for a in break_into_steps(abs(delta_theta), MAX_COMMAND_IN_INVERT)]
+    steps_phi = [sign(delta_phi) * a for a in break_into_steps(abs(delta_phi), MAX_COMMAND_IN_INVERT)]
+    steps_theta = add_zeros_at_end(steps_theta, len(steps_phi))
+    steps_phi = add_zeros_at_end(steps_phi, len(steps_theta))
+    return steps_theta, steps_phi
+
 
 def calc_time_of_slice(steps_theta, steps_phi):
     """
@@ -285,19 +289,39 @@ def calc_time_of_slice(steps_theta, steps_phi):
     # print("time of slice is supposed to be " + str(time_of_slice/1000) + " seconds")
     return time_of_slice
 
+
 def break_into_steps(total_steps, maximal_step):
     steps_array = []
-    while(maximal_step < total_steps):
+    while maximal_step < total_steps:
         steps_array += [maximal_step]
         total_steps -= maximal_step
     if total_steps > 0:
         steps_array += [total_steps]
     return steps_array
 
+
 def add_zeros_at_end(array, length):
     if len(array) < length:
         array += [0] * (length - len(array))
     return array
+
+
+def start_cut():
+    """
+    Moves the pen to slice the starting apple.
+    :return: arm_loc at end of cut in (x,y)
+    """
+    tot_r = ARMS[0] + ARMS[1]
+    angle_to_move = math.acos(1 - (START_SLICE_LENGTH/tot_r)**2)
+    steps_theta, steps_phi = generate_steps_list(angle_to_move, angle_to_move)
+    move_2_motors(steps_theta, steps_phi)  # slice apple
+    steps_theta, steps_phi = generate_steps_list(0, -angle_to_move)
+    move_2_motors(steps_theta, steps_phi)  # go back with phi angle, to allow slice calculation
+    theta_0 = math.acos(DIMS[0]/(2*tot_r))  # theta of arm at beginning
+    return -ARMS[0]*math.cos(theta_0 + angle_to_move) - ARMS[1]*math.cos(theta_0),\
+        ARMS[0]*math.sin(theta_0 + angle_to_move) + ARMS[1]*math.sin(theta_0)
+
+
 # if __name__ == "__main__":
 # print('Lets begin...')
 # make_slice_by_trajectory(get_xy)
