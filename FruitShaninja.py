@@ -8,6 +8,7 @@ from CameraInterface import Camera
 import CameraInterface as Ci
 import FruitDetection as Fd
 import AutomaticStart as As
+import ArduinoCommunication as Ac
 import time
 import cv2
 
@@ -58,11 +59,9 @@ def fruit_shaninja(src, settings, image_processing_features=IMAGE_PROCESSING_FEA
         camera.set_camera_settings(settings)
 
     As.automatic_start()
-    first_time = time.perf_counter()
-    while time.perf_counter() - first_time < 2:
-        current = camera.read() # Retrieve next frame.
-        As.pass_ad(current)
-
+    # Ac.wait(1000)
+    current = (camera.read())[1] # Retrieve next frame.
+    As.pass_ad(current)
 
     bg = cv2.imread(BACKGROUND_FILE_NAME)
     if BACKGROUND:

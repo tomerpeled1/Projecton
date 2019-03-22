@@ -171,13 +171,13 @@ def get_angles_by_xy_and_dt(get_xy_by_t, dt):
     return theta, phi
 
 
-def wait(t):
+def wait(t_ms):
     """
     Creates a delay in the code. DO NOT USE WHILE THREADING, OR IT WILL GET STUCK!!!
     :param t: time to wait in ms.
     """
     start = time.perf_counter()
-    while time.perf_counter() < start + t/1000.0:
+    while time.perf_counter() < start + t_ms/1000.0:
         pass
 
 

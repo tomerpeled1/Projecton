@@ -11,14 +11,15 @@ ANCHOR_POINT = 0, 0  # TODO write something imformative here
 
 def automatic_start():
     # cut the apple for start
-    arm_loc = Ac.start_cut()
-
+    # arm_loc = Ac.start_cut()
+    print("made start cut")
     # Al.do_slice(St.slice_to_point(arm_loc, ANCHOR_POINT))  # TODO write slice_to_point()
 
 
 def pass_ad(frame):
     if Ip.check_ad(frame):
-        Al.do_slice(St.ad_slice())  # TODO write ad_slice()
+        print("passed ad")
+        # Al.do_slice(St.ad_slice())  # TODO write ad_slice()
 
 
 if __name__ == '__main__':

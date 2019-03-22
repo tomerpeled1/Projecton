@@ -309,6 +309,10 @@ def check_ad(frame):
     w, h = template.shape[1], template.shape[0]
     method = eval('cv2.TM_CCOEFF_NORMED')
     # Apply template Matching
+
+    cv2.imshow("frame", frame)
+    cv2.imshow("template", template)
+
     res = cv2.matchTemplate(frame, template, method)
     min_val, max_val, min_loc, max_loc = cv2.minMaxLoc(res)
     # top_left = max_loc
