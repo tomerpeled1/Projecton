@@ -37,7 +37,7 @@ def update_falling(fruit):
     :param fruit: The fruit which we want to update.
     """
     assert len(fruit.centers) > 1
-    if fruit.centers[0][0][1] < fruit.centers[1][0][1]:
+    if fruit.centers[0][0][1] <= fruit.centers[1][0][1]:
         fruit.is_falling = True
 
 
@@ -52,7 +52,7 @@ def track_object(detection_results, fruit):
     if len(detection_results.centers) > 0:
         # Turns the fruit into a rectangle represented by top left and bottom right corners.
         x, y, w, h = fruit.track_window
-        r = [(x, y), (x+w, y+h)]
+        r = [(x, y), (x + w, y + h)]
         # Calculates the center of the rectangle.
         r_cent = center(r)
         n = len(detection_results.centers)
@@ -67,7 +67,7 @@ def track_object(detection_results, fruit):
                 index = i
         # Threshold - if the fruit found is too far from original fruit.
         if min_dis > MOVEMENT_RADIUS:
-            print("min dis: " + str(min_dis))
+            # print("min dis: " + str(min_dis))
             return False
         else:
             # This means we tracked the fruit we were looking for.
@@ -93,7 +93,7 @@ def resize_track_window(track_window):
     """
     x, y, w, h = track_window
     factor = RESIZE_WINDOW_FACTOR
-    inner_window = (int(x + factor*w), int(factor*h + y), int((1-2*factor)*w), int((1-2*factor)*h))
+    inner_window = (int(x + factor * w), int(factor * h + y), int((1 - 2 * factor) * w), int((1 - 2 * factor) * h))
     return inner_window
 
 

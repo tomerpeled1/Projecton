@@ -6,7 +6,9 @@ import Algorithmics as Algo
 import ImageProcessing as Ip
 from CameraInterface import Camera
 import CameraInterface as Ci
-import FruitDetection as Fd
+import FruitDetection2 as Fd
+import AutomaticStart as As
+import ArduinoCommunication as Ac
 import time
 import cv2
 
@@ -21,7 +23,7 @@ IMAGE_PROCESSING_ALGORITHMICS_INTEGRATION = True
 ALGORITHMICS_MECHANICS_INTEGRATION = True
 SIMULATION = False
 BACKGROUND = True
-RESIZE = True
+RESIZE = False
 
 
 IMAGE_PROCESSING_FEATURES = (FLIP, CROP, LIVE, CALIBRATE, RESIZE)
@@ -56,6 +58,11 @@ def fruit_shaninja(src, settings, image_processing_features=IMAGE_PROCESSING_FEA
     if camera.LIVE:
         camera.set_camera_settings(settings)
 
+    As.automatic_start()
+    # Ac.wait(1000)
+    current = (camera.read())[1] # Retrieve next frame.
+    As.pass_ad(current)
+
     bg = cv2.imread(BACKGROUND_FILE_NAME)
     if BACKGROUND:
         # Allows user to click in order to capture background.
@@ -73,13 +80,15 @@ def fruit_shaninja(src, settings, image_processing_features=IMAGE_PROCESSING_FEA
     buffer = []  # Buffer of images for debugging purposes.
 
     # Main while loop.
-
-    while camera.is_opened() and counter < 90000:
+    while camera.is_opened() and counter < 1200:
         t1 = time.perf_counter()
+        # print("********************************************************************")
         counter += 1
-        current = camera.next_frame(current)  # Retrieve next frame.
+        current = camera.next_frame(current) # Retrieve next frame.
+        time_of_frame = time.perf_counter()
         temp_frame = current.copy()  # Copy the frame.
-        detection_results = Fd.fruit_detection(temp_frame, bg, Ip.CONTOUR_AREA_THRESH)  # Run detection on fruits.
+        detection_results = Fd.fruit_detection2(temp_frame, bg, Ip.CONTOUR_AREA_THRESH,
+                                                time_of_frame)  # Run detection on fruits.
         cv2.drawContours(temp_frame, detection_results.conts, -1, (0, 255, 0), 2)  # Draw the fruits as detected.
         Ip.track_known_fruits(fruits_info, temp_frame, detection_results)  # Track known fruits in current frame and
         # remove them for fruits_info.
@@ -91,12 +100,19 @@ def fruit_shaninja(src, settings, image_processing_features=IMAGE_PROCESSING_FEA
         cv2.imshow("temp_frame", temp_frame)
         buffer.append(temp_frame)  # Inserts frame to buffer.
         t2 = time.perf_counter()
-        print("time for everything", abs(t1 - t2))
+        if (Ip.fruits_for_debug_trajectories):
+            # for i in range(1 ,min(len(Ip.fruits_for_debug_trajectories), 3)):
+            Ip.draw_trajectory(Ip.fruits_for_debug_trajectories[-1], camera.last_big_frame)
+        cv2.imshow("please work", camera.last_big_frame)
+        # print("time for everything", abs(t1 - t2))
         if cv2.waitKey(1) == 27:
             break
-    Ip.debug_with_buffer(buffer)
-    # Ip.show_original(camera)
+    # Ip.debug_with_buffer(buffer)
+    Ip.show_original(camera)
 
 
 if __name__ == '__main__':
-    fruit_shaninja(0, Ci.DARK_101_SETTINGS)
+    if LIVE:
+        fruit_shaninja(0, Ci.DARK_101_SETTINGS_new2)
+    else:
+        fruit_shaninja(SAVED_VIDEO_NAME, Ci.DARK_101_SETTINGS_new2)

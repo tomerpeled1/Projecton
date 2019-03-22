@@ -14,16 +14,18 @@ import ArduinoCommunication
 import Simulation as Slm
 from threading import Thread
 import threading
+import numpy as np
 
 # ----------------- CONSTANTS -------------------
 #first acc is measured, second is from fazkanoot
 # RELATIVE_ACC = 1.478  # from experiences we did it tracker program
-RELATIVE_ACC = 1.1    # from experiences we did it tracker program
-CAMERA_FPS = 30  # frames per second
+RELATIVE_ACC = 1.7   # not from experiences we did it tracker program
+CAMERA_FPS = 30 # frames per second
 TIME_BETWEEN_2_FRAMES = 1.0 / CAMERA_FPS  # in sec
-CROP_SIZE = (160, 480)  # (y,x) in pixels
 FRAME_SIZE = (480, 640)  # (y,x) in pixels
+CROP_SIZE = (160, 480)  # (y,x) in pixels
 SCREEN_SIZE = (12, 16)  # (y,x) in cm
+DISTANCE_FROM_TABLET = ArduinoCommunication.d
 ACC = RELATIVE_ACC * SCREEN_SIZE[0]
 INTEGRATE_WITH_MECHANICS = False  # make True to send slices to ArduinoCommunication
 
@@ -34,6 +36,10 @@ simulation_thread = None
 slice_queue = []
 arm_loc = 0, 0
 
+VY_MAX = 24
+VY_MIN = 7
+VX_MAX = 5
+
 
 # ------------- CONVERTING FUNCTIONS -------------
 def pixel2cm(pix_loc):
@@ -43,12 +49,17 @@ def pixel2cm(pix_loc):
             we look at the opposite side because the arm is looking at the screen from it's top
             and we look at it from the bottom
     """
-    (j_coord_crop, i_coord_crop, t) = pix_loc
-    i_coord_frame = FRAME_SIZE[0] + (- CROP_SIZE[0] + i_coord_crop)
-    j_coord_frame = FRAME_SIZE[1] / 2 - CROP_SIZE[1] / 2 + j_coord_crop
+    (j_coord_frame, i_coord_frame, t) = crop2frame(pix_loc)
     i_coord_screen = (float(i_coord_frame / FRAME_SIZE[0])) * SCREEN_SIZE[0]
     j_coord_screen = (1 - float(j_coord_frame / FRAME_SIZE[1])) * SCREEN_SIZE[1]
     return j_coord_screen, i_coord_screen, t  # (x,y,t)
+
+
+def crop2frame(pix_loc):
+    (j_coord_crop, i_coord_crop, t) = pix_loc
+    i_coord_frame = FRAME_SIZE[0] + (- CROP_SIZE[0] + i_coord_crop)
+    j_coord_frame = FRAME_SIZE[1] / 2 - CROP_SIZE[1] / 2 + j_coord_crop
+    return j_coord_frame, i_coord_frame, t
 
 
 def cm2pixel(cm_loc):
@@ -217,10 +228,11 @@ def get_r_coords_by_xy_coords(x_coords, y_coords):
 def get_trajectory_by_fruit_locations(fruit_locs):
     """
     creating a trajectory according to the locations of the fruit by fitting speed v0 and initial angle theta
-    :param fruit_locs: 2d list of [x, y, t] of the fruit (locations of 1 fruit)
+    :param fruit_locs: 2d list of [x, y, t,correlation] of the fruit (locations of 1 fruit)
     :return: trajectory object with the fitted values for speed (v0) and angle (theta)
     """
 
+    # print("fruit locs : " , fruit_locs)
     x_coords = [fruit_loc[0] for fruit_loc in fruit_locs]
     y_coords = [fruit_loc[1] for fruit_loc in fruit_locs]
     # t_coords = [fruit_loc[2] for fruit_loc in fruit_locs]  # times from image processing are not accurate for sure
@@ -249,21 +261,43 @@ def get_trajectory_by_fruit_locations(fruit_locs):
     v_array = [0 for _ in range(len(r_coords))]
     vy_array = [0 for _ in range(len(r_coords))]
     vx_array = [0 for _ in range(len(r_coords))]
+    r_mean = st.mean(r_coords)
+    r_std = np.std(r_coords)
+    r_fixed = []
     for i in range(len(r_coords)):
-        # v_array[i] = r_coords[i] / TIME_BETWEEN_2_FRAMES
-        vx_array[i] = (x_coords[i + 1] - x_coords[i]) / TIME_BETWEEN_2_FRAMES
+        if abs(r_coords[i] - r_mean) < abs(r_std):
+            r_fixed.append(r_coords[i])
+    if r_fixed:
+        r_mean_fixed = st.mean(r_fixed)
+    else:
+        r_mean_fixed = 0
+    times_with_fix = []
+    for i in range(len(r_coords)):
+        # time_with_fix = fruit_locs[i+1][2] - fruit_locs[i][2]
+        times_with_fix.append(TIME_BETWEEN_2_FRAMES)
+        # if abs(r_coords[i] - r_mean) > abs(r_std) and r_mean_fixed != 0:
+        #     times_with_fix[i] = TIME_BETWEEN_2_FRAMES * (r_coords[i] / r_mean_fixed)
+        # print("time with fix: ", times_with_fix[i])
 
-        cur_vy = (y_coords[i + 1] - y_coords[i]) / TIME_BETWEEN_2_FRAMES
+        # v_array[i] = r_coords[i] / TIME_BETWEEN_2_FRAMES
+        time_fixed = times_with_fix[i]
+        if time_fixed == 0:
+            time_fixed = 0.0000001
+        vx_array[i] = (x_coords[i + 1] - x_coords[i]) / time_fixed
+
+        cur_vy = (y_coords[i + 1] - y_coords[i]) / time_fixed
         # now try to get the v_entry from current v
-        vy = cur_vy - ACC * i * TIME_BETWEEN_2_FRAMES
+        vy = cur_vy - ACC * i * times_with_fix[i]
         vy_array[i] = vy
 
     # v0_median = st.median(v_array)
     # v0_mean = st.mean(v_array)
     # v0_rms = rms(v_array)
-    # vy_median = st.median(vy_array)
+    # vy_median = st.median(vy_array)2222222222222
     vy_mean = st.mean(vy_array)
     vx_mean = st.mean(vx_array)
+    # fix the values of the velocities by threshold values: VY_MAX, VY_MIN, VX_MAX
+    vx_mean, vy_mean = fix_v_values_by_threshold(vx_mean, vy_mean)
     v0_mean = math.sqrt(vy_mean ** 2 + vx_mean ** 2)
 
     # v0_by_vy_end_to_end = y_total / t_total / math.sin(theta)
@@ -293,8 +327,8 @@ def get_trajectory_by_fruit_locations(fruit_locs):
     # ***** more options for x0 and y0 values*****
     x0_array, y0_array = [],[]
     for i in range(len(x_coords) - 1):
-        x0_array.append(x_coords[i] - TIME_BETWEEN_2_FRAMES*i * vx_mean)
-        y0_array.append(y_coords[i] - TIME_BETWEEN_2_FRAMES * i * vy_mean)
+        x0_array.append(x_coords[i] - times_with_fix[i]*i * vx_mean)
+        y0_array.append(y_coords[i] - times_with_fix[i] * i * vy_mean)
 
     x0 = st.mean(x0_array)
     y0 = st.mean(y0_array)
@@ -346,221 +380,19 @@ def get_pen_loc():
     """
     :return: the location of the pen (x, y) in cm
     """
-    # location (3cm, 3cm) from the bottom-left corner
-    x_location = -SCREEN_SIZE[1] / 2 + 3
-    y_location = 3
+    # location (2cm, 5cm) from the bottom-left corner
+    x_location = -SCREEN_SIZE[1] / 2 + 2
+    y_location = 4
     return x_location, y_location
     # return -SCREEN_SIZE[1]/2+3, 3  # location (3cm, 3cm) from the bottom-left corner
 
 
 def time_until_peak(time_created, time_of_slice):
     """
-    Calculates the time #define stp 2
-#define dir 3
-#define MS1 4
-#define MS2 5
-#define MS3 6
-#define EN  7
-
-#define stp_2 8
-#define dir_2 9
-#define MS1_2 10
-#define MS2_2 11
-#define MS3_2 12
-#define EN_2  13
-
-#define MAX_RPS 3 // maximum revolutions per second the motor can do
-#define WANTED_RPS 0.3 // the rps that was calculated for fastest slice
-#define STEPS_FRACTION 8 // the number of fractions for full step (full step is 1.8 degrees)
-#define ONE_STEP_DELAY 5000.0 / WANTED_RPS / STEPS_FRACTION // minimum delay in microseconds to put in moving loop
-#define SERIAL_BPS 115200
-#define LENGTH_OF_COMMAND 6
-#define BITS_PER_BYTE 8
-#define READ_DELAY 1000/(SERIAL_BPS/BITS_PER_BYTE/LENGTH_OF_COMMAND) // delay in microseconds to ensure safe reading from Serial (theoretiacaly should be 833.3333)
-#define WRITE_DELAY READ_DELAY // delay in microseconds
-#define MAX_NUM_OF_COMMANDS_IN_CUT 410
-#define END_OF_COMMANDS 'e'
-#define DO 'd'
-#define MAX_MICRO_DELAY 15000
-#define SLICE_END_SIGNAL 'z'
-#define WAIT_FOR_STOP 100 // ms
-
-int steps[MAX_NUM_OF_COMMANDS_IN_CUT][2] = {0};
-
-void setup() {
-  Serial.begin(SERIAL_BPS);
-  Serial.setTimeout(5);
-
-  pinMode(stp, OUTPUT);
-  pinMode(dir, OUTPUT);
-  pinMode(MS1, OUTPUT);
-  pinMode(MS2, OUTPUT);
-  pinMode(MS3, OUTPUT);
-  pinMode(EN, OUTPUT);
-
-  digitalWrite(stp, LOW);
-  digitalWrite(dir, LOW);
-  digitalWrite(MS1, HIGH);
-  digitalWrite(MS2, HIGH);
-  digitalWrite(MS3, LOW);
-  digitalWrite(EN, LOW);
-
-  pinMode(stp_2, OUTPUT);
-  pinMode(dir_2, OUTPUT);
-  pinMode(MS1_2, OUTPUT);
-  pinMode(MS2_2, OUTPUT);
-  pinMode(MS3_2, OUTPUT);
-  pinMode(EN_2, OUTPUT);
-
-  digitalWrite(stp_2, LOW);
-  digitalWrite(dir_2, LOW);
-  digitalWrite(MS1_2, HIGH);
-  digitalWrite(MS2_2, HIGH);
-  digitalWrite(MS3_2, LOW);
-  digitalWrite(EN_2, LOW);
-
-  Serial.print("ONE STEP DELAY is: ");
-  Serial.println(ONE_STEP_DELAY);
-}
-
-void loop() {
-  // make simple move
-//  Serial.println("Write to serial");
-//  write_to_serial_simple_move_of_motors();
-
-  // steps of each motor are updated to the 'steps' array in the main scope (first index is for theta, second index is for phi)
-//  digitalWrite(stp, HIGH);
-  int moves_num = readStepsFromSerial();
-//  digitalWrite(stp, LOW);
-
-  // wait for signal to begin the movement of the motors - 'd'
-  Serial.println("Ready for action...");
-  while (readSerial() != DO){
-//    delayMicroseconds(READ_DELAY);
-  }
-//  Serial.println(SLICE_END_SIGNAL);
-
-
-  // move the motors according to the steps that were read from the Serial = CUT THE *****!!!
-  Serial.println("CUT THEM ALL!!!!");
-  for (int i = 0; i < moves_num; i++) {
-    move(steps[i][0],steps[i][1]);
-  }
-
-}
-
-int readStepsFromSerial() {
-  // collect data - foramt is sending one order at a time in this order - (10's digit tetha, 1's digit tetha, 10's digit phi, 1's digit tetha, sgn_tetha, sgn phi)
-  // sgn_angel is 1 if minus and 0 if plus
-  int index=0;
-  for (char in=readSerial();in!=END_OF_COMMANDS;in=readSerial()) {
-    steps[index][0] = 10*(in-'0') + (readSerial()-'0'); // get abs() of theta
-    in = readSerial();
-    steps[index][1] = 10*(in-'0') + (readSerial()-'0'); // get abs() of phi
-    if (readSerial()-'0') { // add sign of theta
-//      Serial.println("adding minus to theta");
-      steps[index][0] = -steps[index][0];
-    }
-    if (readSerial()-'0') { // add sign of phi
-//      Serial.println("adding minus to phi");
-      steps[index][1] = -steps[index][1];
-    }
-//    Serial.print("steps of small motor (theta): ");
-    Serial.println(steps[index][0]);
-//    Serial.print("steps of big motor (phi): ");
-    Serial.println(steps[index][1]);
-    index++;
-  }
-  return index;
-}
-
-int readSerial() {
-  int in = Serial.read();
-  while (in == -1 || in == '\n') {
-    in = Serial.read();
-  }
-  waitMicroseconds(READ_DELAY);
-  return in;
-}
-
-void write_to_serial_simple_move_of_motors() {
-  //  String steps_frac = (String)STEPS_FRACTION;
-  //  int message_length = 6;
-  int steps_num = 1;
-  //  String message_unclockwise = steps_frac + "0" + steps_frac + "0" + "0" + "0";
-  //  String message_clockwise = steps_frac + "0" + steps_frac + "0" + "1" + "1";
-  //  String message_unclockwise = "808000";
-  //  String message_clockwise = "808011";
-
-  // 10 steps (full steps for each motor) - unclockwise and than clockwise
-  for (int i = 0; i < steps_num; i++) {
-    Serial.write("808000");
-    waitMicroseconds(WRITE_DELAY);
-  }
-  for (int i = 0; i < steps_num; i++) {
-    Serial.write("808011");
-    waitMicroseconds(WRITE_DELAY);
-  }
-  Serial.write(END_OF_COMMANDS);
-}
-
-void waitMicroseconds(double microseconds) {
-    // choose between delay and delayMicroseconds
-    if (microseconds > MAX_MICRO_DELAY) {
-      delay(microseconds / 1000);
-    } else {
-      delayMicroseconds(microseconds);
-    }
-}
-
-
-// small motor = steps1, big motor = steps2
-// positive steps number = unclockwise, negative steps number = clockwise
-void move(int steps1, int steps2) { // for now just move floor(steps)
-//  Serial.println("moving motors:");
-//  Serial.println(steps1);
-//  Serial.println(steps2);
-//  Serial.print('\n');
-  if (steps1 < 0){
-    digitalWrite(dir, LOW);
-    steps1 = -steps1;
-  } else digitalWrite(dir, HIGH);
-  if (steps2 < 0){
-    digitalWrite(dir_2, LOW);
-    steps2 = -steps2;
-  } else digitalWrite(dir_2, HIGH);
-  double time1 = (double) millis();
-  for (int i=0; i<steps1; i++) {
-    digitalWrite(stp, HIGH);
-    waitMicroseconds(ONE_STEP_DELAY / 2);
-    digitalWrite(stp, LOW);
-    waitMicroseconds(ONE_STEP_DELAY / 2);
-  }
-  double time2 = (double) millis();
-  for (int i=0; i<steps2; i++) {
-    digitalWrite(stp_2, HIGH);
-    waitMicroseconds(ONE_STEP_DELAY / 2);
-    digitalWrite(stp_2, LOW);
-    waitMicroseconds(ONE_STEP_DELAY / 2);
-  }
-  double totTime = time2-time1; // in ms
-//  Serial.print("It took ");
-//  Serial.print(totTime);
-//  Serial.println(" ms to make the move in theta");
-
-//  double rps = double(steps)/(200*totTime);
-//  Serial.print("We did ");
-//  Serial.print(rps);
-//  Serial.print(" rps. We intended to do ");
-//  Serial.print(MAX_RPS);
-//  Serial.println(" rps.");
-}needs to be waited until slicing the fruit.
     :param fruit: fruit to calculate when to slice.
-    :return: the time until the slice.
+    :return: the time until the slice in secs.
     """
-    if time_created is None:
-        print ("a")
-    return time_created + time_of_slice - time.clock()
+    return time_created + time_of_slice - time.perf_counter()
 
 def time_until_slice(time_created, time_of_slice):
     return time_until_peak(time_created, time_of_slice)
@@ -576,7 +408,7 @@ def init_info(frame_size, crop_size=CROP_SIZE, screen_size=SCREEN_SIZE):
     global CROP_SIZE, FRAME_SIZE, SCREEN_SIZE
     CROP_SIZE = crop_size
     FRAME_SIZE = frame_size
-    SCREEN_SIZE = screen_size
+    SCREEN_SIZE = (frame_size[0]*screen_size[1]/frame_size[1], screen_size[1])
 
 
 def remove_sliced_fruits(fruits):
@@ -630,6 +462,24 @@ def init_everything(integrate_with_mechanics=INTEGRATE_WITH_MECHANICS, simulate=
         simulation_thread.start()
     else:
         pass
+
+
+def fix_v_values_by_threshold(vx_mean, vy_mean):
+    print("vx: " + str(vx_mean) + "       vy: " + str(vy_mean))
+    if abs(vy_mean) > VY_MAX:
+        vy_mean = VY_MAX * sign(vy_mean)
+    if abs(vy_mean) < VY_MIN:
+        vy_mean = VY_MIN * sign(vy_mean)
+    if abs(vx_mean) > VX_MAX:
+        vx_mean = VX_MAX * sign(vx_mean)
+    return vx_mean, vy_mean
+
+
+
+def sign(num):
+    if num > 0:
+        return 1
+    return -1
 
 
 if __name__ == "__main__":

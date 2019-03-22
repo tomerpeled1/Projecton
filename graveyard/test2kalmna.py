@@ -110,8 +110,8 @@ kalman.processNoiseCov = np.array([[1,0,0,0],
 measurement = np.array((2,1), np.float32)
 # prediction = np.zeros((2,1), np.float32)
 
-print("\nObservation in image: BLUE")
-print("Prediction from Kalman: GREEN\n")
+# print("\nObservation in image: BLUE")
+# print("Prediction from Kalman: GREEN\n")
 
 # if command line arguments are provided try to read video_name
 # otherwise default to capture from attached H/W camera
@@ -195,7 +195,7 @@ if (((args.video_file) and (cap.open(str(args.video_file))))
 
                 track_window = (boxes[0][0],boxes[0][1],boxes[1][0] - boxes[0][0],boxes[1][1] - boxes[0][1])
 
-                cv2.imshow(windowNameSelection,crop)
+                # cv2.imshow(windowNameSelection,crop)
 
             # reset list of boxes
 
@@ -221,7 +221,7 @@ if (((args.video_file) and (cap.open(str(args.video_file))))
             img_bproject = cv2.calcBackProject([img_hsv],[0,1],crop_hist,[0,180,0,255],1)
             # cv2.imshow("hist",crop_hist)
 
-            cv2.imshow(windowName2,img_bproject)
+            # cv2.imshow(windowName2,img_bproject)
 
             # apply meanshift to predict new location (observation)
             # basic HSV histogram comparision with adaptive window size
@@ -250,7 +250,7 @@ if (((args.video_file) and (cap.open(str(args.video_file))))
 
             mask = cv2.inRange(img_hsv, np.array((0., float(s_lower),float(v_lower))), np.array((180.,float(s_upper),float(v_upper))))
 
-            cv2.imshow(windowName2,mask)
+            # cv2.imshow(windowName2,mask)
 
         # display image
 
@@ -259,7 +259,7 @@ if (((args.video_file) and (cap.open(str(args.video_file))))
         # stop the timer and convert to ms. (to see how long processing and display takes)
 
         stop_t = ((cv2.getTickCount() - start_t)/cv2.getTickFrequency())
-        print(stop_t)
+        # print(stop_t)
 
         # start the event loop - essential
 

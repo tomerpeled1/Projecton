@@ -7,7 +7,7 @@ import cv2
 from imutils.video import WebcamVideoStream
 from Calibrate import calibrate as calib
 import SavedVideoWrapper
-import Algorithmics as Sc
+import Algorithmics as Algo
 
 # Settings for camera in projecton lab when lights on.
 LIGHT_LAB_SETTINGS = (215, 75, -7, 10)  # order is (saturation, gain, exposure, focus)
@@ -24,6 +24,8 @@ IPAD_B4_MIDDLE_LIGHTS_OFF_CLOSED_DRAPES = (255, 7, -6, 5)
 IPAD_B4_MIDDLE_LIGHTS_OFF_CLOSED_DRAPES_2 = (255, 18, -6, 10)
 
 DARK_101_SETTINGS_new = (255, 122, -9, 10)  # order is (saturation, gain, exposure, focus)
+DARK_101_SETTINGS_new2 = (255, 122, -8, 10)  # order is (saturation, gain, exposure, focus)
+MORNING_101_SETTINGS_new2 = (255, 104, -9, 10)  # order is (saturation, gain, exposure, focus)
 
 CALIBRATE_FILE_NAME = "calibration data.txt"
 
@@ -86,8 +88,12 @@ class Camera:
         self.current = None
         # Buffer which saves the original frames to display for debug purposes.
         self.buffer = []
+        self.last_big_frame = []
         # Maximal size for buffer to avoid using too much memory.
         self.MAX_SIZE_BUFFER = 500
+
+        # fourcc = cv2.VideoWriter_fourcc(*'MJPG')
+        # self.out = cv2.VideoWriter('output.avi', fourcc, 30.0, (640, 480))
 
     def read(self):
         """
@@ -97,7 +103,7 @@ class Camera:
         frame = self.stream.read()
         to_save = []
         # Option for calibration.
-        if(self.LIVE):
+        if self.LIVE:
             frame = self.crop_to_screen_size(frame)
         self.current = frame
         if self.RESIZE:
@@ -106,8 +112,8 @@ class Camera:
             frame = cv2.resize(frame, (640,480))
             # cv2.imshow("resized", frame)
             # cv2.waitKey(0)
-            to_save = copy.deepcopy(frame)
         # Option for crop.
+        to_save = copy.deepcopy(frame)
         if self.CROP:
             frame = self.crop_image(frame)
         # Option for flip.
@@ -146,9 +152,13 @@ class Camera:
             # Checks if there is a difference between current and to_return.
             if cv2.countNonZero(dif) > 0:
                 # Saves image to buffer.
+                self.last_big_frame = to_save
                 if len(self.buffer) < self.MAX_SIZE_BUFFER:
                     self.buffer.append(to_save)
+                    # self.out.write(to_save)
                 return to_return
+            # else:
+            #     print("GOOD")
 
     def next_frame_for_bg(self, current):
         """
@@ -172,7 +182,7 @@ class Camera:
         frame = frame[self.tr_crop_dimensions[1]:self.bl_crop_dimensions[1],
                       self.bl_crop_dimensions[0]:self.tr_crop_dimensions[0]]
         # Updates the screen size in algorithm module.
-        Sc.init_info(frame.shape[:2])
+        Algo.init_info(frame.shape[:2])
         return frame
 
     def crop_image(self, frame):
@@ -258,3 +268,11 @@ class Camera:
                 cv2.imshow("until background", frame)
                 cv2.waitKey(0)
                 return frame
+
+if __name__ == '__main__':
+    cam = Camera(0, True, False, True, True, True)
+    frame, to_save = cam.read()
+    cv2.imshow("frame", frame)
+    cv2.waitKey(0)
+    cv2.imwrite("AD_IMAGE.png", frame)
+
