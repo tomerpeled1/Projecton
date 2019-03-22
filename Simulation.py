@@ -1,8 +1,8 @@
 """
 the simulation, simulates the motors and work in the same coordinate system.
 """
-
-import pygame
+if (False):
+    import pygame
 import numpy as np
 import time
 import math

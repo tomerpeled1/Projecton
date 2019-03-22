@@ -22,7 +22,8 @@ term_crit = (cv2.TERM_CRITERIA_EPS | cv2.TERM_CRITERIA_COUNT, 10, 1)
 ##init window
 # cv2.namedWindow(WINDOW_NAME, cv2.WINDOW_NORMAL)  # the window to show
 
-HISTS_THRESH = 0.4
+# HISTS_THRESH = 0.4  # the old one
+HISTS_THRESH = 0.1
 HISTS_COMPARE_METHOD = cv2.HISTCMP_CORREL
 
 

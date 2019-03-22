@@ -103,7 +103,7 @@ class Camera:
         frame = self.stream.read()
         to_save = []
         # Option for calibration.
-        if(self.LIVE):
+        if self.LIVE:
             frame = self.crop_to_screen_size(frame)
         self.current = frame
         if self.RESIZE:
@@ -112,8 +112,8 @@ class Camera:
             frame = cv2.resize(frame, (640,480))
             # cv2.imshow("resized", frame)
             # cv2.waitKey(0)
-            to_save = copy.deepcopy(frame)
         # Option for crop.
+        to_save = copy.deepcopy(frame)
         if self.CROP:
             frame = self.crop_image(frame)
         # Option for flip.
@@ -268,3 +268,11 @@ class Camera:
                 cv2.imshow("until background", frame)
                 cv2.waitKey(0)
                 return frame
+
+if __name__ == '__main__':
+    cam = Camera(0, True, False, True, True, True)
+    frame, to_save = cam.read()
+    cv2.imshow("frame", frame)
+    cv2.waitKey(0)
+    cv2.imwrite("AD_IMAGE.png", frame)
+
