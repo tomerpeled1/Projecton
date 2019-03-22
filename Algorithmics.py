@@ -19,11 +19,11 @@ import numpy as np
 # ----------------- CONSTANTS -------------------
 #first acc is measured, second is from fazkanoot
 # RELATIVE_ACC = 1.478  # from experiences we did it tracker program
-RELATIVE_ACC = 1.6    # from experiences we did it tracker program
-CAMERA_FPS = 30  # frames per second
+RELATIVE_ACC = 1.7   # not from experiences we did it tracker program
+CAMERA_FPS = 30 # frames per second
 TIME_BETWEEN_2_FRAMES = 1.0 / CAMERA_FPS  # in sec
-CROP_SIZE = (160, 480)  # (y,x) in pixels
 FRAME_SIZE = (480, 640)  # (y,x) in pixels
+CROP_SIZE = (160, 480)  # (y,x) in pixels
 SCREEN_SIZE = (12, 16)  # (y,x) in cm
 DISTANCE_FROM_TABLET = ArduinoCommunication.d
 ACC = RELATIVE_ACC * SCREEN_SIZE[0]
@@ -36,6 +36,10 @@ simulation_thread = None
 slice_queue = []
 arm_loc = 0, 0
 
+VY_MAX = 24
+VY_MIN = 7
+VX_MAX = 5
+
 
 # ------------- CONVERTING FUNCTIONS -------------
 def pixel2cm(pix_loc):
@@ -45,12 +49,17 @@ def pixel2cm(pix_loc):
             we look at the opposite side because the arm is looking at the screen from it's top
             and we look at it from the bottom
     """
-    (j_coord_crop, i_coord_crop, t) = pix_loc
-    i_coord_frame = FRAME_SIZE[0] + (- CROP_SIZE[0] + i_coord_crop)
-    j_coord_frame = FRAME_SIZE[1] / 2 - CROP_SIZE[1] / 2 + j_coord_crop
+    (j_coord_frame, i_coord_frame, t) = crop2frame(pix_loc)
     i_coord_screen = (float(i_coord_frame / FRAME_SIZE[0])) * SCREEN_SIZE[0]
     j_coord_screen = (1 - float(j_coord_frame / FRAME_SIZE[1])) * SCREEN_SIZE[1]
     return j_coord_screen, i_coord_screen, t  # (x,y,t)
+
+
+def crop2frame(pix_loc):
+    (j_coord_crop, i_coord_crop, t) = pix_loc
+    i_coord_frame = FRAME_SIZE[0] + (- CROP_SIZE[0] + i_coord_crop)
+    j_coord_frame = FRAME_SIZE[1] / 2 - CROP_SIZE[1] / 2 + j_coord_crop
+    return j_coord_frame, i_coord_frame, t
 
 
 def cm2pixel(cm_loc):
@@ -266,8 +275,8 @@ def get_trajectory_by_fruit_locations(fruit_locs):
     for i in range(len(r_coords)):
         # time_with_fix = fruit_locs[i+1][2] - fruit_locs[i][2]
         times_with_fix.append(TIME_BETWEEN_2_FRAMES)
-        if abs(r_coords[i] - r_mean) > abs(r_std) and r_mean_fixed != 0:
-            times_with_fix[i] = TIME_BETWEEN_2_FRAMES * (r_coords[i] / r_mean_fixed)
+        # if abs(r_coords[i] - r_mean) > abs(r_std) and r_mean_fixed != 0:
+        #     times_with_fix[i] = TIME_BETWEEN_2_FRAMES * (r_coords[i] / r_mean_fixed)
         # print("time with fix: ", times_with_fix[i])
 
         # v_array[i] = r_coords[i] / TIME_BETWEEN_2_FRAMES
@@ -284,9 +293,11 @@ def get_trajectory_by_fruit_locations(fruit_locs):
     # v0_median = st.median(v_array)
     # v0_mean = st.mean(v_array)
     # v0_rms = rms(v_array)
-    # vy_median = st.median(vy_array)
+    # vy_median = st.median(vy_array)2222222222222
     vy_mean = st.mean(vy_array)
     vx_mean = st.mean(vx_array)
+    # fix the values of the velocities by threshold values: VY_MAX, VY_MIN, VX_MAX
+    vx_mean, vy_mean = fix_v_values_by_threshold(vx_mean, vy_mean)
     v0_mean = math.sqrt(vy_mean ** 2 + vx_mean ** 2)
 
     # v0_by_vy_end_to_end = y_total / t_total / math.sin(theta)
@@ -397,7 +408,7 @@ def init_info(frame_size, crop_size=CROP_SIZE, screen_size=SCREEN_SIZE):
     global CROP_SIZE, FRAME_SIZE, SCREEN_SIZE
     CROP_SIZE = crop_size
     FRAME_SIZE = frame_size
-    SCREEN_SIZE = screen_size
+    SCREEN_SIZE = (frame_size[0]*screen_size[1]/frame_size[1], screen_size[1])
 
 
 def remove_sliced_fruits(fruits):
@@ -453,6 +464,22 @@ def init_everything(integrate_with_mechanics=INTEGRATE_WITH_MECHANICS, simulate=
         pass
 
 
+def fix_v_values_by_threshold(vx_mean, vy_mean):
+    print("vx: " + str(vx_mean) + "       vy: " + str(vy_mean))
+    if abs(vy_mean) > VY_MAX:
+        vy_mean = VY_MAX * sign(vy_mean)
+    if abs(vy_mean) < VY_MIN:
+        vy_mean = VY_MIN * sign(vy_mean)
+    if abs(vx_mean) > VX_MAX:
+        vx_mean = VX_MAX * sign(vx_mean)
+    return vx_mean, vy_mean
+
+
+
+def sign(num):
+    if num > 0:
+        return 1
+    return -1
 
 
 if __name__ == "__main__":

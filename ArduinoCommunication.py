@@ -202,13 +202,13 @@ def angles2xy(point):
     return ARMS[0] * math.cos(theta) + ARMS[1] * math.cos(phi), ARMS[0] * math.sin(theta) + ARMS[1] * math.sin(phi) - d
 
 
-def wait(t):
+def wait(t_ms):
     """
     Creates a delay in the code. DO NOT USE WHILE THREADING, OR IT WILL GET STUCK!!!
-    :param t: time to wait in ms.
+    :param t_ms: time to wait in ms.
     """
     start = time.perf_counter()
-    while time.perf_counter() < start + t/1000.0:
+    while time.perf_counter() < start + t_ms/1000.0:
         pass
 
 
@@ -379,15 +379,14 @@ def start_cut(arm_loc):
 # print(time.time()-start)
 
 if __name__ == '__main__':
-    # # ערס mode
-    # while True:
-    #     steps_theta_main = 36 * [-5]
-    #     steps_phi_main = 36 * [-10]
-    #     move_2_motors(steps_theta_main, steps_phi_main)
-    #     start_main = time.perf_counter()
-    #     i_steps_theta_main, i_steps_phi_main = invert_slice(steps_theta_main, steps_phi_main)
-    #     while 1000.0*(time.perf_counter() - start_main) < WAIT_FOR_STOP:
-    #         pass
-    #     move_2_motors(i_steps_theta_main, i_steps_phi_main)
-    #     wait(calc_time_of_slice(steps_theta_main, steps_phi_main))
-    print(start_cut())
+    # ערס mode
+    while True:
+        steps_theta_main = 36 * [-5]
+        steps_phi_main = 36 * [-10]
+        move_2_motors(steps_theta_main, steps_phi_main)
+        start_main = time.perf_counter()
+        i_steps_theta_main, i_steps_phi_main = invert_slice(steps_theta_main, steps_phi_main)
+        while 1000.0*(time.perf_counter() - start_main) < WAIT_FOR_STOP:
+            pass
+        move_2_motors(i_steps_theta_main, i_steps_phi_main)
+        wait(calc_time_of_slice(steps_theta_main, steps_phi_main))

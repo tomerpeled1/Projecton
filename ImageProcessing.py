@@ -28,6 +28,7 @@ term_crit = (cv2.TERM_CRITERIA_EPS | cv2.TERM_CRITERIA_COUNT, 30, 1)
 
 # Consts
 SAVED_VIDEO_NAME = "sundayNoon.flv"
+AD_IMAGE = "AD_TEMPLATE.png"
 CONTOUR_AREA_THRESH = 1000  # Threshold for fruit detection.
 MAX_NUM_OF_FRAMES_ON_SCREEN = 13  # Maximal number of frames for fruit to remain on screen.
 FRUIT_TO_EXTRACT = []  # List of fruits needs to be extracted.
@@ -302,6 +303,36 @@ def draw(fruit, frame):
     """
     draw_rectangle(fruit, frame, (255, 0, 0))
     draw_center(fruit, frame)
+
+
+def check_ad(frame):
+    template = cv2.imread(AD_IMAGE)
+    w, h = template.shape[1], template.shape[0]
+    method = eval('cv2.TM_CCOEFF_NORMED')
+    # Apply template Matching
+
+    cv2.imshow("frame", frame)
+    cv2.imshow("template", template)
+
+    res = cv2.matchTemplate(frame, template, method)
+    min_val, max_val, min_loc, max_loc = cv2.minMaxLoc(res)
+    # top_left = max_loc
+    # bottom_right = (top_left[0] + w, top_left[1] + h)
+
+    print(max_val)
+
+    # cv2.rectangle(frame, top_left, bottom_right, 255, 2)
+    # plt.subplot(121), plt.imshow(res, cmap='gray')
+    # plt.title('Matching Result'), plt.xticks([]), plt.yticks([])
+    # plt.subplot(122), plt.imshow(frame, cmap='gray')
+    # plt.title('Detected Point'), plt.xticks([]), plt.yticks([])
+    # plt.show()
+
+    if max_val > 0.9:
+        print("there is an ad")
+        return True
+    print("no addddddddddddddddddddd")
+    return False
 
 
 def init_everything(integrate_with_algorithmics=INTEGRATE_WITH_ALGORITHMICS):

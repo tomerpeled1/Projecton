@@ -92,7 +92,7 @@ def fruit_detection2(frame, background, contour_area_thresh, time_of_frame):
         len1 = len(new_cont)
         for c in contour:
             if cv2.contourArea(c) > contour_area_thresh:
-                new_cont.append(move_back_contour(c, (x,y,w,h)))
+                new_cont.append(move_back_contour(c, (x, y, w, h)))
         len2 = len(new_cont)
         if len1 == len2:
             if cv2.contourArea(cnt) > contour_area_thresh:
@@ -120,15 +120,17 @@ def fruit_detection2(frame, background, contour_area_thresh, time_of_frame):
 
     # print("time for detection: " + str(time.perf_counter()-t))
 
-    return DetectionResults.DetectionResults(conts, rects, centers, time_of_frame)  # list of lists, representing all fruits found
+    return DetectionResults.DetectionResults(conts, rects, centers,
+                                             time_of_frame)  # list of lists, representing all fruits found
 
 
 def move_back_contour(contour, original_rect):
-    x,y,w,h = original_rect
+    x, y, w, h = original_rect
     for point in contour:
         point[0][0] += x
-        point[0]  [1] += y
+        point[0][1] += y
     return contour
+
 
 def get_hue_and_value(frame):
     hsv_frame = cv2.cvtColor(frame, cv2.COLOR_BGR2HSV)
@@ -146,7 +148,7 @@ def thresh_value(subtract_v):
 
 
 def thresh_hue(current_h, subtract_h):
-    white_img = 255*np.ones(current_h.shape, np.uint8)
+    white_img = 255 * np.ones(current_h.shape, np.uint8)
     complement_subtract_h = cv2.subtract(white_img, subtract_h)  # second cyclic option
     final_sub_h = cv2.min(subtract_h, complement_subtract_h)  # modification to cyclic scaling
     subtract_h_mod = cv2.convertScaleAbs(final_sub_h, alpha=1.3)  # amplify hue
@@ -158,9 +160,9 @@ def thresh_hue(current_h, subtract_h):
 
 
 def open_and_close(frame):
-    ellipse1 = cv2.getStructuringElement(cv2.MORPH_ELLIPSE,(5,5))
+    ellipse1 = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (5, 5))
     closed = cv2.morphologyEx(frame, cv2.MORPH_CLOSE, ellipse1)
-    ellipse2 = cv2.getStructuringElement(cv2.MORPH_ELLIPSE,(10,10))
+    ellipse2 = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (10, 10))
     opened = cv2.morphologyEx(closed, cv2.MORPH_OPEN, ellipse2)
     return opened
 
@@ -175,9 +177,9 @@ def black_outside_contours(frame, conts):
 
 def second_threshold(frame, x, y, w, h):
     window = frame[y:y + h, x:x + w]
-    norm_image = cv2.normalize(window,None,0,255,cv2.NORM_MINMAX)
+    norm_image = cv2.normalize(window, None, 0, 255, cv2.NORM_MINMAX)
     # cv2.imshow("norm", norm_image)
-    thresh = 140
+    thresh = 160
     ret, th = cv2.threshold(norm_image, thresh, 255, cv2.THRESH_BINARY)
     ellipse = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (6, 6))
     close = cv2.morphologyEx(th, cv2.MORPH_CLOSE, ellipse)
@@ -185,7 +187,7 @@ def second_threshold(frame, x, y, w, h):
 
 
 def clean_hue(subtract_h):
-    ellipse = cv2.getStructuringElement(cv2.MORPH_ELLIPSE,(5,5))
+    ellipse = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (5, 5))
     opened = cv2.morphologyEx(subtract_h, cv2.MORPH_OPEN, ellipse)
     ret, thr = cv2.threshold(opened, 30, 255, cv2.THRESH_BINARY)
     cleaned = cv2.bitwise_and(subtract_h, thr)
@@ -233,25 +235,25 @@ def center_of_contour(c):
 
 
 if __name__ == "__main__":
-    cap = Camera("2019-03-17 19-59-34.flv", flip=False, crop=False, live=False )
+    cap = Camera("2019-03-17 19-59-34.flv", flip=False, crop=False, live=False)
     cnt = 0
-    while(cnt < 23):
+    while (cnt < 23):
         back_main = cap.read()[0]
-        cnt+=1
+        cnt += 1
     cv2.imshow("main", back_main)
     cv2.waitKey(0)
     back_main = cv2.resize(back_main, None, fx=0.5, fy=0.5)
     cv2.imshow("main", back_main)
     cv2.waitKey(0)
     first_time = time.time()
-    while(cap.is_opened()):
+    while (cap.is_opened()):
         frame_main = cap.read()[0]
-        frame_main = cv2.resize(frame_main, None, fx=0.5, fy=0.5 )
+        frame_main = cv2.resize(frame_main, None, fx=0.5, fy=0.5)
         (height, width, depth) = frame_main.shape
         # back_main = cap.read()
         # back_main = cv2.resize(back_main, None, fx=0.3, fy=0.3)
 
-        detection_results = fruit_detection2(frame_main, back_main, 700, time.time()-first_time)
+        detection_results = fruit_detection2(frame_main, back_main, 700, time.time() - first_time)
         cv2.drawContours(frame_main, detection_results.conts, -1, (0, 255, 0), 2)
         # for i in range(len(rects)):
         #     frame = cv2.rectangle(frame, rects[i][UP_LEFT], rects[i][BOTTOM_RIGHT],

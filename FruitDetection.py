@@ -38,20 +38,20 @@ def fruit_detection(frame, background, contour_area_thresh, time_of_frame):
     # find value change
     # print(real_v.shape, back_v.shape)
     subtract_v = cv2.absdiff(current_v, back_v)
-    cv2.imshow("sub_v", subtract_v)
+    # cv2.imshow("sub_v", subtract_v)
 
     # find hue change (with attention to cyclic scaling), amplify hue
     subtract_h = cv2.absdiff(current_h, back_h)  # first cyclic option
-    cv2.imshow("sub_h_bef", subtract_h)
+    # cv2.imshow("sub_h_bef", subtract_h)
     white_img = 255*np.ones(current_h.shape, np.uint8)
     complement_subtract_h = cv2.subtract(white_img, subtract_h)  # second cyclic option
     final_sub_h = cv2.min(subtract_h, complement_subtract_h)  # modification to cyclic scaling
     subtract_h_mod = cv2.convertScaleAbs(final_sub_h, alpha=1.3)  # amplify hue
-    cv2.imshow("sub_h", subtract_h_mod)
+    # cv2.imshow("sub_h", subtract_h_mod)
 
     # calc total change (value + hue) and remove noise
     sub_add = cv2.add(subtract_v, subtract_h_mod)
-    cv2.imshow("sub_add", sub_add)
+    # cv2.imshow("sub_add", sub_add)
     ret3, add_thresh = cv2.threshold(sub_add, 80, 255, cv2.THRESH_BINARY)
     add_thresh = cv2.morphologyEx(add_thresh, cv2.MORPH_OPEN, np.ones((5, 5), np.uint8))  # remove noise
 
@@ -63,15 +63,15 @@ def fruit_detection(frame, background, contour_area_thresh, time_of_frame):
     mask = add_thresh
 
     # connect pieces of fruit and remove noises
-    cv2.imshow("mask", mask)
+    # cv2.imshow("mask", mask)
     # y = cv2.getStructuringElement(cv2.MORPH_ELLIPSE,(5,5))
     z = np.ones((5, 5), np.uint8)
     mask = cv2.morphologyEx(mask, cv2.MORPH_CLOSE, z)
-    cv2.imshow("close", mask)
+    # cv2.imshow("close", mask)
     # y2 = cv2.getStructuringElement(cv2.MORPH_ELLIPSE,(10,10))
     z2 = np.ones((10, 10), np.uint8)
     mask = cv2.morphologyEx(mask, cv2.MORPH_OPEN, z2)
-    cv2.imshow("open", mask)
+    # cv2.imshow("open", mask)
 
 
 
