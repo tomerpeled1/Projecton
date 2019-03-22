@@ -7,6 +7,7 @@ import cv2
 
 
 ANCHOR_POINT = 0, 0  # TODO write something imformative here
+PASS_AD_POINT = -1, 5
 
 
 def automatic_start():
@@ -19,7 +20,7 @@ def automatic_start():
 def pass_ad(frame):
     if Ip.check_ad(frame):
         print("passed ad")
-        # Al.do_slice(St.ad_slice())  # TODO write ad_slice()
+        # Ac.make_slice_by_trajectory(St.slice_to_point(PASS_AD_POINT), 0)
 
 
 if __name__ == '__main__':
