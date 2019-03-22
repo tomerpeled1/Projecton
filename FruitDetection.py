@@ -57,11 +57,6 @@ def fruit_detection(frame, background, contour_area_thresh):
     ret3, add_thresh = cv2.threshold(sub_add, 80, 255, cv2.THRESH_BINARY)
     add_thresh = cv2.morphologyEx(add_thresh, cv2.MORPH_OPEN, np.ones((5, 5), np.uint8))  # remove noise
 
-    # mask that removes very bright noises (blade)
-    # ret, mask_s = cv2.threshold(real_s, 31, 255, cv2.THRESH_BINARY)
-
-    # combine masks
-    # mask = cv2.bitwise_and(add_thresh, mask_s)
     mask = add_thresh
 
     # connect pieces of fruit and remove noises
@@ -82,24 +77,12 @@ def fruit_detection(frame, background, contour_area_thresh):
     # cv2.imshow("masked", masked)
     # cv2.waitKey(0)
 
-    # find lapping fruit - not ready!!!
-    # masked_hsv = cv2.cvtColor(masked, cv2.COLOR_BGR2HSV)
-    # masked_h = masked_hsv[:, :, 0]
-    # cv2.imshow("masked_h", masked_h)
-    # blurred_masked_h = cv2.blur(masked_h, (5, 5))
-    # cv2.imshow("b_masked_h", blurred_masked_h)
-    # normalized_masked_h = cv2.normalize(blurred_masked_h, None, 0, 255, norm_type=cv2.NORM_MINMAX)
-    # cv2.imshow("norm", normalized_masked_h)
-    # gradient_hue = cv2.morphologyEx(normalized_masked_h, cv2.MORPH_GRADIENT, None)
-    # cv2.imshow("gradient_hue", gradient_hue)
-
     # create contours
     gray_masked = cv2.cvtColor(masked, cv2.COLOR_BGR2GRAY)
     im2, cont, hier = cv2.findContours(gray_masked, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
     cont = [c for c in cont if cv2.contourArea(c) > contour_area_thresh]
     if len(cont) !=0:
           a=0
-
 
     copy = frame.copy()
     stencil = np.zeros(copy.shape).astype(copy.dtype)
@@ -154,7 +137,7 @@ def fruit_detection(frame, background, contour_area_thresh):
         rect = extract_rect(c)
         center = center_of_contour(c)
 
-        new_conts, new_rects, new_centers = separate_overlap(masked, c, rect, center)
+        new_conts, new_rects, new_centers = separate_overlap(masked, c, rect, center, contour_area_thresh)
         conts.extend(new_conts)
         rects.extend(new_rects)
         centers.extend(new_centers)
@@ -164,20 +147,74 @@ def fruit_detection(frame, background, contour_area_thresh):
 
     return DetectionResults.DetectionResults(conts, rects, centers)  # list of lists, representing all fruits found
 
-def separate_overlap(detection_frame, cont, rect, cent):
+def separate_overlap(detection_frame, cont, rect, cent, cont_area_thresh):
     [bot_left, up_right] = rect
     (x_min, y_min) = bot_left
     (x_max, y_max) = up_right
     crop_by_rect = detection_frame[y_min:y_max, x_min:x_max]
-    crop_hist = cv2.calcHist([crop_by_rect], [0], None, [180],[0, 180])
+    crop_by_rect_hsv = cv2.cvtColor(crop_by_rect, cv2.COLOR_RGB2HSV)
+    crop_hist = cv2.calcHist([crop_by_rect_hsv], [0], None, [180],[0, 180])
     crop_hist = [int(x) for x in crop_hist]
-    plt.bar(np.arange(1,180), crop_hist[1:], align='center', alpha=0.5)
-    plt.show()
-    cv2.imshow("a",crop_by_rect)
-    cv2.waitKey(0)
-    peaks, _ = scipy.signal.find_peaks(crop_hist)
-    if len(peaks) == 1:
+    crop_hist = crop_hist[1:]
+    sample_sum = sum(crop_hist)
+    crop_hist[:] = [col / sample_sum for col in crop_hist]
+    # cv2.imshow("a", crop_by_rect)
+    # cv2.waitKey(0)
+    # plt.bar(np.arange(1,180), crop_hist, align='center', alpha=0.5)
+    # plt.show()
+    main_colors = analyze_hist_to_colors(crop_hist)
+
+    conts = []
+    rects = []
+    cents = []
+
+    color_variance = 10
+    if len(main_colors) == 1:
         return [cont], [rect], [cent]
+
+    for color in main_colors:
+        area_mask = cv2.rectangle(np.zeros(detection_frame.shape, np.uint8), bot_left, up_right, (255, 255, 255), -1)
+        masked_area = cv2.bitwise_and(detection_frame, area_mask)
+        low_h = max(0, color - color_variance)
+        high_h = min(180, color + color_variance)
+        low_hsv = np.array([low_h, 0, 0])
+        high_hsv = np.array([high_h, 255, 255])
+        masked_area_hsv = cv2.cvtColor(masked_area, cv2.COLOR_RGB2HSV)
+        masked_color = cv2.inRange(masked_area_hsv, low_hsv, high_hsv)
+        masked_color = cv2.morphologyEx(masked_color, cv2.MORPH_OPEN, np.ones((5, 5), np.uint8))
+
+        im2, contours, hier = cv2.findContours(masked_color, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
+        contours = [c for c in contours if cv2.contourArea(c) > cont_area_thresh]
+        if(len(contours) > 1):
+            print("this is a problem, too many contours")
+        c = find_biggest_contour(contours)
+        rect = extract_rect(c)
+        center = center_of_contour(c)
+        conts.append(c)
+        rects.append(rect)
+        cents.append(center)
+
+    return conts, rects, cents
+
+def find_biggest_contour(conts):
+    areas = [cv2.contourArea(c) for c in conts]
+    largest_size = max(areas)
+    index = areas.index(largest_size)
+    return conts[index]
+
+def analyze_hist_to_colors(hist):
+    color_variance = 5
+    norm_hist = []
+    for i in range(0, 179):
+        low = max(0, i - color_variance)
+        high = min(178, i + color_variance) + 1
+        norm_hist.append(sum(hist[low:high]))
+    # plt.bar(np.arange(1, 180), norm_hist, align='center', alpha=0.5)
+    # plt.show()
+    peaks, _ = scipy.signal.find_peaks(norm_hist)
+    PERCENTAGE = 0.25
+    return [peak for peak in peaks if norm_hist[peak] >= PERCENTAGE]
+
 
 def extract_rect(c):
     x_min = c[c[:, :, 0].argmin()][0][0]
@@ -195,7 +232,7 @@ def move_back_contour(contour, original_rect):
     x,y,w,h = original_rect
     for point in contour:
         point[0][0] += x
-        point[0]  [1] += y
+        point[0][1] += y
     return contour
 
 def center_of_contour(c):
@@ -214,11 +251,11 @@ def center_of_contour(c):
 
 
 if __name__ == "__main__":
-    frame_main = cv2.imread("img&vid\pic3.jpg")
-    frame_main = cv2.resize(frame_main, None, fx=0.3, fy=0.3)
+    frame_main = cv2.imread("img&vid\greyWatermelon.png")
+    # frame_main = cv2.resize(frame_main, None, fx=0.3, fy=0.3)
     (height, width, depth) = frame_main.shape
-    back_main = cv2.imread("img&vid\pic2.jpg")
-    back_main = cv2.resize(back_main, None, fx=0.3, fy=0.3)
+    back_main = cv2.imread("img&vid\grayBack.png")
+    # back_main = cv2.resize(back_main, None, fx=0.3, fy=0.3)
 
     dr = fruit_detection(frame_main, back_main, 1000)
     cv2.drawContours(frame_main, dr.conts, -1, (0, 255, 0), 2)
