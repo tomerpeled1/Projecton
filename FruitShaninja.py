@@ -8,10 +8,12 @@ from CameraInterface import Camera
 import CameraInterface as Ci
 import FruitDetection2 as Fd
 import AutomaticStart as As
+import ArduinoCommunication as Ac
 import time
 import cv2
 
-SAVED_VIDEO_NAME = "section 3.mp4"
+
+SAVED_VIDEO_NAME = "2019-03-17 19-59-34.flv "
 LIVE = True
 BACKGROUND_FILE_NAME = "bg.png"
 CROP = True
@@ -55,7 +57,10 @@ def fruit_shaninja(src, settings, image_processing_features=IMAGE_PROCESSING_FEA
     if camera.LIVE:
         camera.set_camera_settings(settings)
 
-    # As.automatic_start()
+    As.automatic_start()
+    # Ac.wait(1000)
+    current = (camera.read())[1] # Retrieve next frame.
+    As.pass_ad(current)
 
     bg = cv2.imread(BACKGROUND_FILE_NAME)
     if BACKGROUND:
@@ -78,7 +83,7 @@ def fruit_shaninja(src, settings, image_processing_features=IMAGE_PROCESSING_FEA
         t1 = time.perf_counter()
         # print("********************************************************************")
         counter += 1
-        current = camera.next_frame(current)  # Retrieve next frame.
+        current = camera.next_frame(current) # Retrieve next frame.
         time_of_frame = time.perf_counter()
         temp_frame = current.copy()  # Copy the frame.
         detection_results = Fd.fruit_detection2(temp_frame, bg, Ip.CONTOUR_AREA_THRESH,
@@ -101,10 +106,8 @@ def fruit_shaninja(src, settings, image_processing_features=IMAGE_PROCESSING_FEA
         # print("time for everything", abs(t1 - t2))
         if cv2.waitKey(1) == 27:
             break
-
-    print(len(Ip.fruits_for_debug_trajectories))
-    Ip.debug_with_buffer(camera, buffer)
-    # Ip.show_original(camera)
+    # Ip.debug_with_buffer(buffer)
+    Ip.show_original(camera)
 
 
 if __name__ == '__main__':

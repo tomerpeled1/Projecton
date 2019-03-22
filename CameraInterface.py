@@ -7,7 +7,7 @@ import cv2
 from imutils.video import WebcamVideoStream
 from Calibrate import calibrate as calib
 import SavedVideoWrapper
-import Algorithmics as Sc
+import Algorithmics as Algo
 
 # Settings for camera in projecton lab when lights on.
 LIGHT_LAB_SETTINGS = (215, 75, -7, 10)  # order is (saturation, gain, exposure, focus)
@@ -182,7 +182,7 @@ class Camera:
         frame = frame[self.tr_crop_dimensions[1]:self.bl_crop_dimensions[1],
                       self.bl_crop_dimensions[0]:self.tr_crop_dimensions[0]]
         # Updates the screen size in algorithm module.
-        Sc.init_info(frame.shape[:2])
+        Algo.init_info(frame.shape[:2])
         return frame
 
     def crop_image(self, frame):

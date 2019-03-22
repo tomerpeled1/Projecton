@@ -3,6 +3,7 @@ the main image processing file - does the tracking and gets detection from Fruit
 works in pixels coordinates - (0,0) is top left of the frame.
 """
 
+
 # import FruitDetection as Fd
 import RealTimeTracker as Rtt
 # from CameraInterface import Camera
@@ -12,6 +13,7 @@ import cv2
 # import time
 import numpy as np
 from Fruit import Fruit
+
 
 forcheck = 0
 
@@ -26,12 +28,12 @@ term_crit = (cv2.TERM_CRITERIA_EPS | cv2.TERM_CRITERIA_COUNT, 30, 1)
 
 # Consts
 SAVED_VIDEO_NAME = "sundayNoon.flv"
+AD_IMAGE = "AD_TEMPLATE.png"
 CONTOUR_AREA_THRESH = 1000  # Threshold for fruit detection.
 MAX_NUM_OF_FRAMES_ON_SCREEN = 13  # Maximal number of frames for fruit to remain on screen.
 FRUIT_TO_EXTRACT = []  # List of fruits needs to be extracted.
 
-# HISTS_THRESH = 0.2  # Threshold for difference between histograms for recognition of fruits.
-HISTS_THRESH = 0.1  # for try
+HISTS_THRESH = 0.2  # Threshold for difference between histograms for recognition of fruits.
 HISTS_COMPARE_METHOD = cv2.HISTCMP_CORREL  # Method to compare between histograms.
 
 INTEGRATE_WITH_ALGORITHMICS = False
@@ -87,8 +89,8 @@ def draw_trajectory(fruit, frame):
 
     # -------draw fitted trajectory----------#
     for i in times_trajectory:
-        if i == 90:
-            k = 0
+        if i==90:
+            k=0
         xy_cm[0][i], xy_cm[1][i] = route(dt * i)
         xy_pixels[1][i], xy_pixels[0][i], t = Sc.cm2pixel((xy_cm[0][i], xy_cm[1][i], dt * i))
         xy_pixels[1][i] = Sc.FRAME_SIZE[0] - xy_pixels[1][i]
@@ -99,15 +101,15 @@ def draw_trajectory(fruit, frame):
     xy_centers = [[0 for _ in times_centers], [0 for _ in times_centers]]
     cens_original = []
     for cen in fruit.centers:
-        cens_original.append(Sc.crop2frame(cen[0])[:-1])
+        cens_original.append(cen[:-1])
     for i in times_centers:
         xy_centers[1][i], xy_centers[0][i], t = Sc.cm2pixel((x_coords[i], y_coords[i], dt * i))
         xy_centers[1][i] = Sc.FRAME_SIZE[0] - xy_centers[1][i]
         xy_centers[0][i] = Sc.FRAME_SIZE[1] - xy_centers[0][i]
-        cv2.circle(frame, (int(xy_centers[0][i]), int(xy_centers[1][i])), 4, (0, 255, 255), -1)
-        cv2.circle(frame, (int(cens_original[i][0]), int(cens_original[i][1])), 2, (255, 0, 0), -1)
-        # if (i==times_centers[-1]):
-        #     K=0
+        cv2.circle(frame, (int(xy_centers[0][i]), int(xy_centers[1][i])), 3, (0, 255, 255), -1)
+        if (i==times_centers[-1]):
+            K=0
+
 
 
 def calculate_hist_window(window, img_hsv):
@@ -177,7 +179,7 @@ def print_and_extract_centers(fruits_to_extract):
     """
     for fruit in fruits_to_extract:
         fruit.centers = fruit.centers[1:-1]
-        fruit.counter -= 2  ## TODO maybe huge bug!
+        fruit.counter -= 2 ## TODO maybe huge bug!
     if fruits_to_extract:
 
         # # ---------Add trajectory to fruit object ------- #
@@ -242,12 +244,12 @@ def track_known_fruits(fruits_info, current_frame, detection_results):
         for fruit in fruits_info:
             # Try to track fruit and if found update its histogram.
             if not Rtt.track_object(detection_results, fruit):
-                to_delete.append(fruit)  # update tracker using the detection results.
+                to_delete.append(fruit) # update tracker using the detection results.
                 # if fruit.counter <= MAX_NUM_OF_FRAMES_ON_SCREEN:
-                # fruit.hist = calculate_hist_window(fruit.track_window, img_hsv) ## TODO remove first fruits for trajectory fit
-                # If fruit not found extract it.
-                # else:
-                #     to_delete.append(fruit)
+                    # fruit.hist = calculate_hist_window(fruit.track_window, img_hsv) ## TODO remove first fruits for trajectory fit
+            # If fruit not found extract it.
+            # else:
+            #     to_delete.append(fruit)
         # Extract all fruits not tracked.
         global FRUIT_TO_EXTRACT
         for deleted_fruit in to_delete:
@@ -267,21 +269,18 @@ def insert_new_fruits(detection_results, fruits_info, current):
     fruits_info += get_fruits_info(detection_results, current)
 
 
-def debug_with_buffer(camera, buffer):
+def debug_with_buffer(buffer):
     """
     Debugging method which shows images and allows you to pass easily between them.
     :param buffer: List of frames.
     """
     i = 0
-    while i < len(buffer):
-        current_frame = camera.buffer[i]
+    while True:
         for fruit in fruits_for_debug_trajectories:
             # draw_center(fruit, buffer[i])
-            # current_frame = cv2.resize(current_frame, (Sc.FRAME_SIZE[1], Sc.FRAME_SIZE[0]))
-            draw_trajectory(fruit, current_frame)
-        cv2.imshow("camera buffer", current_frame)
-        cv2.imshow("game buffer", buffer[i])
-        x = cv2.waitKey(0)
+            draw_trajectory(fruit, buffer[i])
+        cv2.imshow("debug", buffer[i])
+        x = cv2.waitKey(1)
         if x == 49:  # '1' key
             i -= 1
         elif x == 50:  # '2' key
@@ -304,6 +303,36 @@ def draw(fruit, frame):
     """
     draw_rectangle(fruit, frame, (255, 0, 0))
     draw_center(fruit, frame)
+
+
+def check_ad(frame):
+    template = cv2.imread(AD_IMAGE)
+    w, h = template.shape[1], template.shape[0]
+    method = eval('cv2.TM_CCOEFF_NORMED')
+    # Apply template Matching
+
+    cv2.imshow("frame", frame)
+    cv2.imshow("template", template)
+
+    res = cv2.matchTemplate(frame, template, method)
+    min_val, max_val, min_loc, max_loc = cv2.minMaxLoc(res)
+    # top_left = max_loc
+    # bottom_right = (top_left[0] + w, top_left[1] + h)
+
+    print(max_val)
+
+    # cv2.rectangle(frame, top_left, bottom_right, 255, 2)
+    # plt.subplot(121), plt.imshow(res, cmap='gray')
+    # plt.title('Matching Result'), plt.xticks([]), plt.yticks([])
+    # plt.subplot(122), plt.imshow(frame, cmap='gray')
+    # plt.title('Detected Point'), plt.xticks([]), plt.yticks([])
+    # plt.show()
+
+    if max_val > 0.9:
+        print("there is an ad")
+        return True
+    print("no addddddddddddddddddddd")
+    return False
 
 
 def init_everything(integrate_with_algorithmics=INTEGRATE_WITH_ALGORITHMICS):

@@ -408,7 +408,7 @@ def init_info(frame_size, crop_size=CROP_SIZE, screen_size=SCREEN_SIZE):
     global CROP_SIZE, FRAME_SIZE, SCREEN_SIZE
     CROP_SIZE = crop_size
     FRAME_SIZE = frame_size
-    SCREEN_SIZE = screen_size
+    SCREEN_SIZE = (frame_size[0]*screen_size[1]/frame_size[1], screen_size[1])
 
 
 def remove_sliced_fruits(fruits):
