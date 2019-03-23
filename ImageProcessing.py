@@ -8,7 +8,7 @@ works in pixels coordinates - (0,0) is top left of the frame.
 import RealTimeTracker as Rtt
 # from CameraInterface import Camera
 # import CameraInterface as Ci
-import Algorithmics as Sc
+import Algorithmics as Algo
 import cv2
 # import time
 import numpy as np
@@ -73,7 +73,7 @@ def draw_trajectory(fruit, frame):
     :param frame: a single frame
     """
     # ---------get the centers and transfer to cm.-------#
-    centers_cm = [Sc.pixel2cm(center[0]) for center in fruit.centers]
+    centers_cm = [Algo.pixel2cm(center[0]) for center in fruit.centers]
     x_coords = [center[0] for center in centers_cm]
     y_coords = [center[1] for center in centers_cm]
     # t_coords = [center[2] for center in centers_cm]
@@ -92,9 +92,9 @@ def draw_trajectory(fruit, frame):
         if i==90:
             k=0
         xy_cm[0][i], xy_cm[1][i] = route(dt * i)
-        xy_pixels[1][i], xy_pixels[0][i], t = Sc.cm2pixel((xy_cm[0][i], xy_cm[1][i], dt * i))
-        xy_pixels[1][i] = Sc.FRAME_SIZE[0] - xy_pixels[1][i]
-        xy_pixels[0][i] = Sc.FRAME_SIZE[1] - xy_pixels[0][i]
+        xy_pixels[1][i], xy_pixels[0][i], t = Algo.cm2pixel((xy_cm[0][i], xy_cm[1][i], dt * i))
+        xy_pixels[1][i] = Algo.FRAME_SIZE[0] - xy_pixels[1][i]
+        xy_pixels[0][i] = Algo.FRAME_SIZE[1] - xy_pixels[0][i]
         cv2.circle(frame, (int(xy_pixels[0][i]), int(xy_pixels[1][i])), 2, (255, 0, 255), -1)
 
     # ---------draw the centers of the fruits------------#
@@ -103,9 +103,9 @@ def draw_trajectory(fruit, frame):
     for cen in fruit.centers:
         cens_original.append(cen[:-1])
     for i in times_centers:
-        xy_centers[1][i], xy_centers[0][i], t = Sc.cm2pixel((x_coords[i], y_coords[i], dt * i))
-        xy_centers[1][i] = Sc.FRAME_SIZE[0] - xy_centers[1][i]
-        xy_centers[0][i] = Sc.FRAME_SIZE[1] - xy_centers[0][i]
+        xy_centers[1][i], xy_centers[0][i], t = Algo.cm2pixel((x_coords[i], y_coords[i], dt * i))
+        xy_centers[1][i] = Algo.FRAME_SIZE[0] - xy_centers[1][i]
+        xy_centers[0][i] = Algo.FRAME_SIZE[1] - xy_centers[0][i]
         cv2.circle(frame, (int(xy_centers[0][i]), int(xy_centers[1][i])), 3, (0, 255, 255), -1)
         if (i==times_centers[-1]):
             K=0
@@ -164,14 +164,16 @@ def calc_meanshift_all_fruits(fruits_info, img_hsv):
             # fruit.centers[fruit.counter] = fruit.centers[fruit.counter][:-1] + (correlation,)
             fruit.counter += 1
         else:  # Otherwise the fruit is gone and we remove it from fruits_info and add it to FRUIT_TO_EXTRACT
-            # print("correlation: " + str(correlation))
             fruits_info.remove(fruit)
             if not fruit.is_falling and len(fruit.centers) > MINIMUM_NUM_OF_CENTERS_TO_EXTRACT:
                 FRUIT_TO_EXTRACT.append(fruit)
-    print_and_extract_centers(FRUIT_TO_EXTRACT)
+    update_trajectories(FRUIT_TO_EXTRACT)
 
+def clear_fruits():
+    global FRUIT_TO_EXTRACT
+    FRUIT_TO_EXTRACT[:] = []
 
-def print_and_extract_centers(fruits_to_extract):
+def update_trajectories(fruits_to_extract):
     """
     Extracts the centers list of each fruit to algorithm module (without first and last because they are unreliable).
     Prints the centers for debugging purposes.
@@ -181,21 +183,19 @@ def print_and_extract_centers(fruits_to_extract):
         fruit.centers = fruit.centers[1:-1]
         fruit.counter -= 2 ## TODO maybe huge bug!
     if fruits_to_extract:
-
         # # ---------Add trajectory to fruit object ------- #
         global fruits_for_debug_trajectories
+        fruits_and_trajectories = []
         for fruit in fruits_to_extract:
-            centers_cm = [Sc.pixel2cm(center[0]) for center in fruit.centers]
-            fruit.trajectory = Sc.get_trajectory_by_fruit_locations(centers_cm)
+            centers_cm = [Algo.pixel2cm(center[0]) for center in fruit.centers]
+            fruit.trajectory = Algo.get_trajectory_by_fruit_locations(centers_cm)
             # --- add first fruit to debug fruits buffer ---#
             fruits_for_debug_trajectories.append(fruit)
-            # --- print the centers --- #
-            # print("centers of:" + str([fruit.centers for fruit in fruits_to_extract]))
-
-        if INTEGRATE_WITH_ALGORITHMICS:
-            Sc.update_and_slice(fruits_to_extract)
-        global FRUIT_TO_EXTRACT
-        FRUIT_TO_EXTRACT[:] = []
+            # fruits_and_trajectories.append(fruit)
+        # if INTEGRATE_WITH_ALGORITHMICS:
+        #     Algo.add_slice_to_queue(fruits_to_extract)
+        # global FRUIT_TO_EXTRACT
+        # FRUIT_TO_EXTRACT[:] = []
 
 
 def get_fruits_info(detection_results, frame):
@@ -256,7 +256,7 @@ def track_known_fruits(fruits_info, current_frame, detection_results):
             if len(deleted_fruit.centers) > MINIMUM_NUM_OF_CENTERS_TO_EXTRACT and not deleted_fruit.is_falling:
                 FRUIT_TO_EXTRACT.append(deleted_fruit)
             fruits_info.remove(deleted_fruit)
-        print_and_extract_centers(FRUIT_TO_EXTRACT)
+        update_trajectories(FRUIT_TO_EXTRACT)
 
 
 def insert_new_fruits(detection_results, fruits_info, current):

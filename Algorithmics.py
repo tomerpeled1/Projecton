@@ -19,7 +19,8 @@ import numpy as np
 # ----------------- CONSTANTS -------------------
 #first acc is measured, second is from fazkanoot
 # RELATIVE_ACC = 1.478  # from experiences we did it tracker program
-RELATIVE_ACC = 1.7   # not from experiences we did it tracker program
+PART_OF_SCREEN_FOR_IP = 0
+RELATIVE_ACC = 1.0   # not from experiences we did it tracker program
 CAMERA_FPS = 30 # frames per second
 TIME_BETWEEN_2_FRAMES = 1.0 / CAMERA_FPS  # in sec
 FRAME_SIZE = (480, 640)  # (y,x) in pixels
@@ -29,12 +30,13 @@ DISTANCE_FROM_TABLET = ArduinoCommunication.d
 ACC = RELATIVE_ACC * SCREEN_SIZE[0]
 INTEGRATE_WITH_MECHANICS = False  # make True to send slices to ArduinoCommunication
 
-on_screen_fruits = []
+# on_screen_fruits = []
 SIMULATE = True  # make True to activate simulation
 slice_queue_lock = threading.Condition()
 simulation_thread = None
 slice_queue = []
 arm_loc = 0, 0
+during_slice = False
 
 VY_MAX = 24
 VY_MIN = 7
@@ -143,58 +145,57 @@ class Trajectory:
 
 
 # -------------------- slicing functions ------------------
-def update_fruits(fruits):
-    """
-    Updates on_screen_fruits according to fruits list acquired from image processing.
-    :param fruits: list of Fruit objects - fruits to add to on_scree_fruits
-    """
-    fruits_locs = [[pixel2cm(pix_loc[0]) for pix_loc in fruit.centers] for fruit in fruits]
-    # centers = [[center for center in fruit.centers] for fruit in fruits]
-    # centers2 = [[cm2pixel(loc) for loc in fruit_locs] for fruit_locs in fruits_locs]
-    fruit_trajectories = [get_trajectory_by_fruit_locations(fruit_locs) for fruit_locs in fruits_locs]
-    on_screen_fruits.extend([[fruit_trajectories[i], fruits[i].time_created] for i in range(len(fruits))])
-    # on_screen_fruits.extend(fruits)
-    fruits[:] = []
+# def update_fruits(fruits):
+#     """
+#     Updates on_screen_fruits according to fruits list acquired from image processing.
+#     :param fruits: list of Fruit objects - fruits to add to on_scree_fruits
+#     """
+#     fruits_locs = [[pixel2cm(pix_loc[0]) for pix_loc in fruit.centers] for fruit in fruits]
+#     # centers = [[center for center in fruit.centers] for fruit in fruits]
+#     # centers2 = [[cm2pixel(loc) for loc in fruit_locs] for fruit_locs in fruits_locs]
+#     fruit_trajectories = [get_trajectory_by_fruit_locations(fruit_locs) for fruit_locs in fruits_locs]
+#     on_screen_fruits.extend([[fruit_trajectories[i], fruits[i].time_created] for i in range(len(fruits))])
+#     # on_screen_fruits.extend(fruits)
+#     fruits[:] = []
+#     # fruit_trajectories = [get_trajectory(fruit_locs) for fruit_locs in fruits_locs]
+#     # on_screen_fruits.extend([[fruit_trajectories[i], fruits[i].time_created] for i in range(len(fruits))])
 
-    # fruit_trajectories = [get_trajectory(fruit_locs) for fruit_locs in fruits_locs]
-    # on_screen_fruits.extend([[fruit_trajectories[i], fruits[i].time_created] for i in range(len(fruits))])
 
-
-def create_slice():
+def create_slice(state, time):
     """
     returns a slice according to the fruits that are on the screen
     :return: tuple of (slice_trajectory, timer, t_peak, fruit_trajectories_and_starting_times)
     """
-    return calc_slice(on_screen_fruits)
+    return calc_slice(state.arm_loc, [loc for (fruit, loc)
+                                      in state.get_fruit_locations(time, state.fruits_in_range)])
 
 
-def do_slice(slice_trajectory):
+def do_slice(slice, sliced_fruits):
     """
     activate the simulation or the arduino by the given trajectory
     :param slice_trajectory: function of the location (x, y) of the pen in cm
     """
-    parametrization, timer, time_of_slice, fruits_trajectories = slice_trajectory
-    time_to_slice = time_until_slice(timer, time_of_slice)
+    parametrization, timer, time_of_slice = slice
+    # time_to_slice = 0
     # run simulation
     if SIMULATE:
-        Slm.run_simulation(parametrization, fruits_trajectories)
-    # run arduino
+        Slm.run_simulation(parametrization, sliced_fruits)
     else:
-        ArduinoCommunication.make_slice_by_trajectory(parametrization, time_to_slice)
+        ArduinoCommunication.make_slice_by_trajectory(parametrization)
 
-def update_and_slice(fruits):
+def add_slice_to_queue(slice, sliced_fruits):
     """
     Updates the fruits on the screen and than creates a slice and adds it to slice queue.
     :param fruits: The fruits extracted by the image processing module.
     """
     global slice_queue
     global slice_queue_lock
-    update_fruits(fruits)  # Updates the fruits on screen with the fruits extracted by the image processing module.
+    # update_fruits(fruits)  # Updates the fruits on screen with the fruits extracted by the image processing module.
     if slice_queue_lock.acquire(False):  # If the access to slice queue is available, it means we are not in the middle
         # of a slice and we can create a new one.
-        if len(on_screen_fruits) > 0:  # If there are fruits on the screen we want to create a slice.
-            new_slice = create_slice()
-            slice_queue.append(new_slice)  # Add the new slice to slice queue.
+        # if len(on_screen_fruits) > 0:  # If there are fruits on the screen we want to create a slice.
+        #     new_slice = create_slice()
+        slice_queue.append((slice, sliced_fruits))  # Add the new slice to slice queue.
         slice_queue_lock.notify()
         slice_queue_lock.release()  # Release the lock on the slice queue.
 
@@ -367,21 +368,21 @@ def draw_trajectory_matplotlib(trajectory, x_coords, y_coords):
     # plt.show()
 
 
-def calc_slice(fruit_trajectories_and_starting_times):
+def calc_slice(arm_loc, points):
     """
     return the chosen slice - function of (x, y) by t
-    :param fruit_trajectories_and_starting_times:
-    :return:
+    :param points: points the slice should go through in (x,y)
+    :return: slice.
     """
-    return SliceTypes.slice_to_peak(get_pen_loc(), fruit_trajectories_and_starting_times)
+    return SliceTypes.linear_slice(arm_loc, points)
 
 
 def get_pen_loc():
     """
     :return: the location of the pen (x, y) in cm
     """
-    # location (2cm, 5cm) from the bottom-left corner
-    x_location = -SCREEN_SIZE[1] / 2 + 2
+    # location (16cm, 4cm) from the bottom-left corner
+    x_location = SCREEN_SIZE[1]/2
     y_location = 4
     return x_location, y_location
     # return -SCREEN_SIZE[1]/2+3, 3  # location (3cm, 3cm) from the bottom-left corner
@@ -411,17 +412,17 @@ def init_info(frame_size, crop_size=CROP_SIZE, screen_size=SCREEN_SIZE):
     SCREEN_SIZE = (frame_size[0]*screen_size[1]/frame_size[1], screen_size[1])
 
 
-def remove_sliced_fruits(fruits):
-    """
-    Remove fruits which have already been sliced.
-    :param fruits: list of fruits to remove from on_screen_fruits (sliced fruits are not on the screen anymore).
-    """
-    for fruit in fruits:
-        on_screen_fruits.remove(fruit)
-    for fruit in on_screen_fruits:
-        traj, timer = fruit
-        if time.clock() > timer + traj.calc_life_time():
-            on_screen_fruits.remove(fruit)
+# def remove_sliced_fruits(fruits):
+#     """
+#     Remove fruits which have already been sliced.
+#     :param fruits: list of fruits to remove from on_screen_fruits (sliced fruits are not on the screen anymore).
+#     """
+#     for fruit in fruits:
+#         on_screen_fruits.remove(fruit)
+#     for fruit in on_screen_fruits:
+#         traj, timer = fruit
+#         if time.clock() > timer + traj.calc_life_time():
+#             on_screen_fruits.remove(fruit)
 
 
 def mechanics_thread_run():
@@ -430,6 +431,7 @@ def mechanics_thread_run():
     """
     global slice_queue_lock
     global slice_queue
+    global during_slice
     while True:
         # Unlocks access to the slice queue (slices waiting to be done).
         slice_queue_lock.acquire()
@@ -437,10 +439,12 @@ def mechanics_thread_run():
         while len(slice_queue) == 0:
             slice_queue_lock.wait()
         # Retrieves a slice for the queue.
-        next_slice = slice_queue[0]
-        slice_queue.remove(next_slice)
+        next_slice, sliced_fruits = slice_queue[0]
+        slice_queue.remove((next_slice, sliced_fruits))
         # Executes slice (still memory not unlocked so that we want start a new slice during the previous one).
-        do_slice(next_slice)
+        during_slice = True
+        do_slice(next_slice, sliced_fruits)
+        during_slice = False
         # Release the access to the memory so that we can enter new slices to queue.
         slice_queue_lock.release()
 
@@ -465,7 +469,7 @@ def init_everything(integrate_with_mechanics=INTEGRATE_WITH_MECHANICS, simulate=
 
 
 def fix_v_values_by_threshold(vx_mean, vy_mean):
-    print("vx: " + str(vx_mean) + "       vy: " + str(vy_mean))
+    # TODO - determine the correct values.
     if abs(vy_mean) > VY_MAX:
         vy_mean = VY_MAX * sign(vy_mean)
     if abs(vy_mean) < VY_MIN:
@@ -477,12 +481,28 @@ def fix_v_values_by_threshold(vx_mean, vy_mean):
 
 
 def sign(num):
-    if num > 0:
+    if num >= 0:
         return 1
     return -1
 
+def slice_quality_factor(slice):
+    """
+    :param slice:
+    :return: goodness of slice to determine if it's good enough.
+    """
+    pass
+
+def in_range_for_slice(point):
+    """
+    :param point: in (x,y)
+    :return: true if the point is in range for slice (for now it's top half of screen).
+    """
+    return SliceTypes.in_bound(point)
+
+def on_screen(point):
+    return SliceTypes.in_bound(point, PART_OF_SCREEN_FOR_IP)
 
 if __name__ == "__main__":
-    slice_and_times = create_slice()
+    slice_and_times = SliceTypes.linear_slice(get_pen_loc(), [], [])
     while True:
         do_slice(slice_and_times)

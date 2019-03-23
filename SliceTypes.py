@@ -5,7 +5,6 @@ this file creates slice routs - (x,y)(t).
 import math
 import Algorithmics
 
-
 LINE_LENGTH = 10
 
 r = 10  # second arm length in cm
@@ -13,9 +12,12 @@ R = 15  # first arm length in cm
 d = 15  # distance of major axis from screen in cm
 SCREEN = [16, 12]  # (x,y) dimensions of screen in cm
 AVERAGE_TIME_UNTIL_PEAK = 0.0
+Y_PERCENT_OF_SCREEN_WE_CAN_CUT_IN = 0.3
+
 
 def distance(a, b):
-    return math.sqrt((a[0] - b[0])**2 + (a[1] - b[1])**2)
+    return math.sqrt((a[0] - b[0]) ** 2 + (a[1] - b[1]) ** 2)
+
 
 def tuple_add(tup1, tup2):
     """
@@ -63,7 +65,7 @@ def slice_to_peak(arm_loc, fruit_trajectories_and_starting_times):
     chosen_trajectory, time_created = chosen_fruit
     # the coordinates of the peak
     t_peak, (x_peak, y_peak) = chosen_trajectory.calc_peak()
-    if distance((SCREEN[0]/2, -d), (x_peak, y_peak)) > R + r:
+    if distance((SCREEN[0] / 2, -d), (x_peak, y_peak)) > R + r:
         Algorithmics.remove_sliced_fruits(chosen_fruits)
         return linear_slice(arm_loc, fruit_trajectories_and_starting_times)
     if not in_bound((x_peak, y_peak)):
@@ -207,17 +209,17 @@ def theta_slice(_, __):
     return ret_slice, None, None, None
 
 
-def radius_slice(_, fruit_trajectories_and_starting_times):
+def slice_through_points(arm_loc, points):
+    pass
+
+
+def radius_slice(_, points):
     """
     the slice that uses only theta - stupid and simple.
     :param _: the location of the pen - tuple (x, y) in cm.
     :param fruit_trajectories_and_starting_times:the trajectories of the fruits
     :return: function of (x, y) by t of the pen, None, None, None
     """
-    Algorithmics.on_screen_fruits = []
-    chosen_fruit = fruit_trajectories_and_starting_times[0]
-    chosen_trajectory, time_created = chosen_fruit
-    t_peak = AVERAGE_TIME_UNTIL_PEAK
     theta_0 = math.acos(SCREEN[0] / (2 * (R + r))) + 0.07
     # print("Tetha 0 is: " , theta_0)
     # theta_0 = 70.0 / 180 * math.pi
@@ -228,38 +230,32 @@ def radius_slice(_, fruit_trajectories_and_starting_times):
         y_loc = math.sin(theta_0 + (math.pi - 2 * theta_0) * (1 - t)) - d / (R + r)
 
         return tuple_mul(r + R, (x_loc, y_loc))
-
         # ---- this is the old lambda, for cases the new code does not work.-------#
         # return (lambda t: tuple_mul((R + r),
         #                             (math.cos(theta_0 + (math.pi - 2 * theta_0) * (1 - t)),
         #                              math.sin(theta_0 + (math.pi - 2 * theta_0) * (1 - t)) - d / (R + r)))), \
         #        None, None, fruit_trajectories_and_starting_times
-    return ret_slice, time_created,  t_peak, fruit_trajectories_and_starting_times
+    return ret_slice, None, None, []
 
-def in_bound(point):
-    # print("peak is: -------------------------------------------------" + str(point))
+
+def in_bound(point, percent = Y_PERCENT_OF_SCREEN_WE_CAN_CUT_IN):
     left_bound = 0
     right_bound = SCREEN[0]
-    upper_bound = SCREEN[1]
+    upper_bound = (1 - percent) * SCREEN[1]
     lower_bound = 0
     (x, y) = point
     if x > left_bound and x < right_bound and y > lower_bound and y < upper_bound:
         return True
     return False
 
-def linear_slice(arm_loc, fruit_trajectories_and_starting_times):
+
+def linear_slice(arm_loc, points):
     x_arm_loc = arm_loc[0]
     y_arm_loc = arm_loc[1]
-    x_final = x_arm_loc + 5
-    if len(fruit_trajectories_and_starting_times) > 0:
-        chosen_fruit = fruit_trajectories_and_starting_times[0]
-        chosen_trajectory, time_created = chosen_fruit
-    else:
-        time_created = 0 #TODO - change to something that makes sense.
-    t_peak = AVERAGE_TIME_UNTIL_PEAK
+    x_final = x_arm_loc - 5
     def xy_by_t(t):
         x_slice = x_arm_loc + (x_final - x_arm_loc) * t * 2
         y_slice = y_arm_loc
         return x_slice, y_slice
-    return xy_by_t, time_created, t_peak, fruit_trajectories_and_starting_times
+    return xy_by_t, None, None
 

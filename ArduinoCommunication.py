@@ -55,7 +55,7 @@ WAIT_FOR_STOP = 50.0  # time to wait after slice until committing invert slice i
 # times = int(T / dt)  # the size of the vectors for the simulation
 
 try:
-    ser = serial.Serial('com6', SERIAL_BPS)  # Create Serial port object
+    ser = serial.Serial('com5', SERIAL_BPS)  # Create Serial port object
     time.sleep(2)  # wait for 2 seconds for the communication to get established
 except SerialException:
     print("Didn't create serial.")
@@ -121,14 +121,13 @@ def quantize_trajectory(get_xy_by_t):
     return steps_theta, steps_phi
 
 
-def make_slice_by_trajectory(get_xy_by_t, time_to_slice):
+def make_slice_by_trajectory(get_xy_by_t):
     """
     Sends commands to Arduino according to the given route from the algorithmic module.
     :param get_xy_by_t: function given form algorithmic module
     :param time_to_slice: time to wait until the slice should be executed
     """
     steps_theta, steps_phi = quantize_trajectory(get_xy_by_t)
-    wait(time_to_slice - calc_time_of_slice(steps_theta, steps_phi))
     move_2_motors(steps_theta, steps_phi)
     i_steps_theta, i_steps_phi = invert_slice(steps_theta, steps_phi)
     move_2_motors(i_steps_theta, i_steps_phi, True)
@@ -230,7 +229,7 @@ def move_2_motors(steps_theta, steps_phi, inverse=False):  # WRITE MAXIMUM 41 ST
     ser.write(str.encode(START_SLICE))
     # wait for slice to end
     time_of_slice = calc_time_of_slice(steps_theta, steps_phi)
-    # time.sleep(0.001 * time_of_slice)
+    time.sleep(0.001 * time_of_slice)
     # additional sleep
     time.sleep(0.01)
 
