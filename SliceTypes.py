@@ -74,24 +74,40 @@ def slice_to_peak(arm_loc, fruit_trajectories_and_starting_times):
     # converting the int to the right coordinate system
     x_peak = x_algorithmics_to_mechanics(x_peak)
 
+    # TODO add 1.1 factor to x_peak,y_peak
+
+    slice_trajectory = slice_to_point(arm_loc, (x_peak, y_peak))
+
+    fruit_trajectories_and_starting_times_copy = fruit_trajectories_and_starting_times.copy()
+    # delete the chosen fruit
+    Algorithmics.remove_sliced_fruits(chosen_fruits)
+
+    ## TODO sleep until slice (still TODO?)
+
+    return slice_trajectory, time_created, t_peak, fruit_trajectories_and_starting_times_copy
+
+
+def slice_to_point(arm_loc, target):
+    """
+    Creates a slice in straight line to the given target
+    :param arm_loc: the location of the arm at beginning of slice.
+    :param target: the wanted location of the arm at end of slice.
+    :return: function of (x,y) as function of t
+    """
+    x_arm_loc, y_arm_loc = arm_loc
+    x_target, y_target = target
+
     def slice_trajectory(t):
         """
         returns a tuple (x, y) by t of the trajectory of the pen - the end of the second arm
         :param t: double time between 0 and 1
         :return: the location (x, y) of the pen in cm
         """
-        # TODO need to check the factor 2:
-        x_slice = x_arm_loc + (x_peak - x_arm_loc) * t * 1.1
-        y_slice = y_arm_loc + (y_peak - y_arm_loc) * t * 1.1
+        x_slice = x_arm_loc + (x_target - x_arm_loc) * t
+        y_slice = y_arm_loc + (y_target - y_arm_loc) * t
         return x_slice, y_slice
 
-    fruit_trajectories_and_starting_times_copy = fruit_trajectories_and_starting_times.copy()
-    # delete the chosen fruit
-    Algorithmics.remove_sliced_fruits(chosen_fruits)
-
-    ## TODO sleep until slice
-
-    return slice_trajectory, time_created, t_peak, fruit_trajectories_and_starting_times_copy
+    return slice_trajectory
 
 
 def line_constant_speed(arm_loc, _):
