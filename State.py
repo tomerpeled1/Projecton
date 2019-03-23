@@ -35,19 +35,20 @@ class State:
         :return: tuple - (True, slice, sliced_fruits) if the state is good, (False, None, []) otherwise.
         """
         if self.fruits_in_range:
-            slice = Algo.create_slice(self, 0)
-            return True, slice, self.fruits_in_range
+            slice_to_return = Algo.create_slice(self, 0)
+            return True, slice_to_return, self.fruits_in_range
         else:
             return False, None, []
 
-    def get_fruit_locations(self, time, fruits):
+    def get_fruits_locations(self, time_from_now, fruits):
         """
         Calculates the fruit locations in (time) seconds.
-        :param time: time from now in seconds.
+        :param time_from_now: time from now in seconds.
+        :param fruits: list of fruits to calculate locations
         :return: [(x1,y1), (x2,y2), (x3,y3), ...] list of locations for all fruits.
         """
-        return [(fruit, fruit.trajectory.calc_trajectory()(time + self.current_time - fruit.time_created)) for fruit in
-                fruits]
+        return [(fruit, fruit.trajectory.calc_trajectory()(time_from_now + self.current_time - fruit.time_created))
+                for fruit in fruits]
 
     def add_new_fruits(self, fruits):
         """
@@ -55,7 +56,7 @@ class State:
          of range.
         :param fruits: new fruits to add.
         """
-        fruits_out_of_range_locs = self.get_fruit_locations(0, self.fruits_out_of_range)
+        fruits_out_of_range_locs = self.get_fruits_locations(0, self.fruits_out_of_range)
         self.fruits_in_range = [fruit for (fruit, loc) in fruits_out_of_range_locs if Algo.in_range_for_slice(loc)]
         self.fruits_out_of_range.extend(fruits)
 
@@ -64,14 +65,13 @@ class State:
         Transfers fruits which have gone out of range into fruits out of range and removes fruits which have left the
         screen.
         """
-        fruit_out_of_range_locs = self.get_fruit_locations(0, self.fruits_out_of_range)
+        fruit_out_of_range_locs = self.get_fruits_locations(0, self.fruits_out_of_range)
         self.fruits_out_of_range = [fruit for (fruit, loc) in fruit_out_of_range_locs
                                     if Algo.on_screen(loc) and not Algo.in_range_for_slice(loc)]
-        fruits_in_range_locs = self.get_fruit_locations(0, self.fruits_in_range)
+        fruits_in_range_locs = self.get_fruits_locations(0, self.fruits_in_range)
         fruits_gone_out_of_range = [fruit for (fruit, loc) in fruits_in_range_locs if not Algo.in_range_for_slice(loc)]
         self.fruits_out_of_range.extend(fruits_gone_out_of_range)
         self.fruits_in_range = [fruit for fruit in self.fruits_in_range if fruit not in fruits_gone_out_of_range]
-
 
     def remove_sliced_fruits(self, sliced_fruits):
         """

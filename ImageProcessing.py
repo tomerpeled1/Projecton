@@ -89,8 +89,6 @@ def draw_trajectory(fruit, frame):
 
     # -------draw fitted trajectory----------#
     for i in times_trajectory:
-        if i==90:
-            k=0
         xy_cm[0][i], xy_cm[1][i] = route(dt * i)
         xy_pixels[1][i], xy_pixels[0][i], t = Algo.cm2pixel((xy_cm[0][i], xy_cm[1][i], dt * i))
         xy_pixels[1][i] = Algo.FRAME_SIZE[0] - xy_pixels[1][i]
@@ -107,9 +105,6 @@ def draw_trajectory(fruit, frame):
         xy_centers[1][i] = Algo.FRAME_SIZE[0] - xy_centers[1][i]
         xy_centers[0][i] = Algo.FRAME_SIZE[1] - xy_centers[0][i]
         cv2.circle(frame, (int(xy_centers[0][i]), int(xy_centers[1][i])), 3, (0, 255, 255), -1)
-        if (i==times_centers[-1]):
-            K=0
-
 
 
 def calculate_hist_window(window, img_hsv):
@@ -169,9 +164,11 @@ def calc_meanshift_all_fruits(fruits_info, img_hsv):
                 FRUIT_TO_EXTRACT.append(fruit)
     update_trajectories(FRUIT_TO_EXTRACT)
 
+
 def clear_fruits():
     global FRUIT_TO_EXTRACT
     FRUIT_TO_EXTRACT[:] = []
+
 
 def update_trajectories(fruits_to_extract):
     """
@@ -181,21 +178,15 @@ def update_trajectories(fruits_to_extract):
     """
     for fruit in fruits_to_extract:
         fruit.centers = fruit.centers[1:-1]
-        fruit.counter -= 2 ## TODO maybe huge bug!
+        fruit.counter -= 2
     if fruits_to_extract:
-        # # ---------Add trajectory to fruit object ------- #
+        # ---------Add trajectory to fruit object ------- #
         global fruits_for_debug_trajectories
-        fruits_and_trajectories = []
         for fruit in fruits_to_extract:
             centers_cm = [Algo.pixel2cm(center[0]) for center in fruit.centers]
             fruit.trajectory = Algo.get_trajectory_by_fruit_locations(centers_cm)
-            # --- add first fruit to debug fruits buffer ---#
+            # --- add first fruit to debug fruits buffer --- #
             fruits_for_debug_trajectories.append(fruit)
-            # fruits_and_trajectories.append(fruit)
-        # if INTEGRATE_WITH_ALGORITHMICS:
-        #     Algo.add_slice_to_queue(fruits_to_extract)
-        # global FRUIT_TO_EXTRACT
-        # FRUIT_TO_EXTRACT[:] = []
 
 
 def get_fruits_info(detection_results, frame):
@@ -244,9 +235,10 @@ def track_known_fruits(fruits_info, current_frame, detection_results):
         for fruit in fruits_info:
             # Try to track fruit and if found update its histogram.
             if not Rtt.track_object(detection_results, fruit):
-                to_delete.append(fruit) # update tracker using the detection results.
+                to_delete.append(fruit)  # update tracker using the detection results.
                 # if fruit.counter <= MAX_NUM_OF_FRAMES_ON_SCREEN:
-                    # fruit.hist = calculate_hist_window(fruit.track_window, img_hsv) ## TODO remove first fruits for trajectory fit
+                # fruit.hist = calculate_hist_window(fruit.track_window, img_hsv)  # TODO remove first fruits for
+                #  trajectory fit
             # If fruit not found extract it.
             # else:
             #     to_delete.append(fruit)
@@ -310,7 +302,6 @@ def check_ad(frame):
     w, h = template.shape[1], template.shape[0]
     method = eval('cv2.TM_CCOEFF_NORMED')
     # Apply template Matching
-
     # cv2.imshow("ad frame", frame)
     # cv2.imshow("template", template)
     # cv2.waitKey(0)

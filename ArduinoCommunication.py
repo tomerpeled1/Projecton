@@ -117,7 +117,7 @@ def quantize_trajectory(get_xy_by_t):
     steps_phi = steps_phi_decimal.astype(int)
     for i in range(len(steps_phi)):
         if steps_phi[i] > 50 or steps_theta[i] > 50:
-            a = 0
+            pass  # for debugging
     return steps_theta, steps_phi
 
 
@@ -259,7 +259,7 @@ def move_2_motors(steps_theta, steps_phi, inverse=False):  # WRITE MAXIMUM 41 ST
     # print("CUT THEM!!!")
     ser.write(str.encode(START_SLICE))
     # wait for slice to end
-    time_of_slice = calc_time_of_slice(steps_theta, steps_phi)
+    # time_of_slice = calc_time_of_slice(steps_theta, steps_phi)
     # time.sleep(0.001 * time_of_slice)
     # additional sleep
     time.sleep(0.01)

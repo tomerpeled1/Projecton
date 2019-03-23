@@ -69,7 +69,7 @@ def fruit_shaninja(src, settings, image_processing_features=IMAGE_PROCESSING_FEA
                 time.sleep(time_to_wait_for_ad)
             As.pass_ad((camera.read())[1])
 
-    # return  # to test automatic start
+    return  # to test automatic start
 
     # Get background
     bg = cv2.imread(BACKGROUND_FILE_NAME)
@@ -82,13 +82,15 @@ def fruit_shaninja(src, settings, image_processing_features=IMAGE_PROCESSING_FEA
         cv2.imshow("Saved Background", bg)
         print("press any key to continue.")
         cv2.waitKey(0)
+
     current = bg
     counter = 0
     buffer = []  # Buffer of images for debugging purposes.
     current_state = State.State()
+
     # Main while loop.
     while camera.is_opened() and counter < 1200:
-        t1 = time.perf_counter()
+        # t1 = time.perf_counter()
         # print("********************************************************************")
         counter += 1
         current = camera.next_frame(current)  # Retrieve next frame.
@@ -107,15 +109,14 @@ def fruit_shaninja(src, settings, image_processing_features=IMAGE_PROCESSING_FEA
         current_state.update_state(Ip.FRUIT_TO_EXTRACT, time_of_frame)
         Ip.clear_fruits()
         if not Algo.during_slice:
-            slice_flag, slice, sliced_fruits = current_state.is_good_to_slice()
+            slice_flag, slice_to_do, sliced_fruits = current_state.is_good_to_slice()
             if slice_flag:
-                add_slice_to_queue(slice, sliced_fruits)
+                add_slice_to_queue(slice_to_do, sliced_fruits)
                 current_state.remove_sliced_fruits(sliced_fruits)
-
 
         cv2.imshow("temp_frame", temp_frame)
         buffer.append(temp_frame)  # Inserts frame to buffer.
-        t2 = time.perf_counter()
+        # t2 = time.perf_counter()
         if Ip.fruits_for_debug_trajectories:
             # for i in range(1 ,min(len(Ip.fruits_for_debug_trajectories), 3)):
             Ip.draw_trajectory(Ip.fruits_for_debug_trajectories[-1], camera.last_big_frame)
@@ -126,8 +127,15 @@ def fruit_shaninja(src, settings, image_processing_features=IMAGE_PROCESSING_FEA
     # Ip.debug_with_buffer(buffer)
     Ip.show_original(camera)
 
-def add_slice_to_queue(slice, sliced_fruits):
-    Algo.add_slice_to_queue(slice, sliced_fruits)
+
+def add_slice_to_queue(slice_to_add, sliced_fruits):
+    """
+    Adds the given slice to the slice queue.
+    :param slice_to_add: slice to add to queue
+    :param sliced_fruits: fruits the slice should cut (for simulation)
+    """
+    Algo.add_slice_to_queue(slice_to_add, sliced_fruits)
+
 
 if __name__ == '__main__':
     if LIVE:

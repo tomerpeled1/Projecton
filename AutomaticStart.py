@@ -1,10 +1,8 @@
 import SliceTypes as St
-import Algorithmics as Al
 import ArduinoCommunication as Ac
 import ImageProcessing as Ip
 import time
 import math
-import cv2
 
 
 ANCHOR_POINT = 7.0, 4.0  # TODO write something informative here
@@ -40,6 +38,8 @@ def pass_ad(frame):
     """
     if Ip.check_ad(frame):
         print("passing ad")
+    else:
+        print("no ad")
     time.sleep(1)
     Ac.make_slice_by_trajectory(St.slice_to_point(ANCHOR_POINT, PASS_AD_POINT), 0, False)
     time.sleep(1)

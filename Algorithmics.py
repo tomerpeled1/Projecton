@@ -17,11 +17,11 @@ import threading
 import numpy as np
 
 # ----------------- CONSTANTS -------------------
-#first acc is measured, second is from fazkanoot
+# first acc is measured, second is from fazkanoot
 # RELATIVE_ACC = 1.478  # from experiences we did it tracker program
 PART_OF_SCREEN_FOR_IP = 0
 RELATIVE_ACC = 1.0   # not from experiences we did it tracker program
-CAMERA_FPS = 30 # frames per second
+CAMERA_FPS = 30  # frames per second
 TIME_BETWEEN_2_FRAMES = 1.0 / CAMERA_FPS  # in sec
 FRAME_SIZE = (480, 640)  # (y,x) in pixels
 CROP_SIZE = (160, 480)  # (y,x) in pixels
@@ -35,7 +35,6 @@ SIMULATE = True  # make True to activate simulation
 slice_queue_lock = threading.Condition()
 simulation_thread = None
 slice_queue = []
-arm_loc = 0, 0
 during_slice = False
 
 VY_MAX = 24
@@ -161,32 +160,37 @@ class Trajectory:
 #     # on_screen_fruits.extend([[fruit_trajectories[i], fruits[i].time_created] for i in range(len(fruits))])
 
 
-def create_slice(state, time):
+def create_slice(state, time_to_slice):
     """
-    returns a slice according to the fruits that are on the screen
+    Returns the optimal slice according to the fruits that are on the screen and the given time to slice.
+    :param state: the state of the game
+    :param time_to_slice: the desired time to execute the slice.
     :return: tuple of (slice_trajectory, timer, t_peak, fruit_trajectories_and_starting_times)
     """
     return calc_slice(state.arm_loc, [loc for (fruit, loc)
-                                      in state.get_fruit_locations(time, state.fruits_in_range)])
+                                      in state.get_fruits_locations(time_to_slice, state.fruits_in_range)])
 
 
-def do_slice(slice, sliced_fruits):
+def do_slice(slice_to_do, sliced_fruits):
     """
-    activate the simulation or the arduino by the given trajectory
-    :param slice_trajectory: function of the location (x, y) of the pen in cm
+    Activate the simulation or the arduino by the given slice.
+    :param slice_to_do: function of the location (x, y) of the pen in cm
+    :param sliced_fruits: fruits that the slice is supposed to cut (for simulation)
     """
-    parametrization, timer, time_of_slice = slice
+    parametrization, timer, time_of_slice = slice_to_do
     # time_to_slice = 0
     # run simulation
     if SIMULATE:
         Slm.run_simulation(parametrization, sliced_fruits)
     else:
-        ArduinoCommunication.make_slice_by_trajectory(parametrization)
+        ArduinoCommunication.make_slice_by_trajectory(parametrization, time_of_slice)
 
-def add_slice_to_queue(slice, sliced_fruits):
+
+def add_slice_to_queue(slice_to_add, sliced_fruits):
     """
     Updates the fruits on the screen and than creates a slice and adds it to slice queue.
-    :param fruits: The fruits extracted by the image processing module.
+    :param slice_to_add: slice to add to queue
+    :param sliced_fruits: The fruits extracted by the image processing module
     """
     global slice_queue
     global slice_queue_lock
@@ -195,7 +199,7 @@ def add_slice_to_queue(slice, sliced_fruits):
         # of a slice and we can create a new one.
         # if len(on_screen_fruits) > 0:  # If there are fruits on the screen we want to create a slice.
         #     new_slice = create_slice()
-        slice_queue.append((slice, sliced_fruits))  # Add the new slice to slice queue.
+        slice_queue.append((slice_to_add, sliced_fruits))  # Add the new slice to slice queue.
         slice_queue_lock.notify()
         slice_queue_lock.release()  # Release the lock on the slice queue.
 
@@ -244,14 +248,14 @@ def get_trajectory_by_fruit_locations(fruit_locs):
     # plt.show()
 
     # values between last location to first location
-    x_total = x_coords[-1] - x_coords[0] if x_coords[-1] - x_coords[0] != 0 else 0.00001
+    # x_total = x_coords[-1] - x_coords[0] if x_coords[-1] - x_coords[0] != 0 else 0.00001
     # y_total = y_coords[-1] - y_coords[0]
     # t_total = (len(x_coords) - 1) * TIME_BETWEEN_2_FRAMES
     # r_total = math.sqrt(x_total ** 2 + y_total ** 2)
 
     # *****options for x0 and y0 values*****
-    x0_mean = st.mean(x_coords) if x_total != 0 else 0.001  # to prevent division by zero
-    y0_mean = st.mean(y_coords)
+    # x0_mean = st.mean(x_coords) if x_total != 0 else 0.001  # to prevent division by zero
+    # y0_mean = st.mean(y_coords)
     # x0_last = x_coords[-1]
     # y0_last = y_coords[-1]
     # x0 = x_coords[0]
@@ -259,7 +263,7 @@ def get_trajectory_by_fruit_locations(fruit_locs):
 
     # *****options for v0 value*****
     # r_total_real = abs((SCREEN_SIZE[0] / 3 / math.sin(theta)))  # 3 is because the screen is croped to third
-    v_array = [0 for _ in range(len(r_coords))]
+    # v_array = [0 for _ in range(len(r_coords))]
     vy_array = [0 for _ in range(len(r_coords))]
     vx_array = [0 for _ in range(len(r_coords))]
     r_mean = st.mean(r_coords)
@@ -268,10 +272,10 @@ def get_trajectory_by_fruit_locations(fruit_locs):
     for i in range(len(r_coords)):
         if abs(r_coords[i] - r_mean) < abs(r_std):
             r_fixed.append(r_coords[i])
-    if r_fixed:
-        r_mean_fixed = st.mean(r_fixed)
-    else:
-        r_mean_fixed = 0
+    # if r_fixed:
+    #     r_mean_fixed = st.mean(r_fixed)
+    # else:
+    #     r_mean_fixed = 0
     times_with_fix = []
     for i in range(len(r_coords)):
         # time_with_fix = fruit_locs[i+1][2] - fruit_locs[i][2]
@@ -312,10 +316,10 @@ def get_trajectory_by_fruit_locations(fruit_locs):
     # *****options for theta value*****
     theta_array = [0 for _ in range(len(x_coords) - 1)]
     for i in range(len(x_coords) - 1):
-        if (x_coords[i + 1] - x_coords[i]) != 0:  # to prevent division by zero
-            delta_x = (x_coords[i + 1] - x_coords[i])
-        else:
-            delta_x = 0.001
+        # if (x_coords[i + 1] - x_coords[i]) != 0:  # to prevent division by zero
+        #     delta_x = (x_coords[i + 1] - x_coords[i])
+        # else:
+        #     delta_x = 0.001
         # theta_array[i] = math.pi - math.atan((y_coords[i + 1] - y_coords[i]) / delta_x)
         if vx_mean == 0: vx_mean = 0.00000001
         theta_array[i] = math.pi - math.atan(vy_mean/vx_mean)
@@ -326,7 +330,7 @@ def get_trajectory_by_fruit_locations(fruit_locs):
     theta = theta_mean
 
     # ***** more options for x0 and y0 values*****
-    x0_array, y0_array = [],[]
+    x0_array, y0_array = [], []
     for i in range(len(x_coords) - 1):
         x0_array.append(x_coords[i] - times_with_fix[i]*i * vx_mean)
         y0_array.append(y_coords[i] - times_with_fix[i] * i * vy_mean)
@@ -352,8 +356,8 @@ def draw_trajectory_matplotlib(trajectory, x_coords, y_coords):
     """
     t_tot = 3
     dt = 0.1
-    x_lim = 20
-    y_lim = 25
+    # x_lim = 20
+    # y_lim = 25
 
     times = range(-int(t_tot / dt), int(t_tot / dt))
     xy = [[0 for _ in times], [0 for _ in times]]
@@ -370,9 +374,10 @@ def draw_trajectory_matplotlib(trajectory, x_coords, y_coords):
 
 def calc_slice(arm_loc, points):
     """
-    return the chosen slice - function of (x, y) by t
+    Calculate the slice that goes through the given points.
+    :param arm_loc: location of arm at beginning of slice
     :param points: points the slice should go through in (x,y)
-    :return: slice.
+    :return: calculated slice as parametrization, timer, time_to_slice
     """
     return SliceTypes.linear_slice(arm_loc, points)
 
@@ -388,14 +393,21 @@ def get_pen_loc():
     # return -SCREEN_SIZE[1]/2+3, 3  # location (3cm, 3cm) from the bottom-left corner
 
 
-def time_until_peak(time_created, time_of_slice):
+def time_until_peak(time_created, time_of_peak):
     """
-    :param fruit: fruit to calculate when to slice.
-    :return: the time until the slice in secs.
+    :param time_created: value of perf_counter when fruit was detected
+    :param time_of_peak: time in secs for fruit to reach its peak since detection
+    :return: the time until the fruit reaches its peak in secs
     """
-    return time_created + time_of_slice - time.perf_counter()
+    return time_created + time_of_peak - time.perf_counter()
+
 
 def time_until_slice(time_created, time_of_slice):
+    """
+    :param time_created: value of perf_counter when slice was created
+    :param time_of_slice: value of perf_counter when the slice should be executed
+    :return: the time until the slice should be executed in secs
+    """
     return time_until_peak(time_created, time_of_slice)
 
 
@@ -479,30 +491,36 @@ def fix_v_values_by_threshold(vx_mean, vy_mean):
     return vx_mean, vy_mean
 
 
-
 def sign(num):
     if num >= 0:
         return 1
     return -1
 
-def slice_quality_factor(slice):
+
+def slice_quality_factor(slice_to_qualify):
     """
-    :param slice:
-    :return: goodness of slice to determine if it's good enough.
+    Calculates the quality factor of the given slice, to check if its good enough to execute.
     """
     pass
+
 
 def in_range_for_slice(point):
     """
     :param point: in (x,y)
-    :return: true if the point is in range for slice (for now it's top half of screen).
+    :return: true if the point is in range for slice (for now it's top half of screen)
     """
     return SliceTypes.in_bound(point)
 
+
 def on_screen(point):
+    """
+    :param point: in (x,y)
+    :return: true if the point is inside the screen of the tablet
+    """
     return SliceTypes.in_bound(point, PART_OF_SCREEN_FOR_IP)
 
+
 if __name__ == "__main__":
-    slice_and_times = SliceTypes.linear_slice(get_pen_loc(), [], [])
+    slice_and_times = SliceTypes.linear_slice(get_pen_loc(), [])
     while True:
-        do_slice(slice_and_times)
+        do_slice(slice_and_times, [])
