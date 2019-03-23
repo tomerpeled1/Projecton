@@ -24,6 +24,7 @@ ALGORITHMICS_MECHANICS_INTEGRATION = True
 SIMULATION = False
 BACKGROUND = True
 RESIZE = False
+AUTOMATIC_START = True
 
 
 IMAGE_PROCESSING_FEATURES = (FLIP, CROP, LIVE, CALIBRATE, RESIZE)
@@ -58,11 +59,18 @@ def fruit_shaninja(src, settings, image_processing_features=IMAGE_PROCESSING_FEA
     if camera.LIVE:
         camera.set_camera_settings(settings)
 
-    As.automatic_start()
-    # Ac.wait(1000)
-    current = (camera.read())[1] # Retrieve next frame.
-    As.pass_ad(current)
+    if AUTOMATIC_START:  # Execute automatic start
+        ad_time = As.automatic_start()
+        time_to_wait_for_ad = ad_time - time.perf_counter()
+        if camera.is_opened():
+            if time_to_wait_for_ad > 0:
+                print("waiting for ad:", time_to_wait_for_ad)
+                time.sleep(time_to_wait_for_ad)
+            As.pass_ad((camera.read())[1])
 
+    # return  # to test automatic start
+
+    # Get background
     bg = cv2.imread(BACKGROUND_FILE_NAME)
     if BACKGROUND:
         # Allows user to click in order to capture background.
@@ -75,7 +83,6 @@ def fruit_shaninja(src, settings, image_processing_features=IMAGE_PROCESSING_FEA
         cv2.waitKey(0)
 
     current = bg
-
     counter = 0
     buffer = []  # Buffer of images for debugging purposes.
 
@@ -84,7 +91,7 @@ def fruit_shaninja(src, settings, image_processing_features=IMAGE_PROCESSING_FEA
         t1 = time.perf_counter()
         # print("********************************************************************")
         counter += 1
-        current = camera.next_frame(current) # Retrieve next frame.
+        current = camera.next_frame(current)  # Retrieve next frame.
         time_of_frame = time.perf_counter()
         temp_frame = current.copy()  # Copy the frame.
         detection_results = Fd.fruit_detection2(temp_frame, bg, Ip.CONTOUR_AREA_THRESH,
@@ -100,7 +107,7 @@ def fruit_shaninja(src, settings, image_processing_features=IMAGE_PROCESSING_FEA
         cv2.imshow("temp_frame", temp_frame)
         buffer.append(temp_frame)  # Inserts frame to buffer.
         t2 = time.perf_counter()
-        if (Ip.fruits_for_debug_trajectories):
+        if Ip.fruits_for_debug_trajectories:
             # for i in range(1 ,min(len(Ip.fruits_for_debug_trajectories), 3)):
             Ip.draw_trajectory(Ip.fruits_for_debug_trajectories[-1], camera.last_big_frame)
         cv2.imshow("please work", camera.last_big_frame)
@@ -114,5 +121,6 @@ def fruit_shaninja(src, settings, image_processing_features=IMAGE_PROCESSING_FEA
 if __name__ == '__main__':
     if LIVE:
         fruit_shaninja(0, Ci.DARK_101_SETTINGS_new2)
+        print("finished")
     else:
         fruit_shaninja(SAVED_VIDEO_NAME, Ci.DARK_101_SETTINGS_new2)

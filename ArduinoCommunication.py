@@ -22,8 +22,8 @@ STEPS_PER_REVOLUTION = 200  # number of full steps to make a full round
 STEPS_FRACTION = 8  # the number of steps to make a full step (full step is 1.8 degrees)
 MINIMAL_ANGLE = 2 * np.pi / (STEPS_PER_REVOLUTION * STEPS_FRACTION)  # the minimal angle step of the motor in rad (it is
 # 1.8 degrees divided by the steps fraction)
-ARMS = [15.0, 10.0]  # length of arm links in cm
-d = 15.0  # distance from motor to screen in cm
+ARMS = 15.0, 10.0  # length of arm links in cm
+d = 14.7  # distance from motor to screen in cm
 START_SLICE_LENGTH = 4
 
 # SERIAL CONSTANTS
@@ -42,7 +42,7 @@ BITS_PER_BYTE = 8  # the number of bits in one byte
 WRITE_DELAY = 1000/(SERIAL_BPS/BITS_PER_BYTE/LENGTH_OF_COMMAND)  # delay in ms after writing to prevent buffer overload
 TRAJECTORY_DIVISION_NUMBER = 20  # the number of parts that the trajectory of the arm is divided to
 DT_DIVIDE_TRAJECTORY = float(T) / TRAJECTORY_DIVISION_NUMBER  # size of step in parameter
-WANTED_RPS = 0.4  # speed of motors in revolutions per second
+WANTED_RPS = 0.6  # speed of motors in revolutions per second
 ONE_STEP_DELAY = 5.0 / WANTED_RPS / STEPS_FRACTION  # in ms
 WAIT_FOR_STOP = 50.0  # time to wait after slice until committing invert slice in ms
 
@@ -249,7 +249,7 @@ def move_2_motors(steps_theta, steps_phi, inverse=False):  # WRITE MAXIMUM 41 ST
     time.sleep(0.001*COMMAND_PACKAGE_SIZE*(len(steps_theta) % COMMAND_PACKAGE_SIZE))
 
     t2 = time.perf_counter()
-    print("time for writing: ", t2-t1)
+    # print("time for writing: ", t2-t1)
     ser.write(str.encode(END_WRITING))
 
     # if it is an inverse slice, wait to prevent drifting

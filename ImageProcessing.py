@@ -311,8 +311,9 @@ def check_ad(frame):
     method = eval('cv2.TM_CCOEFF_NORMED')
     # Apply template Matching
 
-    cv2.imshow("frame", frame)
-    cv2.imshow("template", template)
+    # cv2.imshow("ad frame", frame)
+    # cv2.imshow("template", template)
+    # cv2.waitKey(0)
 
     res = cv2.matchTemplate(frame, template, method)
     min_val, max_val, min_loc, max_loc = cv2.minMaxLoc(res)
@@ -328,10 +329,10 @@ def check_ad(frame):
     # plt.title('Detected Point'), plt.xticks([]), plt.yticks([])
     # plt.show()
 
-    if max_val > 0.9:
-        print("there is an ad")
+    if max_val > 0.5:
+        print("there is an ad, the quality of fit: " + str(max_val))
         return True
-    print("no addddddddddddddddddddd")
+    print("there is no ad, the quality of fit: " + str(max_val))
     return False
 
 
