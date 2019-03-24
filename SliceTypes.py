@@ -12,6 +12,7 @@ d = 15  # distance of major axis from screen in cm
 SCREEN = [16, 12]  # (x,y) dimensions of screen in cm
 SLICE_ZONE = 0.5
 PARTITION = 20
+MINIMAL_DISTANCE_FOR_PARTITION = 1
 LINEAR = 0
 ANGLES = 1
 
@@ -230,6 +231,17 @@ def in_bound(point, percent=SLICE_ZONE):
         return True
     print(x, y)
     return False
+
+def get_partition(xy_by_t):
+    dt = 1.0/PARTITION
+    x_points = [xy_by_t(0)[0]]
+    y_points = [xy_by_t(0)[1]]
+    for i in range(1, PARTITION + 1):
+        current_x, current_y = xy_by_t(i*dt)
+        if distance((x_points[-1], y_points[-1]), (current_x, current_y)) >= 1:
+            x_points.append(current_x)
+            y_points.append(current_y)
+    return [(x_points[i], y_points[i]) for i in range(len(x_points))]
 
 
 def linear_slice(arm_loc, _):
