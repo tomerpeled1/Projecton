@@ -7,7 +7,7 @@ from serial import SerialException
 import math
 import time
 import numpy as np
-import matplotlib.pyplot as plt
+# import matplotlib.pyplot as plt
 
 
 # all lengths are in cm, all angles are in degrees
@@ -125,7 +125,6 @@ def make_slice_by_trajectory(get_xy_by_t, invert=True):
     """
     Sends commands to Arduino according to the given route from the algorithmic module.
     :param get_xy_by_t: function given form algorithmic module
-    :param time_to_slice: time to wait until the slice should be executed
     :param invert: if true then make also invert slice
     """
     steps_theta, steps_phi = quantize_trajectory(get_xy_by_t)
@@ -247,7 +246,7 @@ def move_2_motors(steps_theta, steps_phi, inverse=False):  # WRITE MAXIMUM 41 ST
     ser.write(str.encode(message))
     time.sleep(0.001*COMMAND_PACKAGE_SIZE*(len(steps_theta) % COMMAND_PACKAGE_SIZE))
 
-    t2 = time.perf_counter()
+    # t2 = time.perf_counter()
     # print("time for writing: ", t2-t1)
     ser.write(str.encode(END_WRITING))
 
