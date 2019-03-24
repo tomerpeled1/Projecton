@@ -121,7 +121,7 @@ def quantize_trajectory(get_xy_by_t):
     return steps_theta, steps_phi
 
 
-def make_slice_by_trajectory(get_xy_by_t, time_to_slice, invert=True):
+def make_slice_by_trajectory(get_xy_by_t, invert=True):
     """
     Sends commands to Arduino according to the given route from the algorithmic module.
     :param get_xy_by_t: function given form algorithmic module

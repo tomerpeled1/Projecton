@@ -14,9 +14,6 @@ import cv2
 import numpy as np
 from Fruit import Fruit
 
-
-forcheck = 0
-
 MINIMUM_NUM_OF_CENTERS_TO_EXTRACT = 4  # Minimal number of centers for fruit to create good fit.
 
 # Parameters for meanshift
@@ -37,6 +34,7 @@ HISTS_THRESH = 0.2  # Threshold for difference between histograms for recognitio
 HISTS_COMPARE_METHOD = cv2.HISTCMP_CORREL  # Method to compare between histograms.
 
 INTEGRATE_WITH_ALGORITHMICS = False
+
 
 # Fruits to print on screen for debugging of the algorithms.
 fruits_for_debug_trajectories = []
@@ -73,42 +71,66 @@ def draw_trajectory(fruit, frame):
     :param frame: a single frame
     """
     # ---------get the centers and transfer to cm.-------#
-    centers_cm = [Algo.pixel2cm(center[0]) for center in fruit.centers]
-    x_coords = [center[0] for center in centers_cm]
-    y_coords = [center[1] for center in centers_cm]
-    # t_coords = [center[2] for center in centers_cm]
-    times_centers = range(len(x_coords))
-
-    # ------- get the trajectory of the fruit -------#
-    t_tot = 3
+    xy_by_t = fruit.trajectory.calc_trajectory()
+    t_total = 3
     dt = 0.02
-    times_trajectory = range(-int(t_tot / dt), int(t_tot / dt))
-    xy_cm = [[0 for _ in times_trajectory], [0 for _ in times_trajectory]]
-    xy_pixels = [[0 for _ in times_trajectory], [0 for _ in times_trajectory]]
-    route = fruit.trajectory.calc_trajectory()
+    t_vec = [dt*i for i in range(int(t_total/dt))]
+    for t in t_vec:
+        # size = frame.shape
+        xt, yt = xy_by_t(t)
+        yt_pixel, xt_pixel, _ = Algo.cm2pixel((xt, yt, t))
+        cv2.circle(frame, (xt_pixel, yt_pixel), 3, (0, int(85*t), 255), -1)
+    centers = [Algo.crop2frame(center[0]) for center in fruit.centers]
+    for center in centers:
+        cv2.circle(frame, (center[0], center[1]), 3, (0, 255, 0), -1)
 
-    # -------draw fitted trajectory----------#
-    for i in times_trajectory:
-        if i==90:
-            k=0
-        xy_cm[0][i], xy_cm[1][i] = route(dt * i)
-        xy_pixels[1][i], xy_pixels[0][i], t = Algo.cm2pixel((xy_cm[0][i], xy_cm[1][i], dt * i))
-        xy_pixels[1][i] = Algo.FRAME_SIZE[0] - xy_pixels[1][i]
-        xy_pixels[0][i] = Algo.FRAME_SIZE[1] - xy_pixels[0][i]
-        cv2.circle(frame, (int(xy_pixels[0][i]), int(xy_pixels[1][i])), 2, (255, 0, 255), -1)
 
-    # ---------draw the centers of the fruits------------#
-    xy_centers = [[0 for _ in times_centers], [0 for _ in times_centers]]
-    cens_original = []
-    for cen in fruit.centers:
-        cens_original.append(cen[:-1])
-    for i in times_centers:
-        xy_centers[1][i], xy_centers[0][i], t = Algo.cm2pixel((x_coords[i], y_coords[i], dt * i))
-        xy_centers[1][i] = Algo.FRAME_SIZE[0] - xy_centers[1][i]
-        xy_centers[0][i] = Algo.FRAME_SIZE[1] - xy_centers[0][i]
-        cv2.circle(frame, (int(xy_centers[0][i]), int(xy_centers[1][i])), 3, (0, 255, 255), -1)
-        if (i==times_centers[-1]):
-            K=0
+
+
+
+
+
+
+
+
+
+
+
+
+    #
+    # centers = [center[0] for center in fruit.centers]
+    # x_coords = [center[0] for center in centers]
+    # y_coords = [center[1] for center in centers]
+    #
+    # times_centers = range(len(x_coords))
+    #
+    # # ------- get the trajectory of the fruit -------#
+    # t_tot = 3
+    # dt = 0.02
+    # # times_trajectory = range(-int(t_tot / dt), int(t_tot / dt))
+    # times_trajectory = range(0, int(t_tot / dt))
+    # xy_cm = [[0 for _ in times_trajectory], [0 for _ in times_trajectory]]
+    # xy_pixels = [[0 for _ in times_trajectory], [0 for _ in times_trajectory]]
+    # route = fruit.trajectory.calc_trajectory()
+    #
+    # # -------draw fitted trajectory----------#
+    # for i in times_trajectory:
+    #     xy_cm[0][i], xy_cm[1][i] = route(dt * i)
+    #     xy_pixels[1][i], xy_pixels[0][i], t = Algo.cm2pixel((xy_cm[0][i], xy_cm[1][i], dt * i))
+    #     xy_pixels[1][i] = Algo.FRAME_SIZE[0] - xy_pixels[1][i]
+    #     xy_pixels[0][i] = Algo.FRAME_SIZE[1] - xy_pixels[0][i]
+    #     cv2.circle(frame, (int(xy_pixels[0][i]), int(xy_pixels[1][i])), 2, (255, 0, 255), -1)
+    #
+    # # ---------draw the centers of the fruits------------#
+    # xy_centers = [[0 for _ in times_centers], [0 for _ in times_centers]]
+    # cens_original = []
+    # for cen in fruit.centers:
+    #     cens_original.append(cen[:-1])
+    # for i in times_centers:
+    #     # xy_centers[1][i], xy_centers[0][i], t = Algo.cm2pixel((x_coords[i], y_coords[i], dt * i))
+    #     # xy_centers[1][i] = Algo.FRAME_SIZE[0] - xy_centers[1][i]
+    #     # # xy_centers[0][i] = Algo.FRAME_SIZE[1] - xy_centers[0][i]
+    #     cv2.circle(frame, (centers[i][0], centers[i][1]), 3, (0, 255, 255), -1)
 
 
 
@@ -188,14 +210,11 @@ def update_trajectories(fruits_to_extract):
         fruits_and_trajectories = []
         for fruit in fruits_to_extract:
             centers_cm = [Algo.pixel2cm(center[0]) for center in fruit.centers]
-            fruit.trajectory = Algo.get_trajectory_by_fruit_locations(centers_cm)
-            # --- add first fruit to debug fruits buffer ---#
-            fruits_for_debug_trajectories.append(fruit)
-            # fruits_and_trajectories.append(fruit)
-        # if INTEGRATE_WITH_ALGORITHMICS:
-        #     Algo.add_slice_to_queue(fruits_to_extract)
-        # global FRUIT_TO_EXTRACT
-        # FRUIT_TO_EXTRACT[:] = []
+            try:
+                fruit.trajectory = Algo.get_trajectory_by_fruit_locations(centers_cm)
+                fruits_for_debug_trajectories.append(fruit)
+            except:
+                continue
 
 
 def get_fruits_info(detection_results, frame):

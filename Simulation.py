@@ -366,6 +366,8 @@ def run_simulation(func, fruits_sliced):
     :param fruits_trajectories_and_starting_times:
     """
 
+    print("in simulation")
+
     def zero_trajectory(_):
         return 0, 0
 
@@ -394,7 +396,7 @@ def run_simulation(func, fruits_sliced):
 
     xy_of_fruits_list = []
     for j in range(len(first_trajectory)):
-        xy_of_fruits_list.append(xy_by_fruit_trajectory(first_trajectory[i],first_trajectory_total_time[i], dt_motor ))
+        xy_of_fruits_list.append(xy_by_fruit_trajectory(first_trajectory[j],first_trajectory_total_time[j], dt_motor ))
     # x_fruit, y_fruit = xy_by_fruit_trajectory(first_trajectory, first_trajectory_total_time, dt_motor)
 
     # ------------- PLOT -------------------
