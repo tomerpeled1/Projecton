@@ -21,13 +21,13 @@ def automatic_start():
     :return: wanted value of perf_counter when you should take frame of ad
     """
     # move arm to location for slicing the apple
-    Ac.make_slice_by_trajectory(St.slice_to_point(ARM_LOC_0, ARM_LOC_1), 0, False)
+    Ac.make_slice_by_trajectory(St.linear_slice_between_2_points(ARM_LOC_0, ARM_LOC_1), False)
     time.sleep(1)
     # cut the apple for start
     arm_loc = Ac.start_cut(ARM_LOC_1)
     apple_time = time.perf_counter()
     # print("took apple_time!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!")
-    Ac.make_slice_by_trajectory(St.slice_to_point(arm_loc, ANCHOR_POINT), 0, False)
+    Ac.make_slice_by_trajectory(St.linear_slice_between_2_points(arm_loc, ANCHOR_POINT), False)
     return apple_time + AD_TIME
 
 
@@ -41,30 +41,30 @@ def pass_ad(frame):
     # else:
     #     print("no ad")
     time.sleep(1)
-    Ac.make_slice_by_trajectory(St.slice_to_point(ANCHOR_POINT, PASS_AD_POINT), 0, False)
+    Ac.make_slice_by_trajectory(St.linear_slice_between_2_points(ANCHOR_POINT, PASS_AD_POINT), False)
     time.sleep(1)
-    Ac.make_slice_by_trajectory(St.slice_to_point(PASS_AD_POINT, ANCHOR_POINT), 0, False)
+    Ac.make_slice_by_trajectory(St.linear_slice_between_2_points(PASS_AD_POINT, ANCHOR_POINT), False)
     time.sleep(1)
-    Ac.make_slice_by_trajectory(St.slice_to_point(ANCHOR_POINT, PASS_AD_POINT), 0, False)
+    Ac.make_slice_by_trajectory(St.linear_slice_between_2_points(ANCHOR_POINT, PASS_AD_POINT), False)
     time.sleep(1)
-    Ac.make_slice_by_trajectory(St.slice_to_point(PASS_AD_POINT, ANCHOR_POINT), 0, False)
+    Ac.make_slice_by_trajectory(St.linear_slice_between_2_points(PASS_AD_POINT, ANCHOR_POINT), False)
 
 
 if __name__ == '__main__':
     # while True:
-        # Ac.make_slice_by_trajectory(St.slice_to_point((-8, 6), (8, 6)), 0, False)
+        # Ac.make_slice_by_trajectory(St.linear_slice_between_2_points((-8, 6), (8, 6)), 0, False)
         # time.sleep(0.1)
-        # Ac.make_slice_by_trajectory(St.slice_to_point((8, 6), (-8, 6)), 0, False)
+        # Ac.make_slice_by_trajectory(St.linear_slice_between_2_points((8, 6), (-8, 6)), 0, False)
         # time.sleep(0.1)
-    # Ac.make_slice_by_trajectory(St.slice_to_point(ANCHOR_POINT, (0.0, 4.0)), 0, False)
-    # Ac.make_slice_by_trajectory(St.slice_to_point((0.0, 4.0), ANCHOR_POINT), 0, False)
+    # Ac.make_slice_by_trajectory(St.linear_slice_between_2_points(ANCHOR_POINT, (0.0, 4.0)), 0, False)
+    # Ac.make_slice_by_trajectory(St.linear_slice_between_2_points((0.0, 4.0), ANCHOR_POINT), 0, False)
     x_arm = float(input("x location of arm: "))
     y_arm = float(input("y location of arm: "))
 
     while True:
         x_target = float(input("x location of target: "))
         y_target = float(input("y location of target: "))
-        Ac.make_slice_by_trajectory(St.slice_to_point((x_arm, y_arm), (x_target, y_target)), 0, False)
+        Ac.make_slice_by_trajectory(St.linear_slice_between_2_points((x_arm, y_arm), (x_target, y_target)), False)
         x_arm = x_target
         y_arm = y_target
         print("")

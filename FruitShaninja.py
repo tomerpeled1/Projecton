@@ -14,7 +14,7 @@ import State
 
 
 SAVED_VIDEO_NAME = "2019-03-17 19-59-34.flv "
-LIVE = True
+LIVE = False
 BACKGROUND_FILE_NAME = "bg.png"
 CROP = True
 FLIP = True

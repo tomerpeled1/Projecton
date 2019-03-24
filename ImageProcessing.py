@@ -83,20 +83,6 @@ def draw_trajectory(fruit, frame):
     for center in centers:
         cv2.circle(frame, (center[0], center[1]), 3, (0, 255, 0), -1)
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-    #
     # centers = [center[0] for center in fruit.centers]
     # x_coords = [center[0] for center in centers]
     # y_coords = [center[1] for center in centers]
@@ -130,7 +116,6 @@ def draw_trajectory(fruit, frame):
     #     # xy_centers[1][i] = Algo.FRAME_SIZE[0] - xy_centers[1][i]
     #     # # xy_centers[0][i] = Algo.FRAME_SIZE[1] - xy_centers[0][i]
     #     cv2.circle(frame, (centers[i][0], centers[i][1]), 3, (0, 255, 255), -1)
-
 
 
 def calculate_hist_window(window, img_hsv):
@@ -213,7 +198,7 @@ def update_trajectories(fruits_to_extract):
             try:
                 fruit.trajectory = Algo.get_trajectory_by_fruit_locations(centers_cm)
                 fruits_for_debug_trajectories.append(fruit)
-            except:
+            except Exception:
                 continue
 
 
@@ -327,7 +312,7 @@ def draw(fruit, frame):
 
 def check_ad(frame):
     template = cv2.imread(AD_IMAGE)
-    w, h = template.shape[1], template.shape[0]
+    # w, h = template.shape[1], template.shape[0]
     method = eval('cv2.TM_CCOEFF_NORMED')
     # Apply template Matching
     # cv2.imshow("ad frame", frame)

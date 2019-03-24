@@ -6,7 +6,7 @@ the coordinates here is (generally speaking) (x,y) when the 0,0 is at bottom lef
 """
 
 import math
-import matplotlib.pyplot as plt
+# import matplotlib.pyplot as plt
 import statistics as st
 import SliceTypes
 import time
@@ -32,10 +32,10 @@ ACC = RELATIVE_ACC * SCREEN_SIZE[0]
 INTEGRATE_WITH_MECHANICS = False  # make True to send slices to ArduinoCommunication
 SLICE_TYPE = 0
 SLICE_TYPES = {
-    "linear" : 0,
-    "radius" : 1,
-    "through_points" : 2,
-    "to_peak" : 3
+    "linear": 0,
+    "radius": 1,
+    "through_points": 2,
+    "to_peak": 3
 }
 SLICE_QUALITY_FACTOR_THRESH = 0
 MINIMAL_NUMBER_OF_FRUITS_FOR_COMBO = 3
@@ -46,8 +46,6 @@ slice_queue_lock = threading.Condition()
 simulation_thread = None
 slice_queue = []
 during_slice = False
-
-
 
 VY_MAX = 24
 VY_MIN = 7
@@ -81,7 +79,7 @@ def cm2pixel(cm_loc):
     :return: pixel location in order (y, x, t)
     """
     x_coord_screen, y_coord_screen, t = cm_loc
-    x_coord_frame = int(x_coord_screen *(float(FRAME_SIZE[1]) / SCREEN_SIZE[1]))
+    x_coord_frame = int(x_coord_screen * (float(FRAME_SIZE[1]) / SCREEN_SIZE[1]))
     x_coord_frame = FRAME_SIZE[1] - x_coord_frame
     y_coord_frame = int((float(y_coord_screen / SCREEN_SIZE[0])) * FRAME_SIZE[0])
     return y_coord_frame, x_coord_frame, t
@@ -96,10 +94,6 @@ class Trajectory:
     def __init__(self, x0, y0, v0x, v0y):
         """
         initiates the parameters for the trajectory
-        :param x0: by the formula
-        :param y0: by the formula
-        :param v: by the formula
-        :param theta: by the formula
         """
         self.x0 = x0
         self.y0 = y0
@@ -180,14 +174,16 @@ def create_slice(state, time_to_slice):
     :param time_to_slice: the desired time to execute the slice.
     :return: tuple of (slice_trajectory, timer, t_peak, fruit_trajectories_and_starting_times)
     """
-    fruits_and_locs = state.get_fruit_locations(time, state.fruits_in_range)
+    fruits_and_locs = state.get_fruit_locations(time_to_slice, state.fruits_in_range)
     arm_loc = state.arm_loc
     ordered_fruits_and_locs = order_fruits_and_locs(arm_loc, fruits_and_locs)
-    slice, sliced_fruits = create_best_slice(state.arm_loc, ordered_fruits_and_locs)
-    return slice, sliced_fruits
+    slice_to_return, sliced_fruits = create_best_slice(state.arm_loc, ordered_fruits_and_locs)
+    return slice_to_return, sliced_fruits
+
 
 def order_fruits_and_locs(arm_loc, fruits_and_locs):
-    return sorted(fruits_and_locs, key = key(arm_loc))
+    return sorted(fruits_and_locs, key=key(arm_loc))
+
 
 def create_best_slice(arm_loc, ordered_fruits_and_locs):
     for fruits_and_locs in combinations_of_elements(ordered_fruits_and_locs):
@@ -206,22 +202,19 @@ def combinations_of_elements(s):
     :return: subgroups of fruits larger than number of fruits needed for combo by
      descending order by size.
     """
-    if(len(s) < 3):
+    if len(s) < 3:
         return [s]
     return list(itertools.chain.from_iterable(itertools.combinations(s, r)
-                                         for r in range(len(s), MINIMAL_NUMBER_OF_FRUITS_FOR_COMBO-1, -1)))
+                for r in range(len(s), MINIMAL_NUMBER_OF_FRUITS_FOR_COMBO-1, -1)))
 
 
-def good_slice(slice):
+def good_slice(slice_to_evaluate):
     """
     Determines whether or not a slice is "good enough" (creates combo).
-    :param slice: the slice which we want to test.
+    :param slice_to_evaluate: the slice which we want to test.
     :return: true if the slice should be done.
     """
-    return True
-
-
-
+    return True  # TODO
 
 
 def key(arm_loc):
@@ -511,9 +504,10 @@ def mechanics_thread_run():
         slice_queue_lock.release()
 
 
-def init_everything(slice_type = SLICE_TYPE, integrate_with_mechanics=INTEGRATE_WITH_MECHANICS, simulate=SIMULATE):
+def init_everything(slice_type=SLICE_TYPE, integrate_with_mechanics=INTEGRATE_WITH_MECHANICS, simulate=SIMULATE):
     """
     Initializes the algorithmics module - opens a thread for the mechanics module.
+    :param slice_type: the strategy we want to use this game
     :param integrate_with_mechanics: boolean that decides weather to integrate with mechanics or not.
     :param simulate: boolean that decides weather to activate simulation or not.
     """
@@ -547,13 +541,6 @@ def sign(num):
     if num >= 0:
         return 1
     return -1
-
-
-def slice_quality_factor(slice_to_qualify):
-    """
-    Calculates the quality factor of the given slice, to check if its good enough to execute.
-    """
-    pass
 
 
 def in_range_for_slice(point):

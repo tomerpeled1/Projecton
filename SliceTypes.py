@@ -12,8 +12,6 @@ d = 15  # distance of major axis from screen in cm
 SCREEN = [16, 12]  # (x,y) dimensions of screen in cm
 SLICE_ZONE = 0.5
 PARTITION = 20
-
-
 LINEAR = 0
 ANGLES = 1
 
@@ -59,7 +57,6 @@ def slice_to_peak(arm_loc, fruit_trajectories_and_starting_times):  # TODO updat
             [function of (x,y) by t, and double starting time]
     :return: slice, timer, t_peak, fruit_trajectories_and_starting_times
     """
-    x_arm_loc, y_arm_loc = arm_loc
     if not fruit_trajectories_and_starting_times:  # if the list of the fruits is empty - returns radius_slice
         return linear_slice(arm_loc, fruit_trajectories_and_starting_times)
     # gets the first fruit of the list
@@ -82,7 +79,7 @@ def slice_to_peak(arm_loc, fruit_trajectories_and_starting_times):  # TODO updat
 
     fruit_trajectories_and_starting_times_copy = fruit_trajectories_and_starting_times.copy()
     # delete the chosen fruit
-    ## TODO sleep until slice (still TODO?)
+    # TODO sleep until slice (still TODO?)
 
     return slice_trajectory, time_created, t_peak, fruit_trajectories_and_starting_times_copy
 
@@ -90,7 +87,7 @@ def slice_to_peak(arm_loc, fruit_trajectories_and_starting_times):  # TODO updat
 def linear_slice_between_2_points(start, target):
     """
     Creates a slice in straight line to the given target
-    :param arm_loc: the location of the arm at beginning of slice.
+    :param start: the location of the arm at beginning of slice.
     :param target: the wanted location of the arm at end of slice.
     :return: function of (x,y) as function of t
     """
@@ -182,7 +179,7 @@ def line_acceleration_trajectory(arm_loc, _):  # gets time in sec
 #     return ret_slice, None, None, None
 
 
-def slice_through_many_points(arm_loc, ordered_points, move_between_points = LINEAR):
+def slice_through_many_points(arm_loc, ordered_points, move_between_points=LINEAR):
     if move_between_points == LINEAR:
         move_func = linear_slice_between_2_points
     else:
@@ -191,14 +188,15 @@ def slice_through_many_points(arm_loc, ordered_points, move_between_points = LIN
     for i in range(len(ordered_points)-1):
         slice_parts.append(move_func(ordered_points[i], ordered_points[i+1]))
     # print ("*&*&*&*&* SLICE_PARTS before unite ", slice_parts)
-    slice = unite_slice(slice_parts)
-    return slice, ordered_points, None
+    slice_to_return = unite_slice(slice_parts)
+    return slice_to_return, ordered_points, None
 
 
 def unite_slice(slice_parts):
     # print ("*&*&*&*&* SLICE_PARTS ", slice_parts)
     n = len(slice_parts)
     time_for_part = 1.0/n
+
     def united_slice(t):
         i = int(t/time_for_part)
         relative_time = t - i*time_for_part
@@ -206,14 +204,13 @@ def unite_slice(slice_parts):
     return united_slice
 
 
-def radius_slice(arm_loc, points):
+def radius_slice(_, __):
     """
     the slice that uses only theta - stupid and simple.
-    :param _: the location of the pen - tuple (x, y) in cm.
-    :param fruit_trajectories_and_starting_times: the trajectories of the fruits
     :return: function of (x, y) by t of the pen, None, None, None
     """
     theta_0 = math.acos(SCREEN[0] / (2 * (R + r))) + 0.07
+
     def ret_slice(t):
         # not normalized x and y
         x_loc = math.cos(theta_0 + (math.pi - 2 * theta_0) * t)
@@ -223,23 +220,23 @@ def radius_slice(arm_loc, points):
     return ret_slice, None, None
 
 
-def in_bound(point, percent = SLICE_ZONE):
+def in_bound(point, percent=SLICE_ZONE):
     left_bound = 0
     right_bound = SCREEN[0]
     upper_bound = (1.0 - percent) * SCREEN[1]
     lower_bound = 0
-    (x,y) = point
-    if x > left_bound and x < right_bound and y > lower_bound and y < upper_bound:
+    x, y = point
+    if left_bound < x < right_bound and lower_bound < y < upper_bound:
         return True
-    print(x,y)
+    print(x, y)
     return False
 
 
-def linear_slice(arm_loc, points):
+def linear_slice(arm_loc, _):
     """
     Does a linear slice of 10 cm length.
     :param arm_loc: current location.
-    :param points:
+    :param _:
     :return: slice.
     """
     x_arm_loc = arm_loc[0]
@@ -251,4 +248,3 @@ def linear_slice(arm_loc, points):
         y_slice = y_arm_loc
         return x_slice, y_slice
     return xy_by_t, None, None
-
