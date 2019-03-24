@@ -8,9 +8,9 @@ from CameraInterface import Camera
 import CameraInterface as Ci
 import FruitDetection2 as Fd
 import AutomaticStart as As
-import ArduinoCommunication as Ac
 import time
 import cv2
+import State
 
 
 SAVED_VIDEO_NAME = "2019-03-17 19-59-34.flv "
@@ -23,8 +23,10 @@ IMAGE_PROCESSING_ALGORITHMICS_INTEGRATION = True
 ALGORITHMICS_MECHANICS_INTEGRATION = True
 SIMULATION = False
 BACKGROUND = True
-RESIZE = False
+RESIZE = True
+AUTOMATIC_START = False
 
+CHOSEN_SLICE = "through_points"
 
 IMAGE_PROCESSING_FEATURES = (FLIP, CROP, LIVE, CALIBRATE, RESIZE)
 INTEGRATION = (IMAGE_PROCESSING_ALGORITHMICS_INTEGRATION, ALGORITHMICS_MECHANICS_INTEGRATION)
@@ -49,7 +51,7 @@ def fruit_shaninja(src, settings, image_processing_features=IMAGE_PROCESSING_FEA
     # Initiate algorithmics if integrated.
     if integration[0]:
         Ip.init_everything(integrate_with_algorithmics=integration[0])
-        Algo.init_everything(integrate_with_mechanics=integration[1], simulate=simulation)
+        Algo.init_everything(slice_type=Algo.SLICE_TYPES[CHOSEN_SLICE], integrate_with_mechanics=integration[1], simulate=simulation)
     fruits_info = []  # Initialize fruits known.
     # Create new camera object.
     camera = Camera(src, flip=image_processing_features[0], crop=image_processing_features[1],
@@ -58,11 +60,18 @@ def fruit_shaninja(src, settings, image_processing_features=IMAGE_PROCESSING_FEA
     if camera.LIVE:
         camera.set_camera_settings(settings)
 
-    As.automatic_start()
-    # Ac.wait(1000)
-    current = (camera.read())[1] # Retrieve next frame.
-    As.pass_ad(current)
+    if AUTOMATIC_START:  # Execute automatic start
+        ad_time = As.automatic_start()
+        time_to_wait_for_ad = ad_time - time.perf_counter()
+        if camera.is_opened():
+            if time_to_wait_for_ad > 0:
+                print("waiting for ad:", time_to_wait_for_ad)
+                time.sleep(time_to_wait_for_ad)
+            As.pass_ad((camera.read())[1])
 
+    # return  # to test automatic start
+
+    # Get background
     bg = cv2.imread(BACKGROUND_FILE_NAME)
     if BACKGROUND:
         # Allows user to click in order to capture background.
@@ -75,16 +84,16 @@ def fruit_shaninja(src, settings, image_processing_features=IMAGE_PROCESSING_FEA
         cv2.waitKey(0)
 
     current = bg
-
     counter = 0
     buffer = []  # Buffer of images for debugging purposes.
+    current_state = State.State()
 
     # Main while loop.
     while camera.is_opened() and counter < 1200:
-        t1 = time.perf_counter()
+        # t1 = time.perf_counter()
         # print("********************************************************************")
         counter += 1
-        current = camera.next_frame(current) # Retrieve next frame.
+        current = camera.next_frame(current)  # Retrieve next frame.
         time_of_frame = time.perf_counter()
         temp_frame = current.copy()  # Copy the frame.
         detection_results = Fd.fruit_detection2(temp_frame, bg, Ip.CONTOUR_AREA_THRESH,
@@ -97,10 +106,19 @@ def fruit_shaninja(src, settings, image_processing_features=IMAGE_PROCESSING_FEA
         for fruit in fruits_info:  # Draws all fruits which are not falling.
             if not fruit.is_falling:
                 Ip.draw(fruit, temp_frame)
+        current_state.update_state(Ip.FRUIT_TO_EXTRACT, time_of_frame)
+        Ip.clear_fruits()
+        if not Algo.during_slice:
+            slice_flag, slice_to_do, sliced_fruits = current_state.is_good_to_slice()
+            if slice_flag:
+                if integration[0]:
+                    add_slice_to_queue(slice_to_do, sliced_fruits)
+                    current_state.remove_sliced_fruits(sliced_fruits)
+
         cv2.imshow("temp_frame", temp_frame)
         buffer.append(temp_frame)  # Inserts frame to buffer.
-        t2 = time.perf_counter()
-        if (Ip.fruits_for_debug_trajectories):
+        # t2 = time.perf_counter()
+        if Ip.fruits_for_debug_trajectories:
             # for i in range(1 ,min(len(Ip.fruits_for_debug_trajectories), 3)):
             Ip.draw_trajectory(Ip.fruits_for_debug_trajectories[-1], camera.last_big_frame)
         cv2.imshow("please work", camera.last_big_frame)
@@ -111,8 +129,18 @@ def fruit_shaninja(src, settings, image_processing_features=IMAGE_PROCESSING_FEA
     Ip.show_original(camera)
 
 
+def add_slice_to_queue(slice_to_add, sliced_fruits):
+    """
+    Adds the given slice to the slice queue.
+    :param slice_to_add: slice to add to queue
+    :param sliced_fruits: fruits the slice should cut (for simulation)
+    """
+    Algo.add_slice_to_queue(slice_to_add, sliced_fruits)
+
+
 if __name__ == '__main__':
     if LIVE:
         fruit_shaninja(0, Ci.DARK_101_SETTINGS_new2)
+        print("finished")
     else:
         fruit_shaninja(SAVED_VIDEO_NAME, Ci.DARK_101_SETTINGS_new2)

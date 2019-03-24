@@ -1,8 +1,7 @@
 """
 the simulation, simulates the motors and work in the same coordinate system.
 """
-if (False):
-    import pygame
+import pygame
 import numpy as np
 import time
 import math
@@ -360,16 +359,19 @@ def unite_vector(a):
     return united
 
 # ------------- CALCULATE LOCATIONS -------------
-def run_simulation(func, fruits_trajectories_and_starting_times):
+def run_simulation(func, fruits_sliced):
     """
     Runs the simulation.
     :param func: function of (x,y)(t), route of slice
     :param fruits_trajectories_and_starting_times:
     """
 
+    print("in simulation")
+
     def zero_trajectory(_):
         return 0, 0
 
+    fruit_trajectories = [fruit.trajectory for fruit in fruits_sliced]
     # the ideal angles like in the function of the algorithmic
     theta_ideal, phi_ideal = make_ideal_slice_by_trajectory(func)
 
@@ -377,20 +379,25 @@ def run_simulation(func, fruits_trajectories_and_starting_times):
     theta_practical, phi_practical = make_slice_by_trajectory(func)
 
     # get the trajectory of the first fruit - (x,y) by t
-    if len(fruits_trajectories_and_starting_times) > 0:
-        if len(fruits_trajectories_and_starting_times[0]) > 0:
-            first_trajectory_object = fruits_trajectories_and_starting_times[0][0]
-            first_trajectory = first_trajectory_object.calc_trajectory()
-            first_trajectory_total_time = first_trajectory_object.calc_life_time()
-            # do not have to get into the 2 else down
-        else:
-            first_trajectory = zero_trajectory
-            first_trajectory_total_time = 1
+    if len(fruit_trajectories) > 0:
+        first_trajectory = []
+        first_trajectory_total_time = []
+        for i in range(len(fruit_trajectories)):
+            # first_trajectory_object.append(fruit_trajectories[i])
+            first_trajectory.append(fruit_trajectories[i].calc_trajectory())
+            first_trajectory_total_time.append(fruit_trajectories[i].calc_life_time())
+            #     # do not have to get into the 2 else down
+            # else:
+            #     first_trajectory = zero_trajectory
+            #     first_trajectory_total_time = 1
     else:
         first_trajectory = zero_trajectory
         first_trajectory_total_time = 1
 
-    x_fruit, y_fruit = xy_by_fruit_trajectory(first_trajectory, first_trajectory_total_time, dt_motor)
+    xy_of_fruits_list = []
+    for j in range(len(first_trajectory)):
+        xy_of_fruits_list.append(xy_by_fruit_trajectory(first_trajectory[j],first_trajectory_total_time[j], dt_motor ))
+    # x_fruit, y_fruit = xy_by_fruit_trajectory(first_trajectory, first_trajectory_total_time, dt_motor)
 
     # ------------- PLOT -------------------
     screen = pygame.display.set_mode((WIDTH, HEIGHT))
@@ -414,7 +421,8 @@ def run_simulation(func, fruits_trajectories_and_starting_times):
         plot_screen(screen)
 
         # draw fruits locations
-        draw_circle([x_fruit[i], y_fruit[i]], 10, screen, GREEN)
+        for k in range(len(xy_of_fruits_list)):
+            draw_circle([xy_of_fruits_list[k][0][i], xy_of_fruits_list[k][1][i]], 10, screen, GREEN)
 
         # ideal locations
         x_ideal, y_ideal = xy_by_theta_phi(theta_ideal[i], phi_ideal[i], x_0)

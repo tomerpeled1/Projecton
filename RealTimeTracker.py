@@ -36,8 +36,9 @@ def update_falling(fruit):
     Updates the fruit status on whether it is falling by comparison of two centers.
     :param fruit: The fruit which we want to update.
     """
-    assert len(fruit.centers) > 1
-    if fruit.centers[0][0][1] <= fruit.centers[1][0][1]:
+    if (len(fruit.centers) < 3):
+        return
+    if fruit.centers[0][0][1] <= fruit.centers[1][0][1] or fruit.centers[0][0][1] <= fruit.centers[2][0][1]:
         fruit.is_falling = True
 
 
