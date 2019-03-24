@@ -35,7 +35,6 @@ HISTS_COMPARE_METHOD = cv2.HISTCMP_CORREL  # Method to compare between histogram
 
 INTEGRATE_WITH_ALGORITHMICS = False
 
-
 # Fruits to print on screen for debugging of the algorithms.
 fruits_for_debug_trajectories = []
 
@@ -191,9 +190,11 @@ def calc_meanshift_all_fruits(fruits_info, img_hsv):
                 FRUIT_TO_EXTRACT.append(fruit)
     update_trajectories(FRUIT_TO_EXTRACT)
 
+
 def clear_fruits():
     global FRUIT_TO_EXTRACT
     FRUIT_TO_EXTRACT[:] = []
+
 
 def update_trajectories(fruits_to_extract):
     """
@@ -203,11 +204,10 @@ def update_trajectories(fruits_to_extract):
     """
     for fruit in fruits_to_extract:
         fruit.centers = fruit.centers[1:-1]
-        fruit.counter -= 2 ## TODO maybe huge bug!
+        fruit.counter -= 2
     if fruits_to_extract:
-        # # ---------Add trajectory to fruit object ------- #
+        # ---------Add trajectory to fruit object ------- #
         global fruits_for_debug_trajectories
-        fruits_and_trajectories = []
         for fruit in fruits_to_extract:
             centers_cm = [Algo.pixel2cm(center[0]) for center in fruit.centers]
             try:
@@ -263,9 +263,10 @@ def track_known_fruits(fruits_info, current_frame, detection_results):
         for fruit in fruits_info:
             # Try to track fruit and if found update its histogram.
             if not Rtt.track_object(detection_results, fruit):
-                to_delete.append(fruit) # update tracker using the detection results.
+                to_delete.append(fruit)  # update tracker using the detection results.
                 # if fruit.counter <= MAX_NUM_OF_FRAMES_ON_SCREEN:
-                    # fruit.hist = calculate_hist_window(fruit.track_window, img_hsv) ## TODO remove first fruits for trajectory fit
+                # fruit.hist = calculate_hist_window(fruit.track_window, img_hsv)  # TODO remove first fruits for
+                #  trajectory fit
             # If fruit not found extract it.
             # else:
             #     to_delete.append(fruit)
@@ -329,7 +330,6 @@ def check_ad(frame):
     w, h = template.shape[1], template.shape[0]
     method = eval('cv2.TM_CCOEFF_NORMED')
     # Apply template Matching
-
     # cv2.imshow("ad frame", frame)
     # cv2.imshow("template", template)
     # cv2.waitKey(0)

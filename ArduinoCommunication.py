@@ -42,7 +42,7 @@ BITS_PER_BYTE = 8  # the number of bits in one byte
 WRITE_DELAY = 1000/(SERIAL_BPS/BITS_PER_BYTE/LENGTH_OF_COMMAND)  # delay in ms after writing to prevent buffer overload
 TRAJECTORY_DIVISION_NUMBER = 20  # the number of parts that the trajectory of the arm is divided to
 DT_DIVIDE_TRAJECTORY = float(T) / TRAJECTORY_DIVISION_NUMBER  # size of step in parameter
-WANTED_RPS = 0.6  # speed of motors in revolutions per second
+WANTED_RPS = 0.8  # speed of motors in revolutions per second
 ONE_STEP_DELAY = 5.0 / WANTED_RPS / STEPS_FRACTION  # in ms
 WAIT_FOR_STOP = 50.0  # time to wait after slice until committing invert slice in ms
 
@@ -117,7 +117,7 @@ def quantize_trajectory(get_xy_by_t):
     steps_phi = steps_phi_decimal.astype(int)
     for i in range(len(steps_phi)):
         if steps_phi[i] > 50 or steps_theta[i] > 50:
-            a = 0
+            pass  # for debugging
     return steps_theta, steps_phi
 
 
@@ -165,9 +165,9 @@ def get_angles_by_xy_and_dt(get_xy_by_t, dt):
     theta = alpha + delta  # angle between 1st arm and x axis
     phi = theta - beta  # angle between 2nd arm and x axis
 
-    for i in range(len(theta)-1):
-        if abs(theta[i+1]-theta[i]) > 0.2 or abs(phi[i+1]-phi[i]) > 0.2:
-            pass
+    # for i in range(len(theta)-1):
+    #     if abs(theta[i+1]-theta[i]) > 0.2 or abs(phi[i+1]-phi[i]) > 0.2:
+    #         pass
 
     return theta, phi
 
@@ -259,7 +259,7 @@ def move_2_motors(steps_theta, steps_phi, inverse=False):  # WRITE MAXIMUM 41 ST
     # print("CUT THEM!!!")
     ser.write(str.encode(START_SLICE))
     # wait for slice to end
-    time_of_slice = calc_time_of_slice(steps_theta, steps_phi)
+    # time_of_slice = calc_time_of_slice(steps_theta, steps_phi)
     # time.sleep(0.001 * time_of_slice)
     # additional sleep
     time.sleep(0.01)

@@ -51,7 +51,7 @@ def x_algorithmics_to_mechanics(x_algorithmics):
     return x_algorithmics - SCREEN[0] / 2
 
 
-def slice_to_peak(arm_loc, fruit_trajectories_and_starting_times):
+def slice_to_peak(arm_loc, fruit_trajectories_and_starting_times):  # TODO update to new algo
     """
     make straight line to the peak in a constant speed
     :param arm_loc: (x,y) of arm location
@@ -245,6 +245,7 @@ def linear_slice(arm_loc, points):
     x_arm_loc = arm_loc[0]
     y_arm_loc = arm_loc[1]
     x_final = x_arm_loc - 5
+
     def xy_by_t(t):
         x_slice = x_arm_loc + (x_final - x_arm_loc) * t * 2
         y_slice = y_arm_loc

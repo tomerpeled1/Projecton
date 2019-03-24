@@ -55,15 +55,16 @@ class State:
         else:
             return False, None, []
 
-    def get_fruit_locations(self, time, fruits):
+    def get_fruits_locations(self, time_from_now, fruits):
         """
         Calculates the fruit locations in (time) seconds.
-        :param time: time from now in seconds.
+        :param time_from_now: time from now in seconds.
+        :param fruits: list of fruits to calculate locations
         :return: [(x1,y1), (x2,y2), (x3,y3), ...] list of locations for all fruits.
         """
         locs = []
         for fruit in fruits:
-            t = time + self.current_time - fruit.time_created
+            t = time_from_now + self.current_time - fruit.time_created
             print(str(t))
             locs.append((fruit, fruit.trajectory.calc_trajectory()(t)))
         return locs
@@ -109,7 +110,6 @@ class State:
                     print("t = ", t, "center from trajectory: ", f.trajectory.calc_trajectory()(t))
                 self.fruits_out_of_range.remove(fruits_out_of_range_locs[index][0])
         # self.fruits_out_of_range = [fruit for (fruit, loc) in fruits_out_of_range_locs if Algo.on_screen(loc)]
-
 
     def remove_sliced_fruits(self, sliced_fruits):
         """
