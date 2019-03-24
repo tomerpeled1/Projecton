@@ -174,7 +174,7 @@ def create_slice(state, time_to_slice):
     :param time_to_slice: the desired time to execute the slice.
     :return: tuple of (slice_trajectory, timer, t_peak, fruit_trajectories_and_starting_times)
     """
-    fruits_and_locs = state.get_fruit_locations(time_to_slice, state.fruits_in_range)
+    fruits_and_locs = state.get_fruits_locations(time_to_slice, state.fruits_in_range)
     arm_loc = state.arm_loc
     ordered_fruits_and_locs = order_fruits_and_locs(arm_loc, fruits_and_locs)
     slice_to_return, sliced_fruits = create_best_slice(state.arm_loc, ordered_fruits_and_locs)
