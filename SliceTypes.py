@@ -190,18 +190,21 @@ def slice_through_many_points(arm_loc, ordered_points, move_between_points=LINEA
         slice_parts.append(move_func(ordered_points[i], ordered_points[i+1]))
     # print ("*&*&*&*&* SLICE_PARTS before unite ", slice_parts)
     slice_to_return = unite_slice(slice_parts)
-    return slice_to_return, ordered_points, None
+    xy_points = get_partition(slice_to_return)
+    return xy_points
 
 
 def unite_slice(slice_parts):
     # print ("*&*&*&*&* SLICE_PARTS ", slice_parts)
     n = len(slice_parts)
     time_for_part = 1.0/n
-
     def united_slice(t):
-        i = int(t/time_for_part)
-        relative_time = t - i*time_for_part
-        return slice_parts[i](relative_time*n)
+        if t != 1:
+            i = int(t/time_for_part)
+            relative_time = t - i*time_for_part
+            return slice_parts[i](relative_time*n)
+        else:
+            return slice_parts[-1](1)
     return united_slice
 
 
@@ -218,7 +221,10 @@ def radius_slice(_, __):
         y_loc = math.sin(theta_0 + (math.pi - 2 * theta_0) * t) - d / (R + r)
 
         return tuple_mul(r + R, (x_loc, y_loc))
-    return ret_slice, None, None
+
+    xy_points = get_partition(ret_slice)
+
+    return xy_points
 
 
 def in_bound(point, percent=SLICE_ZONE):
@@ -259,4 +265,6 @@ def linear_slice(arm_loc, _):
         x_slice = x_arm_loc + (x_final - x_arm_loc) * t * 2
         y_slice = y_arm_loc
         return x_slice, y_slice
-    return xy_by_t, None, None
+
+    xy_points = get_partition(xy_by_t)
+    return xy_points
