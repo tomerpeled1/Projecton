@@ -352,6 +352,7 @@ def xy_by_fruit_trajectory(trajectory, total_time, dt):
         y_fruit[i] += d
     return x_fruit, y_fruit
 
+
 def unite_vector(a):
     united = []
     for i in a:

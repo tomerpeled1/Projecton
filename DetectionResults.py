@@ -14,6 +14,6 @@ class DetectionResults:
         self.centers = [(center[0], center[1], self.time_created) for center in centers]
 
     def pop_element(self, i):
-        self.conts.pop(i)
         self.centers.pop(i)
         self.rects.pop(i)
+        self.conts.pop(i)

@@ -299,25 +299,34 @@ def separate_overlap(detection_frame, cont, rect, cent, cont_area_thresh):
             rects.extend([extract_rect(c) for c in thresh_contours])
             cents.extend([center_of_contour(c) for c in thresh_contours])
 
-    def cont_area(c):
-        return cv2.contourArea(c)
+    def cont_area(tup):
+        cnt, rct, cent = tup
+        return cv2.contourArea(cnt)
 
-    conts.sort(key=cont_area)
+    lst = [(conts[i], rects[i], cents[i]) for i in range(len(conts))]
 
-    conts_indices_to_remove = []
+    lst.sort(key=cont_area)
+
+    lst_indices_to_remove = []
     for i in range(len(conts)):
+        cont1 = lst[i][0]
         for j in range(i):
-            if is_cont1_contained_by_cont2(conts[j], conts[i], detection_frame):
-                if j not in conts_indices_to_remove:
-                    conts_indices_to_remove.append(j)
+            cont2 = lst[j][0]
+            if is_cont1_contained_by_cont2(cont1, cont2, detection_frame):
+                if j not in lst_indices_to_remove:
+                    lst_indices_to_remove.append(j)
 
-    conts_indices_to_remove.sort(reverse=True)
-    for i in conts_indices_to_remove:
-        conts.pop(i)
+    lst_indices_to_remove.sort(reverse=True)
+    for i in lst_indices_to_remove:
+        lst.pop(i)
 
     # keeps the given contour if it does not divide it to at least 2 contours
-    if len(conts) < 2:
+    if len(lst) < 2:
         return [cont], [rect], [cent]
+
+    conts = [tup[0] for tup in lst]
+    rects = [tup[1] for tup in lst]
+    cents = [tup[2] for tup in lst]
 
     return conts, rects, cents
 

@@ -19,9 +19,9 @@ import itertools
 
 # ----------------- CONSTANTS -------------------
 # first acc is measured, second is from fazkanoot
-# RELATIVE_ACC = 1.478  # from experiences we did it tracker program
+RELATIVE_ACC = 1.478  # from experiences we did it tracker program
 PART_OF_SCREEN_FOR_IP = 0.0
-RELATIVE_ACC = 1.0   # not from experiences we did it tracker program
+# RELATIVE_ACC = 1.4   # not from experiences we did it tracker program
 CAMERA_FPS = 30  # frames per second
 TIME_BETWEEN_2_FRAMES = 1.0 / CAMERA_FPS  # in sec
 FRAME_SIZE = (480, 640)  # (y,x) in pixels
