@@ -28,14 +28,14 @@ class State:
         """
         self.current_time = current_time
         new_fruits = [fruit for fruit in new_fruits if fruit.trajectory]
-        print("before add", self.fruits_out_of_range)
-        print("before add", self.fruits_in_range)
+        # print("before add", self.fruits_out_of_range)
+        # print("before add", self.fruits_in_range)
         self.add_new_fruits(new_fruits)
-        print("after add", self.fruits_out_of_range)
-        print("after add", self.fruits_in_range)
+        # print("after add", self.fruits_out_of_range)
+        # print("after add", self.fruits_in_range)
         self.remove_old_fruits()
-        print("after remove", self.fruits_out_of_range)
-        print("after remove", self.fruits_in_range)
+        # print("after remove", self.fruits_out_of_range)
+        # print("after remove", self.fruits_in_range)
 
     def is_good_to_slice(self):  # TODO finish
         """
@@ -89,9 +89,12 @@ class State:
         for index in range(len(fruits_out_of_range_locs)):
             flag = Algo.on_screen(fruits_out_of_range_locs[index][1])
             if not flag:
-                print("*************************", fruits_out_of_range_locs[index][0], "centers: ",
-                      fruits_out_of_range_locs[index][0].centers)
+                # print("*************************", fruits_out_of_range_locs[index][0], "centers: ",
+                #       fruits_out_of_range_locs[index][0].centers)
                 f = fruits_out_of_range_locs[index][0]
+                # print("self.time: ", self.current_time, "center: ", fruits_out_of_range_locs[index][1])
+                # for t in [k*0.05 for k in range(40)]:
+                    # print("t = ", t, "center from trajectory: ", f.trajectory.calc_trajectory()(t))
                 self.fruits_out_of_range.remove(fruits_out_of_range_locs[index][0])
 
 
