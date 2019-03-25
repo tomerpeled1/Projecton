@@ -42,7 +42,7 @@ BITS_PER_BYTE = 8  # the number of bits in one byte
 WRITE_DELAY = 1000/(SERIAL_BPS/BITS_PER_BYTE/LENGTH_OF_COMMAND)  # delay in ms after writing to prevent buffer overload
 TRAJECTORY_DIVISION_NUMBER = 20  # the number of parts that the trajectory of the arm is divided to
 DT_DIVIDE_TRAJECTORY = float(T) / TRAJECTORY_DIVISION_NUMBER  # size of step in parameter
-WANTED_RPS = 0.4  # speed of motors in revolutions per second
+WANTED_RPS = 0.8  # speed of motors in revolutions per second
 ONE_STEP_DELAY = 5.0 / WANTED_RPS / STEPS_FRACTION  # in ms
 WAIT_FOR_STOP = 50.0  # time to wait after slice until committing invert slice in ms
 
@@ -271,19 +271,19 @@ def generate_steps_list(delta_steps_theta, delta_steps_phi):
     return steps_theta, steps_phi
 
 
-def calc_time_of_slice(steps_theta, steps_phi):
-    """
-    Calculates the duration of the given slice.
-    :param steps_theta: steps of slice in theta
-    :param steps_phi: steps of slice in phi
-    :return: duration of given slice in ms
-    """
-    steps_counter = 20  # take spare
-    for i in range(len(steps_theta)):
-        steps_counter += abs(steps_theta[i]) + abs(steps_phi[i])
-    time_of_slice = steps_counter * ONE_STEP_DELAY
-    # print("time of slice is supposed to be " + str(time_of_slice/1000) + " seconds")
-    return time_of_slice
+# def calc_time_of_slice(steps_theta, steps_phi):
+#     """
+#     Calculates the duration of the given slice.
+#     :param steps_theta: steps of slice in theta
+#     :param steps_phi: steps of slice in phi
+#     :return: duration of given slice in ms
+#     """
+#     steps_counter = 20  # take spare
+#     for i in range(len(steps_theta)):
+#         steps_counter += abs(steps_theta[i]) + abs(steps_phi[i])
+#     time_of_slice = steps_counter * ONE_STEP_DELAY
+#     # print("time of slice is supposed to be " + str(time_of_slice/1000) + " seconds")
+#     return time_of_slice
 
 
 def break_into_steps(total_steps, step_per_command):
@@ -350,7 +350,7 @@ def start_cut(arm_loc):
 # print(time.time()-start)
 
 if __name__ == '__main__':
-    make_slice_by_trajectory([(0.6,0.0), (0.0,7.0)], False)
-    make_slice_by_trajectory([(0.0,7.0), (7.0,7.0)], False)
-    make_slice_by_trajectory([(7.0,7.0), (7.0,0.0)], False)
-    make_slice_by_trajectory([(7.0,0.0), (0.0,0.0)], False)
+    make_slice_by_trajectory([(0.6,0.0), (0.6,5.0)], False)
+    make_slice_by_trajectory([(0.6,5.0), (5.0,5.0)], False)
+    make_slice_by_trajectory([(5.0,5.0), (5.0,0.6)], False)
+    make_slice_by_trajectory([(5.0,0.6), (0.0,0.6)], False)

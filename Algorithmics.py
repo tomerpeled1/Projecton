@@ -215,9 +215,9 @@ def good_slice(points_of_slice_to_evaluate):
     :param points_of_slice_to_evaluate: the slice which we want to test.
     :return: true if the slice should be done.
     """
-    return time_for_slice(points_of_slice_to_evaluate) < MAX_TIME_FOR_COMBO
+    # return time_for_slice(points_of_slice_to_evaluate) < MAX_TIME_FOR_COMBO
 
-    # return True
+    return True
 
 
 
@@ -228,19 +228,19 @@ def key(arm_loc):
     return distance_from_arm_in_x
 
 
-def do_slice(slice_to_do, sliced_fruits):
+def do_slice(points_to_slice, sliced_fruits):
     """
     Activate the simulation or the arduino by the given slice.
-    :param slice_to_do: function of the location (x, y) of the pen in cm
+    :param points_to_slice: list of points the slice should go through
     :param sliced_fruits: fruits that the slice is supposed to cut (for simulation)
     """
-    parametrization, timer, time_of_slice = slice_to_do
+    parametrization = points_to_slice
     # time_to_slice = 0
     # run simulation
     if SIMULATE:
         Slm.run_simulation(parametrization, sliced_fruits)
     else:
-        ArduinoCommunication.make_slice_by_trajectory(parametrization, time_of_slice)
+        ArduinoCommunication.make_slice_by_trajectory(parametrization)
 
 
 def add_slice_to_queue(slice_to_add, sliced_fruits):
