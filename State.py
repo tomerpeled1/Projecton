@@ -46,10 +46,9 @@ class State:
                               self.get_fruits_locations(CRITICAL_TIME, self.fruits_in_range)
                               if not Algo.in_range_for_slice(loc)]
         if len(self.fruits_in_range) > 1:
-            # print("FRUIT IN RANGE!")
-            current_slice, sliced_fruits = Algo.create_slice(self, 0)
-            if current_slice is not None:
-                return True, current_slice, sliced_fruits
+            current_slice_points, sliced_fruits = Algo.create_slice(self, 0)
+            if current_slice_points:
+                return True, current_slice_points, sliced_fruits
             else:
                 return False, None, []
         else:

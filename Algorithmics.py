@@ -39,6 +39,7 @@ SLICE_TYPES = {
 }
 SLICE_QUALITY_FACTOR_THRESH = 0
 MINIMAL_NUMBER_OF_FRUITS_FOR_COMBO = 3
+MAX_TIME_FOR_COMBO = 0.4 #in sec
 
 # on_screen_fruits = []
 SIMULATE = True  # make True to activate simulation
@@ -172,13 +173,13 @@ def create_slice(state, time_to_slice):
     Returns the optimal slice according to the fruits that are on the screen and the given time to slice.
     :param state: the state of the game
     :param time_to_slice: the desired time to execute the slice.
-    :return: tuple of (slice_trajectory, timer, t_peak, fruit_trajectories_and_starting_times)
+    :return: tuple of (xy_points,  sliced_fruits)
     """
     fruits_and_locs = state.get_fruits_locations(time_to_slice, state.fruits_in_range)
     arm_loc = state.arm_loc
     ordered_fruits_and_locs = order_fruits_and_locs(arm_loc, fruits_and_locs)
-    slice_to_return, sliced_fruits = create_best_slice(state.arm_loc, ordered_fruits_and_locs)
-    return slice_to_return, sliced_fruits
+    xy_points_to_go_through, sliced_fruits = create_best_slice(state.arm_loc, ordered_fruits_and_locs)
+    return xy_points_to_go_through, sliced_fruits
 
 
 def order_fruits_and_locs(arm_loc, fruits_and_locs):
@@ -188,11 +189,11 @@ def order_fruits_and_locs(arm_loc, fruits_and_locs):
 def create_best_slice(arm_loc, ordered_fruits_and_locs):
     for fruits_and_locs in combinations_of_elements(ordered_fruits_and_locs):
         locs = [loc for (fruit, loc) in fruits_and_locs]
-        slice_locs = calc_slice(arm_loc, locs)
-        if good_slice(slice_locs):
+        slice_points = calc_slice(arm_loc, locs)
+        if good_slice(slice_points):
             sliced_fruits = [fruit for (fruit, loc) in fruits_and_locs]
-            return slice_locs, sliced_fruits
-    return None, []
+            return slice_points, sliced_fruits
+    return [], []
 
 
 def combinations_of_elements(s):
@@ -202,19 +203,23 @@ def combinations_of_elements(s):
     :return: subgroups of fruits larger than number of fruits needed for combo by
      descending order by size.
     """
-    if len(s) < 3:
+    if len(s) < MINIMAL_NUMBER_OF_FRUITS_FOR_COMBO:
         return [s]
     return list(itertools.chain.from_iterable(itertools.combinations(s, r)
                 for r in range(len(s), MINIMAL_NUMBER_OF_FRUITS_FOR_COMBO-1, -1)))
 
 
-def good_slice(slice_to_evaluate):
+def good_slice(points_of_slice_to_evaluate):
     """
     Determines whether or not a slice is "good enough" (creates combo).
-    :param slice_to_evaluate: the slice which we want to test.
+    :param points_of_slice_to_evaluate: the slice which we want to test.
     :return: true if the slice should be done.
     """
-    return True  # TODO
+    # return time_for_slice(points_of_slice_to_evaluate) < MAX_TIME_FOR_COMBO
+
+    return True
+
+
 
 
 def key(arm_loc):
@@ -223,19 +228,19 @@ def key(arm_loc):
     return distance_from_arm_in_x
 
 
-def do_slice(slice_to_do, sliced_fruits):
+def do_slice(points_to_slice, sliced_fruits):
     """
     Activate the simulation or the arduino by the given slice.
-    :param slice_to_do: function of the location (x, y) of the pen in cm
+    :param points_to_slice: list of points the slice should go through
     :param sliced_fruits: fruits that the slice is supposed to cut (for simulation)
     """
-    parametrization, timer, time_of_slice = slice_to_do
+    parametrization = points_to_slice
     # time_to_slice = 0
     # run simulation
     if SIMULATE:
         Slm.run_simulation(parametrization, sliced_fruits)
     else:
-        ArduinoCommunication.make_slice_by_trajectory(parametrization, time_of_slice)
+        ArduinoCommunication.make_slice_by_trajectory(parametrization)
 
 
 def add_slice_to_queue(slice_to_add, sliced_fruits):

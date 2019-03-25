@@ -13,20 +13,20 @@ import cv2
 import State
 
 
-SAVED_VIDEO_NAME = "img&vid\\2019-03-17 19-59-34.flv "
+SAVED_VIDEO_NAME = "2019-03-17 19-59-34.flv "
 LIVE = True
 BACKGROUND_FILE_NAME = "bg.png"
 CROP = True
 FLIP = True
 CALIBRATE = False
 IMAGE_PROCESSING_ALGORITHMICS_INTEGRATION = True
-ALGORITHMICS_MECHANICS_INTEGRATION = False
+ALGORITHMICS_MECHANICS_INTEGRATION = True
 SIMULATION = False
 BACKGROUND = False
-RESIZE = not LIVE
+RESIZE = False
 AUTOMATIC_START = False
 
-CHOSEN_SLICE = "through_points"
+CHOSEN_SLICE = "linear"
 
 IMAGE_PROCESSING_FEATURES = (FLIP, CROP, LIVE, CALIBRATE, RESIZE)
 INTEGRATION = (IMAGE_PROCESSING_ALGORITHMICS_INTEGRATION, ALGORITHMICS_MECHANICS_INTEGRATION)
@@ -109,10 +109,10 @@ def fruit_shaninja(src, settings, image_processing_features=IMAGE_PROCESSING_FEA
         current_state.update_state(Ip.FRUIT_TO_EXTRACT, time_of_frame)
         Ip.clear_fruits()
         if not Algo.during_slice:
-            slice_flag, slice_to_do, sliced_fruits = current_state.is_good_to_slice()
+            slice_flag, points_to_slice, sliced_fruits = current_state.is_good_to_slice()
             if slice_flag:
                 if integration[0]:
-                    add_slice_to_queue(slice_to_do, sliced_fruits)
+                    add_slice_to_queue(points_to_slice, sliced_fruits)
                     current_state.remove_sliced_fruits(sliced_fruits)
 
         cv2.imshow("temp_frame", temp_frame)
@@ -129,13 +129,13 @@ def fruit_shaninja(src, settings, image_processing_features=IMAGE_PROCESSING_FEA
     Ip.show_original(camera)
 
 
-def add_slice_to_queue(slice_to_add, sliced_fruits):
+def add_slice_to_queue(slice_points_to_add, sliced_fruits):
     """
     Adds the given slice to the slice queue.
     :param slice_to_add: slice to add to queue
     :param sliced_fruits: fruits the slice should cut (for simulation)
     """
-    Algo.add_slice_to_queue(slice_to_add, sliced_fruits)
+    Algo.add_slice_to_queue(slice_points_to_add, sliced_fruits)
 
 
 if __name__ == '__main__':
