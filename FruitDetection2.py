@@ -6,6 +6,7 @@ With a given frame, should return all fruit elements found in it.
 import numpy as np
 import cv2
 import time
+from numpy import array
 
 import scipy.signal
 import matplotlib.pyplot as plt
@@ -13,6 +14,15 @@ import matplotlib.pyplot as plt
 import DetectionResults
 from CameraInterface import Camera
 
+pine_image = cv2.imread("pineapple.png")
+pine_image = cv2.cvtColor(pine_image, cv2.COLOR_RGB2HSV)
+PINEAPPLE_HIST = cv2.calcHist([pine_image], [0], None, [180], [1, 180])
+# PINEAPPLE_HIST = [int(x) for x in PINEAPPLE_HIST]
+# PINEAPPLE_HIST = PINEAPPLE_HIST[1:]
+NORM_PINEAPPLE_HIST = cv2.normalize(PINEAPPLE_HIST, PINEAPPLE_HIST, norm_type=cv2.NORM_L1)
+
+PINEAPPLE_THRESHOLD = 0.4
+k=1
 
 def fruit_detection2(frame, background, contour_area_thresh, time_of_frame):
     """
@@ -105,39 +115,55 @@ def fruit_detection2(frame, background, contour_area_thresh, time_of_frame):
     masked = cv2.bitwise_and(current, current, mask=mask2)
     # cv2.imshow("ma", masked)
     for i in range(len(cont)):
+
         c = cont[i]
         rect = extract_rect(c)
         center = center_of_contour(c)
 
-        new_conts, new_rects, new_centers = separate_overlap(masked, c, rect, center, contour_area_thresh)
-        conts.extend(new_conts)
-        rects.extend(new_rects)
-        centers.extend(new_centers)
+        # show_cont(c, frame)
 
-        # conts.append(c)
-        # rects.append(rect)
-        # centers.append(center)
+        # if False:
+        #     pass
+        if is_pineapple(masked, c, rect):
+            conts.append(c)
+            rects.append(rect)
+            centers.append(center)
 
-        # c = cont[i]
-        # x_min = c[c[:, :, 0].argmin()][0][0]
-        # x_max = c[c[:, :, 0].argmax()][0][0]
-        # y_min = c[c[:, :, 1].argmin()][0][1]
-        # y_max = c[c[:, :, 1].argmax()][0][1]
-        # bot_left = (x_min, y_min)
-        # # up_left = (x_min, y_max)
-        # # bot_right = (x_max, y_min)
-        # up_right = (x_max, y_max)
-        # rect = [bot_left, up_right]
-        # center = center_of_contour(c)
-        # conts.append(c)
-        # rects.append(rect)
-        # centers.append(center)
+        else:
+            new_conts, new_rects, new_centers = separate_overlap(masked, c, rect, center, contour_area_thresh)
+            conts.extend(new_conts)
+            rects.extend(new_rects)
+            centers.extend(new_centers)
 
     # print("time for detection: " + str(time.perf_counter()-t))
 
     return DetectionResults.DetectionResults(conts, rects, centers,
                                              time_of_frame)  # list of lists, representing all fruits found
 
+
+def is_pineapple(detection_frame, cont, rect):
+    hist = get_hist(detection_frame, cont, rect)
+    norm_hist = cv2.normalize(hist, hist, norm_type=cv2.NORM_L1)
+    correlation = cv2.compareHist(norm_hist, NORM_PINEAPPLE_HIST, cv2.HISTCMP_CORREL)
+    return correlation > PINEAPPLE_THRESHOLD
+
+def get_hist(detection_frame, cont, rect):
+    [bot_left, up_right] = rect
+    (x_min, y_min) = bot_left
+    (x_max, y_max) = up_right
+    crop_by_rect = detection_frame[y_min:y_max, x_min:x_max]
+    # if k == 2:
+    #     cv2.imwrite("pineapple.png", crop_by_rect)
+    crop_by_rect_hsv = cv2.cvtColor(crop_by_rect, cv2.COLOR_RGB2HSV)
+    crop_hist = cv2.calcHist([crop_by_rect_hsv], [0], None, [180], [1, 180])
+    # crop_hist = [int(x) for x in crop_hist]
+    # crop_hist = crop_hist[1:]
+    return crop_hist
+
+def show_cont(name, cont, frame):
+    x, y, w, h = cv2.boundingRect(cont)
+    window = frame[y:y + h, x:x + w]
+    cv2.imshow(name, window)
 
 def move_back_contour(contour, original_rect):
     x, y, w, h = original_rect
@@ -250,12 +276,12 @@ def center_of_contour(c):
 
 
 def separate_overlap(detection_frame, cont, rect, cent, cont_area_thresh):
-    [bot_left, up_right] = rect
-    (x_min, y_min) = bot_left
-    (x_max, y_max) = up_right
-    crop_by_rect = detection_frame[y_min:y_max, x_min:x_max]
-    crop_by_rect_hsv = cv2.cvtColor(crop_by_rect, cv2.COLOR_RGB2HSV)
-    crop_hist = cv2.calcHist([crop_by_rect_hsv], [0], None, [180],[0, 180])
+    # global k
+    crop_hist = get_hist(detection_frame, cont, rect)
+    # print(str(k))
+    # print(crop_hist)
+    # show_cont(str(k), cont, detection_frame)
+    # k+=1
     crop_hist = [int(x) for x in crop_hist]
     crop_hist = crop_hist[1:]
     sample_sum = sum(crop_hist)
@@ -277,6 +303,7 @@ def separate_overlap(detection_frame, cont, rect, cent, cont_area_thresh):
     if len(main_colors) == 1:
         return [cont], [rect], [cent]
 
+    [bot_left, up_right] = rect
     for color in main_colors:
         area_mask = cv2.rectangle(np.zeros(detection_frame.shape, np.uint8), bot_left, up_right, (255, 255, 255), -1)
         masked_area = cv2.bitwise_and(detection_frame, area_mask)
@@ -386,9 +413,9 @@ def is_cont1_contained_by_cont2(cont1, cont2, frame):
 
 
 if __name__ == "__main__":
-    cap = Camera("img&vid\\23-3Dark.flv", flip=True, crop=False, live=False)
     resize_factor = 0.3
     minimal_contour_area = 4000
+    cap = Camera("img&vid\\23-3Dark.flv", flip=True, crop=False, live=False)
     cnt = 0
     while (cnt < 1):
         back_main = cap.read()[0]
@@ -414,3 +441,36 @@ if __name__ == "__main__":
         cv2.imshow("frame", frame_main)
         cv2.waitKey(0)
     cv2.destroyAllWindows()
+
+
+    # resize_factor = 0.3
+    # minimal_contour_area = 4000
+    # # cap = Camera("img&vid\\23-3Dark.flv", flip=True, crop=False, live=False)
+    # cnt = 0
+    # # while (cnt < 1):
+    # #     back_main = cap.read()[0]
+    # #     cnt += 1
+    # back_main = cv2.imread("img&vid\\pineBack.png")
+    # cv2.imshow("main", back_main)
+    # cv2.waitKey(0)
+    # back_main = cv2.resize(back_main, None, fx=resize_factor, fy=resize_factor)
+    # cv2.imshow("main", back_main)
+    # cv2.waitKey(0)
+    # first_time = time.time()
+    # if True:
+    # # while (cap.is_opened()):
+    # #     frame_main = cap.read()[0]
+    #     frame_main = cv2.imread("img&vid\\pineFront.png")
+    #     frame_main = cv2.resize(frame_main, None, fx=resize_factor, fy=resize_factor)
+    #     (height, width, depth) = frame_main.shape
+    #     # back_main = cap.read()
+    #     # back_main = cv2.resize(back_main, None, fx=0.3, fy=0.3)
+    #
+    #     detection_results = fruit_detection2(frame_main, back_main, resize_factor**2*minimal_contour_area, time.time() - first_time)
+    #     cv2.drawContours(frame_main, detection_results.conts, -1, (0, 255, 0), 2)
+    #     # for i in range(len(rects)):
+    #     #     frame = cv2.rectangle(frame, rects[i][UP_LEFT], rects[i][BOTTOM_RIGHT],
+    #     #                       (255, 0, 0), 2)
+    #     cv2.imshow("frame", frame_main)
+    #     cv2.waitKey(0)
+    # cv2.destroyAllWindows()
