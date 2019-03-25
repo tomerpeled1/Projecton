@@ -42,17 +42,12 @@ class State:
         Determines whether or not should we slice right now.
         :return: tuple - (True, slice, sliced_fruits) if the state is good, (False, None, []) otherwise.
         """
-        critical_time_locs = [(fruit, loc) for (fruit, loc) in
-                              self.get_fruits_locations(CRITICAL_TIME, self.fruits_in_range)
-                              if not Algo.in_range_for_slice(loc)]
-        if len(self.fruits_in_range) > 1:
+        if len(self.fruits_in_range) > 2:
             current_slice_points, sliced_fruits = Algo.create_slice(self, 0)
             if current_slice_points:
                 return True, current_slice_points, sliced_fruits
-            else:
-                return False, None, []
-        else:
-            return False, None, []
+        return False, None, []
+
 
     def get_fruits_locations(self, time_from_now, fruits):
         """
@@ -63,13 +58,10 @@ class State:
         """
         locs = []
         for fruit in fruits:
-            t = time_from_now + self.current_time - fruit.time_created
-            print(str(t))
+            t = time_from_now + ARM_DELAY + self.current_time - fruit.time_created
             locs.append((fruit, fruit.trajectory.calc_trajectory()(t)))
         return locs
 
-        # return [(fruit, fruit.trajectory.calc_trajectory()(time + self.current_time - fruit.time_created))
-        #         for fruit in fruits]
 
     def add_new_fruits(self, fruits):
         """
@@ -91,11 +83,6 @@ class State:
         """
         Transfers fruits which have gone out of range from in range to the garbage
         """
-        # fruit_out_of_range_locs = self.get_fruit_locations(0, self.fruits_out_of_range)
-        # self.fruits_out_of_range = [fruit for (fruit, loc) in fruit_out_of_range_locs
-        #                             if Algo.on_screen(loc) and not Algo.in_range_for_slice(loc)]
-        # fruits_gone_out_of_range = [fruit for (fruit, loc) in fruits_in_range_locs if not Algo.in_range_for_slice(loc)]
-        # self.fruits_out_of_range.extend(fruits_gone_out_of_range)
         fruits_in_range_locs = self.get_fruits_locations(0, self.fruits_in_range)
         fruits_out_of_range_locs = self.get_fruits_locations(0, self.fruits_out_of_range)
         self.fruits_in_range = [fruit for (fruit, loc) in fruits_in_range_locs if Algo.in_range_for_slice(loc)]
@@ -105,11 +92,8 @@ class State:
                 print("*************************", fruits_out_of_range_locs[index][0], "centers: ",
                       fruits_out_of_range_locs[index][0].centers)
                 f = fruits_out_of_range_locs[index][0]
-                print("self.time: ", self.current_time, "center: ", fruits_out_of_range_locs[index][1])
-                for t in [k*0.05 for k in range(40)]:
-                    print("t = ", t, "center from trajectory: ", f.trajectory.calc_trajectory()(t))
                 self.fruits_out_of_range.remove(fruits_out_of_range_locs[index][0])
-        # self.fruits_out_of_range = [fruit for (fruit, loc) in fruits_out_of_range_locs if Algo.on_screen(loc)]
+
 
     def remove_sliced_fruits(self, sliced_fruits):
         """
@@ -117,3 +101,8 @@ class State:
         :param sliced_fruits: fruits to remove.
         """
         self.fruits_in_range = [fruit for fruit in self.fruits_in_range if fruit not in sliced_fruits]
+
+
+    def get_critical_fruits(self):
+        return [fruit for (fruit, loc) in self.get_fruits_locations(CRITICAL_TIME, self.fruits_in_range)
+                if not Algo.in_range_for_slice(loc)]

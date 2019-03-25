@@ -6,7 +6,6 @@ the coordinates here is (generally speaking) (x,y) when the 0,0 is at bottom lef
 """
 
 import math
-# import matplotlib.pyplot as plt
 import statistics as st
 import SliceTypes
 import time
@@ -30,16 +29,15 @@ SCREEN_SIZE = (12, 16)  # (y,x) in cm
 DISTANCE_FROM_TABLET = ArduinoCommunication.d
 ACC = RELATIVE_ACC * SCREEN_SIZE[0]
 INTEGRATE_WITH_MECHANICS = False  # make True to send slices to ArduinoCommunication
-SLICE_TYPE = 0
-SLICE_TYPES = {
-    "linear": 0,
-    "radius": 1,
-    "through_points": 2,
-    "to_peak": 3
-}
+
+LINEAR = 0
+RADIUS = 1
+THROUGH_POINTS = 2
+SLICE_TYPE = LINEAR
+
 SLICE_QUALITY_FACTOR_THRESH = 0
 MINIMAL_NUMBER_OF_FRUITS_FOR_COMBO = 3
-MAX_TIME_FOR_COMBO = 0.4 #in sec
+MAX_TIME_FOR_COMBO = 400 #in ms
 
 # on_screen_fruits = []
 SIMULATE = True  # make True to activate simulation
@@ -176,9 +174,11 @@ def create_slice(state, time_to_slice):
     :return: tuple of (xy_points,  sliced_fruits)
     """
     fruits_and_locs = state.get_fruits_locations(time_to_slice, state.fruits_in_range)
+    critical_fruits_locs = state.get_fruits_locations(time_to_slice, state.get_critical_fruits())
     arm_loc = state.arm_loc
     ordered_fruits_and_locs = order_fruits_and_locs(arm_loc, fruits_and_locs)
-    xy_points_to_go_through, sliced_fruits = create_best_slice(state.arm_loc, ordered_fruits_and_locs)
+    xy_points_to_go_through, sliced_fruits = create_best_slice(state.arm_loc, ordered_fruits_and_locs, critical_fruits_locs)
+
     return xy_points_to_go_through, sliced_fruits
 
 
@@ -186,12 +186,17 @@ def order_fruits_and_locs(arm_loc, fruits_and_locs):
     return sorted(fruits_and_locs, key=key(arm_loc))
 
 
-def create_best_slice(arm_loc, ordered_fruits_and_locs):
+def create_best_slice(arm_loc, ordered_fruits_and_locs, critical_fruits_locs):
     for fruits_and_locs in combinations_of_elements(ordered_fruits_and_locs):
         locs = [loc for (fruit, loc) in fruits_and_locs]
         slice_points = calc_slice(arm_loc, locs)
         if good_slice(slice_points):
             sliced_fruits = [fruit for (fruit, loc) in fruits_and_locs]
+            critical_fruits_not_sliced = order_fruits_and_locs(slice_points[-1], [(fruit, loc) for (fruit, loc) in critical_fruits_locs if fruit not in sliced_fruits])
+            critical_fruits_not_sliced_locs = [loc for (fruit, loc) in critical_fruits_not_sliced]
+            remaining_slice = calc_slice(slice_points[-1], critical_fruits_not_sliced_locs)
+            slice_points.extend(remaining_slice[1:])
+            sliced_fruits.extend([fruit for (fruit, loc) in critical_fruits_not_sliced])
             return slice_points, sliced_fruits
     return [], []
 
@@ -215,11 +220,8 @@ def good_slice(points_of_slice_to_evaluate):
     :param points_of_slice_to_evaluate: the slice which we want to test.
     :return: true if the slice should be done.
     """
-    # return time_for_slice(points_of_slice_to_evaluate) < MAX_TIME_FOR_COMBO
-
     return True
-
-
+    # return ArduinoCommunication.calc_time_of_slice(points_of_slice_to_evaluate) < MAX_TIME_FOR_COMBO
 
 
 def key(arm_loc):
@@ -435,11 +437,11 @@ def calc_slice(arm_loc, points):
     :param points: points the slice should go through in (x,y)
     :return: calculated slice as parametrization, timer, time_to_slice
     """
-    if SLICE_TYPE == SLICE_TYPES["linear"]:
+    if SLICE_TYPE == LINEAR:
         return SliceTypes.linear_slice(arm_loc, points)
-    elif SLICE_TYPE == SLICE_TYPES["radius"]:
+    elif SLICE_TYPE == RADIUS:
         return SliceTypes.radius_slice(arm_loc, points)
-    elif SLICE_TYPE == SLICE_TYPES["through_points"]:
+    elif SLICE_TYPE == THROUGH_POINTS:
         return SliceTypes.slice_through_many_points(arm_loc, points)
 
 
