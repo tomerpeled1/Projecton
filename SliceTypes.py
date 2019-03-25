@@ -181,6 +181,13 @@ def line_acceleration_trajectory(arm_loc, _):  # gets time in sec
 
 
 def slice_through_many_points(arm_loc, ordered_points, move_between_points=LINEAR):
+    """
+
+    :param arm_loc:
+    :param ordered_points: list of tuples, points in (x,y) at mechanics coordinates.
+    :param move_between_points:
+    :return:
+    """
     if move_between_points == LINEAR:
         move_func = linear_slice_between_2_points
     else:
@@ -198,6 +205,7 @@ def unite_slice(slice_parts):
     # print ("*&*&*&*&* SLICE_PARTS ", slice_parts)
     n = len(slice_parts)
     time_for_part = 1.0/n
+
     def united_slice(t):
         if t != 1:
             i = int(t/time_for_part)
