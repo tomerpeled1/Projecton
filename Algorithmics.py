@@ -10,7 +10,7 @@ import math
 import statistics as st
 import SliceTypes
 import time
-import ArduinoCommunication
+import ArduinoCommunication as Ac
 import Simulation as Slm
 from threading import Thread
 import threading
@@ -26,10 +26,10 @@ CAMERA_FPS = 30  # frames per second
 TIME_BETWEEN_2_FRAMES = 1.0 / CAMERA_FPS  # in sec
 FRAME_SIZE = (480, 640)  # (y,x) in pixels
 CROP_SIZE = (160, 480)  # (y,x) in pixels
-SCREEN_SIZE = (12, 16)  # (y,x) in cm
-DISTANCE_FROM_TABLET = ArduinoCommunication.d
+SCREEN_SIZE = (12.0, 16.0)  # (y,x) in cm
+DISTANCE_FROM_TABLET = Ac.d
 ACC = RELATIVE_ACC * SCREEN_SIZE[0]
-INTEGRATE_WITH_MECHANICS = False  # make True to send slices to ArduinoCommunication
+INTEGRATE_WITH_MECHANICS = False  # make True to send slices to Ac
 SLICE_TYPE = 0
 SLICE_TYPES = {
     "linear": 0,
@@ -240,7 +240,7 @@ def do_slice(points_to_slice, sliced_fruits):
     if SIMULATE:
         Slm.run_simulation(parametrization, sliced_fruits)
     else:
-        ArduinoCommunication.make_slice_by_trajectory(parametrization)
+        Ac.make_slice_by_trajectory(parametrization)
 
 
 def add_slice_to_queue(slice_to_add, sliced_fruits):
@@ -428,6 +428,15 @@ def draw_trajectory_matplotlib(trajectory, x_coords, y_coords):
     # plt.show()
 
 
+def algo_to_mech(point):
+    """
+    Converts a point form the algorithmics and trajectory coordinates to mechanics and Arduino coordinates
+    :param point: (x,y) in algorithmics and trajectory coordinates
+    :return: (x,y) in mechanics and Arduino coordinates
+    """
+    return Ac.DIMS[0]/2 - point[0], point[1] + (Ac.DIMS[1] - SCREEN_SIZE[0])
+
+
 def calc_slice(arm_loc, points):
     """
     Calculate the slice that goes through the given points.
@@ -435,6 +444,7 @@ def calc_slice(arm_loc, points):
     :param points: points the slice should go through in (x,y)
     :return: calculated slice as parametrization, timer, time_to_slice
     """
+    points = [algo_to_mech(point) for point in points]
     if SLICE_TYPE == SLICE_TYPES["linear"]:
         return SliceTypes.linear_slice(arm_loc, points)
     elif SLICE_TYPE == SLICE_TYPES["radius"]:
@@ -445,11 +455,11 @@ def calc_slice(arm_loc, points):
 
 def get_pen_loc():
     """
-    :return: the location of the pen (x, y) in cm
+    :return: the location of the pen (x, y) in mechanics coordinates in cm
     """
     # location (16cm, 4cm) from the bottom-left corner
     x_location = SCREEN_SIZE[1]/2
-    y_location = 4
+    y_location = 5.5
     return x_location, y_location
     # return -SCREEN_SIZE[1]/2+3, 3  # location (3cm, 3cm) from the bottom-left corner
 
