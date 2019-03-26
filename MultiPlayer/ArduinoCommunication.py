@@ -32,9 +32,7 @@ START_SLICE = '~'
 LENGTH_OF_COMMAND = 2  # the length of a command to the serial that contains the number of steps for each motor and the
 SERIAL_BUFFER_SIZE = 64  # in bytes
 COMMAND_PACKAGE_SIZE = math.floor(SERIAL_BUFFER_SIZE/LENGTH_OF_COMMAND)  # number of commands to write at once
-STEPS_IN_COMMAND = 31  # number of steps to move at every command
-STEPS_FOR_ACCELERATION = int(STEPS_FRACTION / 0.5)  # number of steps to move at acceleration move
-NUMBER_OF_ACCELERATION_MOVES = 1
+STEPS_IN_COMMAND = STEPS_FRACTION  # number of steps to move at every command
 
 # TIME CONSTANTS
 T = 1.0  # max value of parameter at slice
@@ -44,7 +42,7 @@ BITS_PER_BYTE = 8  # the number of bits in one byte
 WRITE_DELAY = 1000/(SERIAL_BPS/BITS_PER_BYTE/LENGTH_OF_COMMAND)  # delay in ms after writing to prevent buffer overload
 TRAJECTORY_DIVISION_NUMBER = 20  # the number of parts that the trajectory of the arm is divided to
 DT_DIVIDE_TRAJECTORY = float(T) / TRAJECTORY_DIVISION_NUMBER  # size of step in parameter
-WANTED_RPS = 0.6  # speed of motors in revolutions per second
+WANTED_RPS = 0.4  # speed of motors in revolutions per second
 ONE_STEP_DELAY = 5.0 / WANTED_RPS / STEPS_FRACTION  # in ms
 WAIT_FOR_STOP = 50.0  # time to wait after slice until committing invert slice in ms
 
@@ -57,7 +55,7 @@ WAIT_FOR_STOP = 50.0  # time to wait after slice until committing invert slice i
 # times = int(T / dt)  # the size of the vectors for the simulation
 
 try:
-    ser = serial.Serial('com3', SERIAL_BPS)  # Create Serial port object
+    ser = serial.Serial('com6', SERIAL_BPS)  # Create Serial port object
     time.sleep(2)  # wait for 2 seconds for the communication to get established
 except SerialException:
     print("Didn't create serial.")
@@ -238,10 +236,10 @@ def move_2_motors(steps_theta, steps_phi, inverse=False):  # WRITE MAXIMUM 41 ST
     time.sleep(0.01)
 
     # print steps made
-    # print("Theta steps:")
-    # print(str(steps_theta) + str(sum(steps_theta)))
-    # print("Phi steps:")
-    # print(str(steps_phi) + str(sum(steps_phi)))
+    print("Theta steps:")
+    print(str(steps_theta) + str(sum(steps_theta)))
+    print("Phi steps:")
+    print(str(steps_phi) + str(sum(steps_phi)))
 
 
 def sign(x):
@@ -264,77 +262,7 @@ def invert_slice(steps_theta, steps_phi):
     return generate_steps_list(-sum(steps_theta), -sum(steps_phi))
 
 
-def add_padding_for_acceleration(steps_list, padding_steps):
-    """
-    Add padding at beginning and end of steps list, to allow acceleration.
-    :param steps_list: list of steps without padding
-    :param padding_steps: total amount of steps for padding
-    :return: padded list of steps
-    """
-    padding_list = break_into_steps(padding_steps, STEPS_FOR_ACCELERATION)
-    for i in range(len(padding_list)):
-        if i % 2 == 0:
-            steps_list = [padding_list[i]] + steps_list
-        else:
-            steps_list.append(padding_list[i])
-    return steps_list
-
-
-def phi_steps_by_theta_steps_for_acceleration(delta_steps_phi, steps_theta):
-    steps_phi = []
-    for move in steps_theta:
-        if delta_steps_phi > move:
-            steps_phi.append(move)
-            delta_steps_phi -= move
-        else:
-            break
-    if delta_steps_phi < STEPS_IN_COMMAND:
-        if delta_steps_phi > 0:
-            steps_phi.append(delta_steps_phi)
-    else:
-        end_of_steps_phi = break_into_equal_steps(delta_steps_phi)
-        steps_phi = steps_phi + end_of_steps_phi
-    return steps_phi
-
-
 def generate_steps_list(delta_steps_theta, delta_steps_phi):
-    """
-    Generates lists of steps to move in each angle, given the total delta.
-    :param delta_steps_theta: total delta of steps to move in theta
-    :param delta_steps_phi: total delta of steps to move in phi
-    :return: (steps_theta, steps_phi), tuple of lists of steps in each motor
-    """
-    theta_sign = sign(delta_steps_theta)
-    phi_sign = sign(delta_steps_phi)
-    delta_steps_theta = abs(delta_steps_theta)
-    delta_steps_phi = abs(delta_steps_phi)
-    delta_steps_theta_without_acceleration = delta_steps_theta - 2 * NUMBER_OF_ACCELERATION_MOVES * \
-                                             STEPS_FOR_ACCELERATION
-    if delta_steps_theta_without_acceleration < 0:
-        delta_steps_theta_without_acceleration = 0
-    padding_steps_theta = delta_steps_theta - delta_steps_theta_without_acceleration
-
-    steps_theta_without_acceleration = break_into_equal_steps(delta_steps_theta_without_acceleration)
-
-    steps_theta = add_padding_for_acceleration(steps_theta_without_acceleration, padding_steps_theta)
-
-    steps_phi = phi_steps_by_theta_steps_for_acceleration(delta_steps_phi, steps_theta)
-
-    steps_theta = add_zeros_at_end(steps_theta, len(steps_phi))
-    steps_phi = add_zeros_at_end(steps_phi, len(steps_theta))
-
-    if theta_sign < 0: steps_theta = [-steps for steps in steps_theta]
-    if phi_sign < 0: steps_phi = [-steps for steps in steps_phi]
-
-    print("steps_theta: ")
-    print(steps_theta)
-    print("steps_phi: ")
-    print(steps_phi)
-
-    return steps_theta, steps_phi
-
-
-def generate_steps_list2(delta_steps_theta, delta_steps_phi):
     """
     Generates lists of steps to move in each angle, given the total delta.
     :param delta_steps_theta: total delta of steps to move in theta
@@ -379,18 +307,6 @@ def break_into_steps(total_steps, step_per_command):
     return steps_array
 
 
-def break_into_equal_steps(total_steps):
-    """
-    Splits the total amount of steps into equal portions.
-    :param total_steps: total amount of steps to move
-    :return: list of steps
-    """
-    if total_steps == 0:
-        return []
-    steps_per_command = math.ceil(total_steps/math.ceil(total_steps / STEPS_IN_COMMAND))
-    return break_into_steps(total_steps, steps_per_command)
-
-
 def add_zeros_at_end(array, length):
     """
     Adds zeros to the end of the given array to make it in the given length.
@@ -424,12 +340,6 @@ def start_cut(arm_loc):
     theta_0, _ = xy2angles(arm_loc)
     return angles2xy((theta_0 + angle_to_move, theta_0))
 
-def init_multi_arduino_communication():
-    global DIMS
-    global d
-    DIMS = (12.0, 8.0)
-    d = 17.8
-
 
 # if __name__ == "__main__":
 # print('Lets begin...')
@@ -445,6 +355,10 @@ def init_multi_arduino_communication():
 # print(time.time()-start)
 
 if __name__ == '__main__':
-    make_slice_by_trajectory([(0.6,0.0), (-7.0,4.0), (7.0,4.0), (0.6,0.0)], False)
+    make_slice_by_trajectory([(0.6,0.0), (-7.0,4.0)], False)
+    # time.sleep(0.1)
+    make_slice_by_trajectory([(-7.0,4.0), (7.0,4.0)], False)
+    # time.sleep(0.1)
+    make_slice_by_trajectory([(7.0,4.0), (0.6,0.0)], False)
+    # time.sleep(0.1)
     # make_slice_by_trajectory([(5.0,0.6), (0.6,0.0)], False)
-    # generate_steps_list(7, -70)

@@ -22,7 +22,7 @@ class SavedVideoWrapper:
         :return: frame from video
         """
         _, frame = self.stream.read()
-        cv2.waitKey(1)
+        cv2.waitKey(15)
         return frame
 
     def stop(self):

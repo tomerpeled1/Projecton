@@ -7,7 +7,7 @@ import cv2
 from imutils.video import WebcamVideoStream
 from Calibrate import calibrate as calib
 import SavedVideoWrapper
-import Algorithmics as Algo
+import AlgorithmicsMulti as Algo
 
 # Settings for camera in projecton lab when lights on.
 LIGHT_LAB_SETTINGS = (215, 75, -7, 10)  # order is (saturation, gain, exposure, focus)
@@ -61,7 +61,8 @@ def set_calibrate_file(bl, tr):
 
 
 class Camera:
-    def __init__(self, src=0, flip=True, crop=False, live=True, calibrate=False, resize=False, multi=False):
+
+    def __init__(self, src=0, flip=True, crop=False, live=True, calibrate=False, resize=False):
         """
         Constructor for camera object.
         :param src: The source for the camera. 0 for live and video name for saved video.
@@ -76,7 +77,6 @@ class Camera:
         self.LIVE = live
         self.CALIBRATE = calibrate
         self.RESIZE = resize
-        self.MULTI = multi
         # Opens a stream for the camera.
         if self.LIVE:
             self.stream = WebcamVideoStream(src=src, name="Live Video").start()
@@ -91,8 +91,9 @@ class Camera:
         self.last_big_frame = []
         # Maximal size for buffer to avoid using too much memory.
         self.MAX_SIZE_BUFFER = 500
-        # fourcc = cv2.VideoWriter_fourcc(*'XVID')
-        # self.out = cv2.VideoWriter('multi2322.avi', fourcc, 30.0, (416, 285))
+
+        # fourcc = cv2.VideoWriter_fourcc(*'MJPG')
+        # self.out = cv2.VideoWriter('output.avi', fourcc, 30.0, (640, 480))
 
     def read(self):
         """
@@ -108,7 +109,7 @@ class Camera:
         if self.RESIZE:
             # cv2.imshow("before resized", frame)
             # cv2.waitKey(0)
-            frame = cv2.resize(frame, (640, 480))
+            frame = cv2.resize(frame, (640,480))
             # cv2.imshow("resized", frame)
             # cv2.waitKey(0)
         # Option for crop.
@@ -120,7 +121,7 @@ class Camera:
             frame = Camera.flip(frame)
             to_save = Camera.flip(to_save)
 
-        return frame, to_save
+        return frame,to_save
 
     @staticmethod
     def flip(frame):
@@ -156,8 +157,8 @@ class Camera:
                     self.buffer.append(to_save)
                     # self.out.write(to_save)
                 return to_return
-                # else:
-                #     print("GOOD")
+            # else:
+            #     print("GOOD")
 
     def next_frame_for_bg(self, current):
         """
@@ -166,7 +167,7 @@ class Camera:
         :return: next frame different from current.
         """
         while True:
-            to_return, _ = self.read()
+            to_return,_ = self.read()
             dif = cv2.subtract(to_return, current)
             dif = cv2.cvtColor(dif, cv2.COLOR_BGR2GRAY)
             if cv2.countNonZero(dif) > 0:
@@ -179,7 +180,7 @@ class Camera:
         :return: The frame cropped with the calibration dimensions.
         """
         frame = frame[self.tr_crop_dimensions[1]:self.bl_crop_dimensions[1],
-                self.bl_crop_dimensions[0]:self.tr_crop_dimensions[0]]
+                      self.bl_crop_dimensions[0]:self.tr_crop_dimensions[0]]
         # Updates the screen size in algorithm module.
         Algo.init_info(frame.shape[:2])
         return frame
@@ -192,13 +193,9 @@ class Camera:
         """
         (height, width, depth) = frame.shape
         if self.FLIP:
-            frame = frame[:160, width // 2 - 240: width // 2 + 240]
+            frame = frame[:160, width//2 - 240: width//2 + 240]
         else:
-            if not self.MULTI:
-                frame = frame[height - 160: height, width // 2 - 240: width // 2 + 240]
-            else:
-                frame = frame[height - 106: height, width // 2 - 180: width // 2 + 180]
-
+            frame = frame[height - 106: height, :]
         return frame
 
     def background_and_wait(self):
@@ -239,8 +236,7 @@ class Camera:
                 # Calibrate the camera with a click on space.
                 if cv2.waitKey(1) == 32:
                     (bl, tr) = calib(frame)
-                    if self.MULTI:
-                        tr = (tr[0], tr[1] + int((abs(tr[1] - bl[1]) // 2.5)))
+                    tr = (tr[0], tr[1] + int((abs(tr[1] - bl[1])//2.5)))
                     self.bl_crop_dimensions = bl
                     self.tr_crop_dimensions = tr
                     set_calibrate_file(bl, tr)
@@ -262,7 +258,7 @@ class Camera:
         Waits for click to capture image.
         :return: image captured.
         """
-        frame, _ = self.read()
+        frame,_ = self.read()
         counter = 0
         while True:
             frame = self.next_frame_for_bg(frame)
@@ -274,10 +270,10 @@ class Camera:
                 cv2.waitKey(0)
                 return frame
 
-
 if __name__ == '__main__':
     cam = Camera(0, True, False, True, True, True)
     frame, to_save = cam.read()
     cv2.imshow("frame", frame)
     cv2.waitKey(0)
     cv2.imwrite("AD_IMAGE.png", frame)
+

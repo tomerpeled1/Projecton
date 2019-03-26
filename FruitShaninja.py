@@ -13,21 +13,22 @@ import cv2
 import State
 
 
-SAVED_VIDEO_NAME = "2019-03-17 19-59-34.flv "
-LIVE = False
+SAVED_VIDEO_NAME = "multi2.avi"
+LIVE = True
 BACKGROUND_FILE_NAME = "bg.png"
 CROP = True
-FLIP = LIVE
+FLIP = True
 CALIBRATE = False
 IMAGE_PROCESSING_ALGORITHMICS_INTEGRATION = True
 ALGORITHMICS_MECHANICS_INTEGRATION = True
 SIMULATION = False
-BACKGROUND = True
+CAPTURE_BACKGROUND = True
 RESIZE = not LIVE
 AUTOMATIC_START = False
+MULTI = False
 
 
-CHOSEN_SLICE = Algo.THROUGH_POINTS
+CHOSEN_SLICE = Algo.LINEAR
 
 IMAGE_PROCESSING_FEATURES = (FLIP, CROP, LIVE, CALIBRATE, RESIZE)
 INTEGRATION = (IMAGE_PROCESSING_ALGORITHMICS_INTEGRATION, ALGORITHMICS_MECHANICS_INTEGRATION)
@@ -52,16 +53,17 @@ def fruit_shaninja(src, settings, image_processing_features=IMAGE_PROCESSING_FEA
     # Initiate algorithmics if integrated.
     if integration[0]:
         Ip.init_everything(integrate_with_algorithmics=integration[0])
-        Algo.init_everything(slice_type=CHOSEN_SLICE, integrate_with_mechanics=integration[1], simulate=simulation)
+        Algo.init_everything(slice_type=CHOSEN_SLICE, integrate_with_mechanics=integration[1],
+                             simulate=simulation, multi=MULTI)
     fruits_info = []  # Initialize fruits known.
     # Create new camera object.
     camera = Camera(src, flip=image_processing_features[0], crop=image_processing_features[1],
                     live=image_processing_features[2], calibrate=image_processing_features[3],
-                    resize=image_processing_features[4])
+                    resize=image_processing_features[4],multi=MULTI)
     if camera.LIVE:
         camera.set_camera_settings(settings)
 
-    if AUTOMATIC_START:  # Execute automatic start
+    if AUTOMATIC_START and not MULTI:  # Execute automatic start
         ad_time = As.automatic_start()
         time_to_wait_for_ad = ad_time - time.perf_counter()
         if camera.is_opened():
@@ -74,7 +76,7 @@ def fruit_shaninja(src, settings, image_processing_features=IMAGE_PROCESSING_FEA
 
     # Get background
     bg = cv2.imread(BACKGROUND_FILE_NAME)
-    if BACKGROUND:
+    if CAPTURE_BACKGROUND:
         # Allows user to click in order to capture background.
         print("choose background")
         bg = camera.background_and_wait()
@@ -91,44 +93,44 @@ def fruit_shaninja(src, settings, image_processing_features=IMAGE_PROCESSING_FEA
 
     # Main while loop.
     while camera.is_opened() and counter < 1200:
-        # t1 = time.perf_counter()
-        # print("********************************************************************")
-        counter += 1
-        current = camera.next_frame(current)  # Retrieve next frame.
-        time_of_frame = time.perf_counter()
-        temp_frame = current.copy()  # Copy the frame.
-        detection_results = Fd.fruit_detection2(temp_frame, bg, Ip.CONTOUR_AREA_THRESH,
-                                                time_of_frame)  # Run detection on fruits.
-        cv2.drawContours(temp_frame, detection_results.conts, -1, (0, 255, 0), 2)  # Draw the fruits as detected.
-        Ip.track_known_fruits(fruits_info, temp_frame, detection_results)  # Track known fruits in current frame and
-        # remove them for fruits_info.
-        if len(detection_results.conts) > 0:  # In case there are more fruits left it inserts them as new fruits.
-            Ip.insert_new_fruits(detection_results, fruits_info, temp_frame)
-        for fruit in fruits_info:  # Draws all fruits which are not falling.
-            if not fruit.is_falling:
-                Ip.draw(fruit, temp_frame)
-        current_state.update_state(Ip.FRUIT_TO_EXTRACT, time_of_frame)
-        Ip.clear_fruits()
-        if not Algo.during_slice:
-            slice_flag, points_to_slice, sliced_fruits = current_state.is_good_to_slice()
-            if slice_flag:
-                if integration[0]:
-                    add_slice_to_queue(points_to_slice, sliced_fruits)
-                    current_state.remove_sliced_fruits(sliced_fruits)
+        if not (Algo.during_slice and MULTI): # dont image proccess during a slice in multiplayer mode
+            # t1 = time.perf_counter()
+            # print("********************************************************************")
+            counter += 1
+            current = camera.next_frame(current)  # Retrieve next frame.
+            time_of_frame = time.perf_counter()
+            temp_frame = current.copy()  # Copy the frame.
+            detection_results = Fd.fruit_detection2(temp_frame, bg, Ip.CONTOUR_AREA_THRESH,
+                                                    time_of_frame)  # Run detection on fruits.
+            cv2.drawContours(temp_frame, detection_results.conts, -1, (0, 255, 0), 2)  # Draw the fruits as detected.
+            Ip.track_known_fruits(fruits_info, temp_frame, detection_results)  # Track known fruits in current frame and
+            # remove them for fruits_info.
+            if len(detection_results.conts) > 0:  # In case there are more fruits left it inserts them as new fruits.
+                Ip.insert_new_fruits(detection_results, fruits_info, temp_frame)
+            for fruit in fruits_info:  # Draws all fruits which are not falling.
+                if not fruit.is_falling:
+                    Ip.draw(fruit, temp_frame)
+            current_state.update_state(Ip.FRUIT_TO_EXTRACT, time_of_frame)
+            Ip.clear_fruits()
+            if not Algo.during_slice:
+                slice_flag, points_to_slice, sliced_fruits = current_state.is_good_to_slice()
+                if slice_flag:
+                    if integration[0]:
+                        add_slice_to_queue(points_to_slice, sliced_fruits)
+                        current_state.remove_sliced_fruits(sliced_fruits)
 
-        cv2.imshow("temp_frame", temp_frame)
-        buffer.append(temp_frame)  # Inserts frame to buffer.
-        # t2 = time.perf_counter()
-        if Ip.fruits_for_debug_trajectories:
-            # for i in range(1 ,min(len(Ip.fruits_for_debug_trajectories), 3)):
-            Ip.draw_trajectory(Ip.fruits_for_debug_trajectories[-1], camera.last_big_frame)
-        cv2.imshow("please work", camera.last_big_frame)
-        # print("time for everything", abs(t1 - t2))
-        if cv2.waitKey(1) == 27:
-            break
+            cv2.imshow("temp_frame", temp_frame)
+            buffer.append(temp_frame)  # Inserts frame to buffer.
+            # t2 = time.perf_counter()
+            if Ip.fruits_for_debug_trajectories:
+                # for i in range(1 ,min(len(Ip.fruits_for_debug_trajectories), 3)):
+                Ip.draw_trajectory(Ip.fruits_for_debug_trajectories[-1], camera.last_big_frame)
+            cv2.imshow("please work", camera.last_big_frame)
+            # print("time for everything", abs(t1 - t2))
+            if cv2.waitKey(1) == 27:
+                break
     # Ip.debug_with_buffer(buffer)
-    Ip.show_original(camera)
-
+    # Ip.show_original(camera)
 
 def add_slice_to_queue(slice_points_to_add, sliced_fruits):
     """
