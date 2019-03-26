@@ -128,7 +128,7 @@ class Trajectory:
         returns the time that the fruit gets to the symmetric location to the initial location (x0, y0)
         :return: double time in sec
         """
-        t = 2 * self.v0y / ACC
+        t = 2 * abs(self.v0y) / ACC
         return t
 
     def x_trajectory(self, t):
@@ -176,7 +176,8 @@ def create_slice(state, time_to_slice):
     fruits_and_locs = state.get_fruits_locations(time_to_slice, state.fruits_in_range)
     critical_fruits_locs = state.get_fruits_locations(time_to_slice, state.get_critical_fruits())
     arm_loc = state.arm_loc
-    ordered_fruits_and_locs = order_fruits_and_locs(arm_loc, fruits_and_locs)
+    arm_loc_algo_coordinates = mech_to_algo(arm_loc)
+    ordered_fruits_and_locs = order_fruits_and_locs(arm_loc_algo_coordinates, fruits_and_locs)
     xy_points_to_go_through, sliced_fruits = create_best_slice(state.arm_loc, ordered_fruits_and_locs, critical_fruits_locs)
 
     return xy_points_to_go_through, sliced_fruits
@@ -187,18 +188,34 @@ def order_fruits_and_locs(arm_loc, fruits_and_locs):
 
 
 def create_best_slice(arm_loc, ordered_fruits_and_locs, critical_fruits_locs):
+    """
+    creates the best slice it can with the given fruits on screen.
+    :param arm_loc: the location of the arm initially.
+    :param ordered_fruits_and_locs: list of (fruit, loc) sorted by distance on x axis from the arm loc.
+    :param critical_fruits_locs: fruits about to be losr.
+    :return: points to slice through and the fruits sliced.
+    """
+    current_arm_loc = arm_loc
+    slice_points = []
+    sliced_fruits = []
     for fruits_and_locs in combinations_of_elements(ordered_fruits_and_locs):
         locs = [loc for (fruit, loc) in fruits_and_locs]
-        slice_points = calc_slice(arm_loc, locs)
-        if good_slice(slice_points):
-            sliced_fruits = [fruit for (fruit, loc) in fruits_and_locs]
-            critical_fruits_not_sliced = order_fruits_and_locs(slice_points[-1], [(fruit, loc) for (fruit, loc) in critical_fruits_locs if fruit not in sliced_fruits])
-            critical_fruits_not_sliced_locs = [loc for (fruit, loc) in critical_fruits_not_sliced]
-            remaining_slice = calc_slice(slice_points[-1], critical_fruits_not_sliced_locs)
+        temp_slice_points = calc_slice(arm_loc, locs)
+        if good_slice(temp_slice_points):
+            slice_points.extend(temp_slice_points)
+            sliced_fruits.extend([fruit for (fruit, loc) in fruits_and_locs])
+            current_arm_loc = temp_slice_points[-1]
+            break
+    critical_fruits_not_sliced = order_fruits_and_locs(current_arm_loc, [(fruit, loc) for (fruit, loc) in critical_fruits_locs if fruit not in sliced_fruits])
+    if critical_fruits_not_sliced:
+        critical_fruits_not_sliced_locs = [loc for (fruit, loc) in critical_fruits_not_sliced]
+        remaining_slice = calc_slice(current_arm_loc, critical_fruits_not_sliced_locs)
+        if slice_points:
             slice_points.extend(remaining_slice[1:])
-            sliced_fruits.extend([fruit for (fruit, loc) in critical_fruits_not_sliced])
-            return slice_points, sliced_fruits
-    return [], []
+        else:
+            slice_points.append(remaining_slice)
+        sliced_fruits.extend([fruit for (fruit, loc) in critical_fruits_not_sliced])
+    return slice_points, sliced_fruits
 
 
 def combinations_of_elements(s):
@@ -221,12 +238,13 @@ def good_slice(points_of_slice_to_evaluate):
     :return: true if the slice should be done.
     """
     return True
-    # return ArduinoCommunication.calc_time_of_slice(points_of_slice_to_evaluate) < MAX_TIME_FOR_COMBO
+    # return Ac.calc_time_of_slice(points_of_slice_to_evaluate) < MAX_TIME_FOR_COMBO
 
 
 def key(arm_loc):
-    def distance_from_arm_in_x(a):
-        return abs(a[1][0] - arm_loc[0])
+    def distance_from_arm_in_x(fruit_and_loc):
+        fruit, loc = fruit_and_loc
+        return abs(loc[0] - arm_loc[0])
     return distance_from_arm_in_x
 
 
@@ -439,6 +457,15 @@ def algo_to_mech(point):
     return Ac.DIMS[0]/2 - point[0], point[1] + (Ac.DIMS[1] - SCREEN_SIZE[0])
 
 
+def mech_to_algo(point):
+    """
+    Converts a point form the mechanics and arduino coordinates to algorithmics and trajectory coordinates
+    :param point: (x,y) in mechanics and Arduino coordinates
+    :return: (x,y) in algorithmics and trajectory coordinates
+    """
+    return Ac.DIMS[0]/2 - point[0], point[1] - (Ac.DIMS[1] - SCREEN_SIZE[0])
+
+
 def calc_slice(arm_loc, points):
     """
     Calculate the slice that goes through the given points.
@@ -446,8 +473,7 @@ def calc_slice(arm_loc, points):
     :param points: points the slice should go through in (x,y)
     :return: calculated slice as parametrization, timer, time_to_slice
     """
-    if SLICE_TYPE == LINEAR:
-        points = [algo_to_mech(point) for point in points]
+    points = [algo_to_mech(point) for point in points]
     if SLICE_TYPE == LINEAR:
         return SliceTypes.linear_slice(arm_loc, points)
     elif SLICE_TYPE == RADIUS:

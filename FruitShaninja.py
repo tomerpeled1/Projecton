@@ -14,20 +14,20 @@ import State
 
 
 SAVED_VIDEO_NAME = "2019-03-17 19-59-34.flv "
-LIVE = True
+LIVE = False
 BACKGROUND_FILE_NAME = "bg.png"
 CROP = True
-FLIP = True
+FLIP = False
 CALIBRATE = False
 IMAGE_PROCESSING_ALGORITHMICS_INTEGRATION = True
 ALGORITHMICS_MECHANICS_INTEGRATION = True
-SIMULATION = False
-BACKGROUND = False
-RESIZE = False
+SIMULATION = True
+BACKGROUND = True
+RESIZE = not LIVE
 AUTOMATIC_START = False
 
 
-CHOSEN_SLICE = Algo.LINEAR
+CHOSEN_SLICE = Algo.THROUGH_POINTS
 
 IMAGE_PROCESSING_FEATURES = (FLIP, CROP, LIVE, CALIBRATE, RESIZE)
 INTEGRATION = (IMAGE_PROCESSING_ALGORITHMICS_INTEGRATION, ALGORITHMICS_MECHANICS_INTEGRATION)
@@ -138,10 +138,12 @@ def add_slice_to_queue(slice_points_to_add, sliced_fruits):
     """
     Algo.add_slice_to_queue(slice_points_to_add, sliced_fruits)
 
-
-if __name__ == '__main__':
+def run():
     if LIVE:
         fruit_shaninja(0, Ci.DARK_101_SETTINGS_new2)
         print("finished")
     else:
         fruit_shaninja(SAVED_VIDEO_NAME, Ci.DARK_101_SETTINGS_new2)
+
+if __name__ == '__main__':
+    run()
