@@ -13,7 +13,7 @@ import cv2
 import State
 
 
-SAVED_VIDEO_NAME = "multi2.avi"
+SAVED_VIDEO_NAME = "2019-03-17 19-59-34.flv "
 LIVE = True
 BACKGROUND_FILE_NAME = "bg.png"
 CROP = True
@@ -130,7 +130,8 @@ def fruit_shaninja(src, settings, image_processing_features=IMAGE_PROCESSING_FEA
             if cv2.waitKey(1) == 27:
                 break
     # Ip.debug_with_buffer(buffer)
-    # Ip.show_original(camera)
+    Ip.show_original(camera)
+
 
 def add_slice_to_queue(slice_points_to_add, sliced_fruits):
     """
