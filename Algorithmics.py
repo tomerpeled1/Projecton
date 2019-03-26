@@ -504,7 +504,7 @@ def get_pen_loc():
     :return: the location of the pen (x, y) in mechanics coordinates in cm
     """
     # location (16cm, 4cm) from the bottom-left corner
-    x_location = SCREEN_SIZE[1] / 2 - 1
+    x_location = 0.0
     y_location = SCREEN_SIZE[0] + 4.0 - FULL_SCREEN[0]
     if MULTI:
         x_location = -1 * x_location
