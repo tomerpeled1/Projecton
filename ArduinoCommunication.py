@@ -32,9 +32,9 @@ START_SLICE = '~'
 LENGTH_OF_COMMAND = 2  # the length of a command to the serial that contains the number of steps for each motor and the
 SERIAL_BUFFER_SIZE = 64  # in bytes
 COMMAND_PACKAGE_SIZE = math.floor(SERIAL_BUFFER_SIZE/LENGTH_OF_COMMAND)  # number of commands to write at once
-STEPS_IN_COMMAND = STEPS_FRACTION  # number of steps to move at every command
-STEPS_FOR_ACCELERATION = STEPS_FRACTION / 2  # number of steps to move at acceleration move
-NUMBER_OF_ACCELERATION_MOVES = 4
+STEPS_IN_COMMAND = 31  # number of steps to move at every command
+STEPS_FOR_ACCELERATION = int(STEPS_FRACTION / 2)  # number of steps to move at acceleration move
+NUMBER_OF_ACCELERATION_MOVES = 2
 
 # TIME CONSTANTS
 T = 1.0  # max value of parameter at slice
@@ -265,12 +265,18 @@ def invert_slice(steps_theta, steps_phi):
 
 
 def add_padding_for_acceleration(steps_list, padding_steps):
-    padding_list = break_into_equal_steps(padding_steps)
+    """
+    Add padding at beginning and end of steps list, to allow acceleration.
+    :param steps_list: list of steps without padding
+    :param padding_steps: total amount of steps for padding
+    :return: padded list of steps
+    """
+    padding_list = break_into_steps(padding_steps, STEPS_FOR_ACCELERATION)
     for i in range(len(padding_list)):
         if i % 2 == 0:
-            steps_list = padding_list[i] + steps_list
+            steps_list = [padding_list[i]] + steps_list
         else:
-            steps_list = steps_list + padding_list[i]
+            steps_list.append(padding_list[i])
     return steps_list
 
 
@@ -298,7 +304,12 @@ def generate_steps_list(delta_steps_theta, delta_steps_phi):
     :param delta_steps_phi: total delta of steps to move in phi
     :return: (steps_theta, steps_phi), tuple of lists of steps in each motor
     """
-    delta_steps_theta_without_acceleration = delta_steps_theta - NUMBER_OF_ACCELERATION_MOVES * STEPS_FOR_ACCELERATION
+    theta_sign = sign(delta_steps_theta)
+    phi_sign = sign(delta_steps_phi)
+    delta_steps_theta = abs(delta_steps_theta)
+    delta_steps_phi = abs(delta_steps_phi)
+    delta_steps_theta_without_acceleration = delta_steps_theta - 2 * NUMBER_OF_ACCELERATION_MOVES * \
+                                             STEPS_FOR_ACCELERATION
     if delta_steps_theta_without_acceleration < 0:
         delta_steps_theta_without_acceleration = 0
     padding_steps_theta = delta_steps_theta - delta_steps_theta_without_acceleration
@@ -311,6 +322,9 @@ def generate_steps_list(delta_steps_theta, delta_steps_phi):
 
     steps_theta = add_zeros_at_end(steps_theta, len(steps_phi))
     steps_phi = add_zeros_at_end(steps_phi, len(steps_theta))
+
+    if theta_sign < 0: steps_theta = [-steps for steps in steps_theta]
+    if phi_sign < 0: steps_phi = [-steps for steps in steps_phi]
 
     print("steps_theta: ")
     print(steps_theta)
@@ -367,12 +381,13 @@ def break_into_steps(total_steps, step_per_command):
 
 def break_into_equal_steps(total_steps):
     """
-    Splits the total amount of steps into portions.
+    Splits the total amount of steps into equal portions.
     :param total_steps: total amount of steps to move
-    :param step_per_command: amount of steps in each command
     :return: list of steps
     """
-    steps_per_command = math.ceil(total_steps / STEPS_IN_COMMAND)
+    if total_steps == 0:
+        return []
+    steps_per_command = math.ceil(total_steps/math.ceil(total_steps / STEPS_IN_COMMAND))
     return break_into_steps(total_steps, steps_per_command)
 
 
@@ -424,10 +439,11 @@ def start_cut(arm_loc):
 # print(time.time()-start)
 
 if __name__ == '__main__':
-    make_slice_by_trajectory([(0.6,0.0), (-7.0,4.0)], False)
+    # make_slice_by_trajectory([(0.6,0.0), (-7.0,4.0)], False)
     # time.sleep(0.1)
-    make_slice_by_trajectory([(-7.0,4.0), (7.0,4.0)], False)
+    # make_slice_by_trajectory([(-7.0,4.0), (7.0,4.0)], False)
     # time.sleep(0.1)
-    make_slice_by_trajectory([(7.0,4.0), (0.6,0.0)], False)
+    # make_slice_by_trajectory([(7.0,4.0), (0.6,0.0)], False)
     # time.sleep(0.1)
     # make_slice_by_trajectory([(5.0,0.6), (0.6,0.0)], False)
+    generate_steps_list(7, -70)
