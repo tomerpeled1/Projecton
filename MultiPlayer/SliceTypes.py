@@ -10,21 +10,11 @@ r = 10  # second arm length in cm
 R = 15  # first arm length in cm
 d = 15  # distance of major axis from screen in cm
 SCREEN = [16, 12]  # (x,y) dimensions of screen in cm
-SLICE_ZONE = 0.0
+SLICE_ZONE = 0.5
 PARTITION = 20
 MINIMAL_DISTANCE_FOR_PARTITION = 1
 LINEAR = 0
 ANGLES = 1
-MULTI = False
-
-
-def init_multi(multi=False):
-    if multi:
-        MULTI = multi
-        global d
-        global SCREEN
-        d = 17.8
-        SCREEN = [12, 8]
 
 
 def distance(a, b):
@@ -203,8 +193,8 @@ def slice_through_many_points(arm_loc, ordered_points, move_between_points=LINEA
     else:
         move_func = linear_slice_between_2_points
     slice_parts = [move_func(arm_loc, ordered_points[0])]
-    for i in range(len(ordered_points) - 1):
-        slice_parts.append(move_func(ordered_points[i], ordered_points[i + 1]))
+    for i in range(len(ordered_points)-1):
+        slice_parts.append(move_func(ordered_points[i], ordered_points[i+1]))
     # print ("*&*&*&*&* SLICE_PARTS before unite ", slice_parts)
     slice_to_return = unite_slice(slice_parts)
     xy_points = get_partition(slice_to_return)
@@ -214,16 +204,15 @@ def slice_through_many_points(arm_loc, ordered_points, move_between_points=LINEA
 def unite_slice(slice_parts):
     # print ("*&*&*&*&* SLICE_PARTS ", slice_parts)
     n = len(slice_parts)
-    time_for_part = 1.0 / n
+    time_for_part = 1.0/n
 
     def united_slice(t):
         if t != 1:
-            i = int(t / time_for_part)
-            relative_time = t - i * time_for_part
-            return slice_parts[i](relative_time * n)
+            i = int(t/time_for_part)
+            relative_time = t - i*time_for_part
+            return slice_parts[i](relative_time*n)
         else:
             return slice_parts[-1](1)
-
     return united_slice
 
 
@@ -254,22 +243,18 @@ def in_bound(point, percent=SLICE_ZONE):
     x, y = point
     if left_bound < x < right_bound and lower_bound < y < upper_bound:
         return True
-    # print(x, y)
+    print(x, y)
     return False
 
-
 def get_partition(xy_by_t):
-    dt = 1.0 / PARTITION
+    dt = 1.0/PARTITION
     x_points = [xy_by_t(0)[0]]
     y_points = [xy_by_t(0)[1]]
-    for i in range(1, PARTITION):
-        current_x, current_y = xy_by_t(i * dt)
+    for i in range(1, PARTITION + 1):
+        current_x, current_y = xy_by_t(i*dt)
         if distance((x_points[-1], y_points[-1]), (current_x, current_y)) >= 1:
             x_points.append(current_x)
             y_points.append(current_y)
-    x_final, y_final = xy_by_t(1)
-    x_points.append(x_final)
-    y_points.append(y_final)
     return [(x_points[i], y_points[i]) for i in range(len(x_points))]
 
 
@@ -282,13 +267,10 @@ def linear_slice(arm_loc, _):
     """
     x_arm_loc = arm_loc[0]
     y_arm_loc = arm_loc[1]
-    x_final = x_arm_loc - 14.0
-    print("start: ", (x_arm_loc,y_arm_loc), "finish: ", (x_final, y_arm_loc))
-    if MULTI:
-        x_final = x_arm_loc + 9.0
+    x_final = x_arm_loc - 5
 
     def xy_by_t(t):
-        x_slice = x_arm_loc + (x_final - x_arm_loc) * t
+        x_slice = x_arm_loc + (x_final - x_arm_loc) * t * 2
         y_slice = y_arm_loc
         return x_slice, y_slice
 

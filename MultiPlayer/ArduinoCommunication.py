@@ -42,7 +42,7 @@ BITS_PER_BYTE = 8  # the number of bits in one byte
 WRITE_DELAY = 1000/(SERIAL_BPS/BITS_PER_BYTE/LENGTH_OF_COMMAND)  # delay in ms after writing to prevent buffer overload
 TRAJECTORY_DIVISION_NUMBER = 20  # the number of parts that the trajectory of the arm is divided to
 DT_DIVIDE_TRAJECTORY = float(T) / TRAJECTORY_DIVISION_NUMBER  # size of step in parameter
-WANTED_RPS = 0.8  # speed of motors in revolutions per second
+WANTED_RPS = 0.4  # speed of motors in revolutions per second
 ONE_STEP_DELAY = 5.0 / WANTED_RPS / STEPS_FRACTION  # in ms
 WAIT_FOR_STOP = 50.0  # time to wait after slice until committing invert slice in ms
 
@@ -55,7 +55,7 @@ WAIT_FOR_STOP = 50.0  # time to wait after slice until committing invert slice i
 # times = int(T / dt)  # the size of the vectors for the simulation
 
 try:
-    ser = serial.Serial('com3', SERIAL_BPS)  # Create Serial port object
+    ser = serial.Serial('com6', SERIAL_BPS)  # Create Serial port object
     time.sleep(2)  # wait for 2 seconds for the communication to get established
 except SerialException:
     print("Didn't create serial.")
@@ -339,12 +339,6 @@ def start_cut(arm_loc):
     move_2_motors(steps_theta, steps_phi)  # go back with phi angle, to allow slice calculation
     theta_0, _ = xy2angles(arm_loc)
     return angles2xy((theta_0 + angle_to_move, theta_0))
-
-def init_multi_arduino_communication():
-    global DIMS
-    global d
-    DIMS = (12.0, 8.0)
-    d = 17.8
 
 
 # if __name__ == "__main__":

@@ -6,6 +6,7 @@ the coordinates here is (generally speaking) (x,y) when the 0,0 is at bottom lef
 """
 
 import math
+# import matplotlib.pyplot as plt
 import statistics as st
 import SliceTypes
 import time
@@ -17,29 +18,29 @@ import numpy as np
 import itertools
 
 # ----------------- CONSTANTS -------------------
-MULTI = False
-
 # first acc is measured, second is from fazkanoot
 # RELATIVE_ACC = 1.478  # from experiences we did it tracker program
 PART_OF_SCREEN_FOR_IP = 0.0
-RELATIVE_ACC = 1.4  # not from experiences we did it tracker program
+RELATIVE_ACC = 0.6   # not from experiences we did it tracker program
 CAMERA_FPS = 30  # frames per second
 TIME_BETWEEN_2_FRAMES = 1.0 / CAMERA_FPS  # in sec
-FRAME_SIZE = (480, 640)  # (y,x) in pixels
-CROP_SIZE = (160, 480)  # (y,x) in pixels
-SCREEN_SIZE = (12.0, 16.0)  # (y,x) in cm
+# FRAME_SIZE = (480, 640)  # (y,x) in pixels
+FRAME_SIZE = (320, 480)  # (y,x) in pixels
+CROP_SIZE = (106, 480)  # (y,x) in pixels
+SCREEN_SIZE = (8.0, 12.0)  # (y,x) in cm
 DISTANCE_FROM_TABLET = Ac.d
 ACC = RELATIVE_ACC * SCREEN_SIZE[0]
-INTEGRATE_WITH_MECHANICS = False  # make True to send slices to ArduinoCommunication
-
-LINEAR = 0
-RADIUS = 1
-THROUGH_POINTS = 2
-SLICE_TYPE = LINEAR
-
+INTEGRATE_WITH_MECHANICS = False  # make True to send slices to Ac
+SLICE_TYPE = 0
+SLICE_TYPES = {
+    "linear": 0,
+    "radius": 1,
+    "through_points": 2,
+    "to_peak": 3
+}
 SLICE_QUALITY_FACTOR_THRESH = 0
-MINIMAL_NUMBER_OF_FRUITS_FOR_COMBO = 1
-MAX_TIME_FOR_COMBO = 400  # in ms
+MINIMAL_NUMBER_OF_FRUITS_FOR_COMBO = 3
+MAX_TIME_FOR_COMBO = 0.4 #in sec
 
 # on_screen_fruits = []
 SIMULATE = True  # make True to activate simulation
@@ -80,9 +81,9 @@ def cm2pixel(cm_loc):
     :return: pixel location in order (y, x, t)
     """
     x_coord_screen, y_coord_screen, t = cm_loc
-    x_coord_frame = int(x_coord_screen * (float(FRAME_SIZE[1]) / SCREEN_SIZE[1]))
-    x_coord_frame = FRAME_SIZE[1] - x_coord_frame
-    y_coord_frame = int((float(y_coord_screen / SCREEN_SIZE[0])) * FRAME_SIZE[0])
+    x_coord_frame = int(x_coord_screen * (float(CROP_SIZE[1]) / SCREEN_SIZE[1]))
+    x_coord_frame = CROP_SIZE[1] - x_coord_frame
+    y_coord_frame = int((float(y_coord_screen / SCREEN_SIZE[0])) * CROP_SIZE[0])
     return y_coord_frame, x_coord_frame, t
 
 
@@ -130,7 +131,7 @@ class Trajectory:
         returns the time that the fruit gets to the symmetric location to the initial location (x0, y0)
         :return: double time in sec
         """
-        t = 2 * abs(self.v0y) / ACC
+        t = 2 * self.v0y / ACC
         return t
 
     def x_trajectory(self, t):
@@ -176,13 +177,9 @@ def create_slice(state, time_to_slice):
     :return: tuple of (xy_points,  sliced_fruits)
     """
     fruits_and_locs = state.get_fruits_locations(time_to_slice, state.fruits_in_range)
-    critical_fruits_locs = state.get_fruits_locations(time_to_slice, state.get_critical_fruits())
     arm_loc = state.arm_loc
-    arm_loc_algo_coordinates = mech_to_algo(arm_loc)
-    ordered_fruits_and_locs = order_fruits_and_locs(arm_loc_algo_coordinates, fruits_and_locs)
-    xy_points_to_go_through, sliced_fruits = create_best_slice(state.arm_loc, ordered_fruits_and_locs,
-                                                               critical_fruits_locs)
-
+    ordered_fruits_and_locs = order_fruits_and_locs(arm_loc, fruits_and_locs)
+    xy_points_to_go_through, sliced_fruits = create_best_slice(state.arm_loc, ordered_fruits_and_locs)
     return xy_points_to_go_through, sliced_fruits
 
 
@@ -190,38 +187,14 @@ def order_fruits_and_locs(arm_loc, fruits_and_locs):
     return sorted(fruits_and_locs, key=key(arm_loc))
 
 
-def create_best_slice(arm_loc, ordered_fruits_and_locs, critical_fruits_locs):
-    """
-    creates the best slice it can with the given fruits on screen.
-    :param arm_loc: the location of the arm initially.
-    :param ordered_fruits_and_locs: list of (fruit, loc) sorted by distance on x axis from the arm loc.
-    :param critical_fruits_locs: fruits about to be losr.
-    :return: points to slice through and the fruits sliced.
-    """
-    current_arm_loc = arm_loc
-    slice_points = []
-    sliced_fruits = []
+def create_best_slice(arm_loc, ordered_fruits_and_locs):
     for fruits_and_locs in combinations_of_elements(ordered_fruits_and_locs):
         locs = [loc for (fruit, loc) in fruits_and_locs]
-        temp_slice_points = calc_slice(arm_loc, locs)
-        if good_slice(temp_slice_points):
-            slice_points.extend(temp_slice_points)
-            sliced_fruits.extend([fruit for (fruit, loc) in fruits_and_locs])
-            current_arm_loc = temp_slice_points[-1]
-            break
-    if SLICE_TYPE == THROUGH_POINTS:
-        critical_fruits_not_sliced = order_fruits_and_locs(current_arm_loc,
-                                                           [(fruit, loc) for (fruit, loc) in critical_fruits_locs if
-                                                            fruit not in sliced_fruits])
-        if critical_fruits_not_sliced:
-            critical_fruits_not_sliced_locs = [loc for (fruit, loc) in critical_fruits_not_sliced]
-            remaining_slice = calc_slice(current_arm_loc, critical_fruits_not_sliced_locs)
-            if slice_points:
-                slice_points.extend(remaining_slice[1:])
-            else:
-                slice_points.append(remaining_slice)
-            sliced_fruits.extend([fruit for (fruit, loc) in critical_fruits_not_sliced])
-    return slice_points, sliced_fruits
+        slice_points = calc_slice(arm_loc, locs)
+        if good_slice(slice_points):
+            sliced_fruits = [fruit for (fruit, loc) in fruits_and_locs]
+            return slice_points, sliced_fruits
+    return [], []
 
 
 def combinations_of_elements(s):
@@ -234,7 +207,7 @@ def combinations_of_elements(s):
     if len(s) < MINIMAL_NUMBER_OF_FRUITS_FOR_COMBO:
         return [s]
     return list(itertools.chain.from_iterable(itertools.combinations(s, r)
-                                              for r in range(len(s), MINIMAL_NUMBER_OF_FRUITS_FOR_COMBO - 1, -1)))
+                for r in range(len(s), MINIMAL_NUMBER_OF_FRUITS_FOR_COMBO-1, -1)))
 
 
 def good_slice(points_of_slice_to_evaluate):
@@ -244,21 +217,16 @@ def good_slice(points_of_slice_to_evaluate):
     :return: true if the slice should be done.
     """
     # return time_for_slice(points_of_slice_to_evaluate) < MAX_TIME_FOR_COMBO
+
     return True
 
 
+
+
 def key(arm_loc):
-    def distance_from_arm_in_x(fruit_and_loc):
-        fruit, loc = fruit_and_loc
-        return abs(loc[0] - arm_loc[0])
-
+    def distance_from_arm_in_x(a):
+        return abs(a[1][0] - arm_loc[0])
     return distance_from_arm_in_x
-
-
-def flip_points_for_multiplayer(points):
-    points = [(SCREEN_SIZE[1] - p[0], SCREEN_SIZE[0] - p[1]) for p in points]
-    print("after flip: ", points)
-    return points
 
 
 def do_slice(points_to_slice, sliced_fruits):
@@ -267,10 +235,7 @@ def do_slice(points_to_slice, sliced_fruits):
     :param points_to_slice: list of points the slice should go through
     :param sliced_fruits: fruits that the slice is supposed to cut (for simulation)
     """
-    if MULTI:
-        points_to_slice = flip_points_for_multiplayer(points_to_slice)
     parametrization = points_to_slice
-
     # time_to_slice = 0
     # run simulation
     if SIMULATE:
@@ -457,11 +422,11 @@ def draw_trajectory_matplotlib(trajectory, x_coords, y_coords):
     for i in times:
         xy[0][i], xy[1][i] = route(dt * i)
 
-        # plt.plot(xy[0], xy[1], 'ro')
-        # plt.plot(x_coords, y_coords, 'bo')
-        # plt.ylim(0, y_lim)
-        # plt.xlim(0, x_lim)
-        # plt.show()
+    # plt.plot(xy[0], xy[1], 'ro')
+    # plt.plot(x_coords, y_coords, 'bo')
+    # plt.ylim(0, y_lim)
+    # plt.xlim(0, x_lim)
+    # plt.show()
 
 
 def algo_to_mech(point):
@@ -470,16 +435,7 @@ def algo_to_mech(point):
     :param point: (x,y) in algorithmics and trajectory coordinates
     :return: (x,y) in mechanics and Arduino coordinates
     """
-    return Ac.DIMS[0] / 2 - point[0], point[1] + (Ac.DIMS[1] - SCREEN_SIZE[0])
-
-
-def mech_to_algo(point):
-    """
-    Converts a point form the mechanics and arduino coordinates to algorithmics and trajectory coordinates
-    :param point: (x,y) in mechanics and Arduino coordinates
-    :return: (x,y) in algorithmics and trajectory coordinates
-    """
-    return Ac.DIMS[0] / 2 - point[0], point[1] - (Ac.DIMS[1] - SCREEN_SIZE[0])
+    return Ac.DIMS[0]/2 - point[0], point[1] + (Ac.DIMS[1] - SCREEN_SIZE[0])
 
 
 def calc_slice(arm_loc, points):
@@ -489,13 +445,12 @@ def calc_slice(arm_loc, points):
     :param points: points the slice should go through in (x,y)
     :return: calculated slice as parametrization, timer, time_to_slice
     """
-
     points = [algo_to_mech(point) for point in points]
-    if SLICE_TYPE == LINEAR:
+    if SLICE_TYPE == SLICE_TYPES["linear"]:
         return SliceTypes.linear_slice(arm_loc, points)
-    elif SLICE_TYPE == RADIUS:
+    elif SLICE_TYPE == SLICE_TYPES["radius"]:
         return SliceTypes.radius_slice(arm_loc, points)
-    elif SLICE_TYPE == THROUGH_POINTS:
+    elif SLICE_TYPE == SLICE_TYPES["through_points"]:
         return SliceTypes.slice_through_many_points(arm_loc, points)
 
 
@@ -504,11 +459,8 @@ def get_pen_loc():
     :return: the location of the pen (x, y) in mechanics coordinates in cm
     """
     # location (16cm, 4cm) from the bottom-left corner
-    x_location = SCREEN_SIZE[1] / 2 - 1
+    x_location = SCREEN_SIZE[1]/2
     y_location = 5.5
-    if MULTI:
-        x_location = -1 * x_location
-        y_location = 4.0
     return x_location, y_location
     # return -SCREEN_SIZE[1]/2+3, 3  # location (3cm, 3cm) from the bottom-left corner
 
@@ -531,7 +483,7 @@ def time_until_slice(time_created, time_of_slice):
     return time_until_peak(time_created, time_of_slice)
 
 
-def init_info(frame_size, screen_size=SCREEN_SIZE):
+def init_info(frame_size, crop_size=CROP_SIZE, screen_size=SCREEN_SIZE):
     """
     Initializes the sizes for the screen so that the algorithmics work properly.
     :param frame_size: size of frame in pixels
@@ -539,10 +491,9 @@ def init_info(frame_size, screen_size=SCREEN_SIZE):
     :param screen_size: size of screen in cm
     """
     global CROP_SIZE, FRAME_SIZE, SCREEN_SIZE
-    CROP_SIZE = (frame_size[0] // 3, int(frame_size[1] * 0.75))
+    CROP_SIZE = crop_size
     FRAME_SIZE = frame_size
-    SCREEN_SIZE = (frame_size[0] * screen_size[1] / frame_size[1], screen_size[1])
-    # SCREEN_SIZE = (frame_size[0]*screen_size[1]/frame_size[1], frame_size[1]*screen_size[0]/frame_size[0])
+    SCREEN_SIZE = (frame_size[0]*screen_size[1]/frame_size[1], screen_size[1])
 
 
 def mechanics_thread_run():
@@ -569,8 +520,7 @@ def mechanics_thread_run():
         slice_queue_lock.release()
 
 
-def init_everything(slice_type=SLICE_TYPE, integrate_with_mechanics=INTEGRATE_WITH_MECHANICS,
-                    simulate=SIMULATE, multi=False):
+def init_everything(slice_type=SLICE_TYPE, integrate_with_mechanics=INTEGRATE_WITH_MECHANICS, simulate=SIMULATE):
     """
     Initializes the algorithmics module - opens a thread for the mechanics module.
     :param slice_type: the strategy we want to use this game
@@ -583,11 +533,6 @@ def init_everything(slice_type=SLICE_TYPE, integrate_with_mechanics=INTEGRATE_WI
     SIMULATE = simulate
     global SLICE_TYPE
     SLICE_TYPE = slice_type
-    global MULTI
-    MULTI = multi
-    if MULTI:
-        init_multi_params()
-        SliceTypes.init_multi(MULTI)
     # In case we want to integrate with mechanics (simulation or arduino) we must open a new thread for it.
     if INTEGRATE_WITH_MECHANICS:
         global simulation_thread
@@ -595,19 +540,6 @@ def init_everything(slice_type=SLICE_TYPE, integrate_with_mechanics=INTEGRATE_WI
         simulation_thread.start()
     else:
         pass
-
-
-def init_multi_params():
-    global FRAME_SIZE
-    global CROP_SIZE
-    global SCREEN_SIZE
-    global ACC
-    Ac.init_multi_arduino_communication()
-    FRAME_SIZE = (320, 480)
-    CROP_SIZE = (106, 360)
-    SCREEN_SIZE = (8.0, 12.0)
-    ACC = RELATIVE_ACC * SCREEN_SIZE[0]
-    # TODO add VY_MAX and this
 
 
 def fix_v_values_by_threshold(vx_mean, vy_mean):

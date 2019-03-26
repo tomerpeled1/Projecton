@@ -3,12 +3,11 @@ the main image processing file - does the tracking and gets detection from Fruit
 works in pixels coordinates - (0,0) is top left of the frame.
 """
 
-
 # import FruitDetection as Fd
 import RealTimeTracker as Rtt
 # from CameraInterface import Camera
 # import CameraInterface as Ci
-import Algorithmics as Algo
+import AlgorithmicsMulti as Algo
 import cv2
 # import time
 import numpy as np
@@ -26,7 +25,7 @@ term_crit = (cv2.TERM_CRITERIA_EPS | cv2.TERM_CRITERIA_COUNT, 30, 1)
 # Consts
 SAVED_VIDEO_NAME = "sundayNoon.flv"
 AD_IMAGE = "AD_TEMPLATE.png"
-CONTOUR_AREA_THRESH = 1000  # Threshold for fruit detection.
+CONTOUR_AREA_THRESH = 500  # Threshold for fruit detection.
 MAX_NUM_OF_FRAMES_ON_SCREEN = 13  # Maximal number of frames for fruit to remain on screen.
 FRUIT_TO_EXTRACT = []  # List of fruits needs to be extracted.
 
@@ -73,49 +72,53 @@ def draw_trajectory(fruit, frame):
     xy_by_t = fruit.trajectory.calc_trajectory()
     t_total = 3
     dt = 0.02
-    t_vec = [dt*i for i in range(int(t_total/dt))]
+    t_vec = [dt * i for i in range(int(t_total / dt))]
     for t in t_vec:
         # size = frame.shape
         xt, yt = xy_by_t(t)
         yt_pixel, xt_pixel, _ = Algo.cm2pixel((xt, yt, t))
-        cv2.circle(frame, (xt_pixel, yt_pixel), 3, (0, int(85*t), 255), -1)
-    centers = [Algo.crop2frame(center[0]) for center in fruit.centers]
+        cv2.circle(frame, (xt_pixel, yt_pixel), 3, (0, int(85 * t), 255), -1)
+    # centers = [Algo.crop2frame(center[0]) for center in fruit.centers]
+    centers = fruit.centers
     for center in centers:
+        center = center[0]
         cv2.circle(frame, (center[0], center[1]), 3, (0, 255, 0), -1)
 
-    # centers = [center[0] for center in fruit.centers]
-    # x_coords = [center[0] for center in centers]
-    # y_coords = [center[1] for center in centers]
-    #
-    # times_centers = range(len(x_coords))
-    #
-    # # ------- get the trajectory of the fruit -------#
-    # t_tot = 3
-    # dt = 0.02
-    # # times_trajectory = range(-int(t_tot / dt), int(t_tot / dt))
-    # times_trajectory = range(0, int(t_tot / dt))
-    # xy_cm = [[0 for _ in times_trajectory], [0 for _ in times_trajectory]]
-    # xy_pixels = [[0 for _ in times_trajectory], [0 for _ in times_trajectory]]
-    # route = fruit.trajectory.calc_trajectory()
-    #
-    # # -------draw fitted trajectory----------#
-    # for i in times_trajectory:
-    #     xy_cm[0][i], xy_cm[1][i] = route(dt * i)
-    #     xy_pixels[1][i], xy_pixels[0][i], t = Algo.cm2pixel((xy_cm[0][i], xy_cm[1][i], dt * i))
-    #     xy_pixels[1][i] = Algo.FRAME_SIZE[0] - xy_pixels[1][i]
-    #     xy_pixels[0][i] = Algo.FRAME_SIZE[1] - xy_pixels[0][i]
-    #     cv2.circle(frame, (int(xy_pixels[0][i]), int(xy_pixels[1][i])), 2, (255, 0, 255), -1)
-    #
-    # # ---------draw the centers of the fruits------------#
-    # xy_centers = [[0 for _ in times_centers], [0 for _ in times_centers]]
-    # cens_original = []
-    # for cen in fruit.centers:
-    #     cens_original.append(cen[:-1])
-    # for i in times_centers:
-    #     # xy_centers[1][i], xy_centers[0][i], t = Algo.cm2pixel((x_coords[i], y_coords[i], dt * i))
-    #     # xy_centers[1][i] = Algo.FRAME_SIZE[0] - xy_centers[1][i]
-    #     # # xy_centers[0][i] = Algo.FRAME_SIZE[1] - xy_centers[0][i]
-    #     cv2.circle(frame, (centers[i][0], centers[i][1]), 3, (0, 255, 255), -1)
+        # centers = [center[0] for center in fruit.centers]
+        # x_coords = [center[0] for center in centers]
+        # y_coords = [center[1] for center in centers]
+        #
+        # times_centers = range(len(x_coords))
+        #
+        # # ------- get the trajectory of the fruit -------#
+        # t_tot = 3
+        # dt = 0.02
+        # # times_trajectory = range(-int(t_tot / dt), int(t_tot / dt))
+        # times_trajectory = range(0, int(t_tot / dt))
+        # xy_cm = [[0 for _ in times_trajectory], [0 for _ in times_trajectory]]
+        # xy_pixels = [[0 for _ in times_trajectory], [0 for _ in times_trajectory]]
+        # route = fruit.trajectory.calc_trajectory()
+        #
+        # # -------draw fitted trajectory----------#
+        # for i in times_trajectory:
+        #     xy_cm[0][i], xy_cm[1][i] = route(dt * i)
+        #     xy_pixels[1][i], xy_pixels[0][i], t = Algo.cm2pixel((xy_cm[0][i], xy_cm[1][i], dt * i))
+        #     xy_pixels[1][i] = Algo.FRAME_SIZE[0] - xy_pixels[1][i]
+        #     xy_pixels[0][i] = Algo.FRAME_SIZE[1] - xy_pixels[0][i]
+        #     cv2.circle(frame, (int(xy_pixels[0][i]), int(xy_pixels[1][i])), 2, (255, 0, 255), -1)
+        #
+        # # ---------draw the centers of the fruits------------#
+        # xy_centers = [[0 for _ in times_centers], [0 for _ in times_centers]]
+        # cens_original = []
+        # for cen in fruit.centers:
+        #     cens_original.append(cen[:-1])
+        # for i in times_centers:
+        #     # xy_centers[1][i], xy_centers[0][i], t = Algo.cm2pixel((x_coords[i], y_coords[i], dt * i))
+        #     # xy_centers[1][i] = Algo.FRAME_SIZE[0] - xy_centers[1][i]
+        #     # # xy_centers[0][i] = Algo.FRAME_SIZE[1] - xy_centers[0][i]
+        #     cv2.circle(frame, (centers[i][0], centers[i][1]), 3, (0, 255, 255), -1)
+
+def match_to_multiplayer_from_crop(point):
 
 
 def calculate_hist_window(window, img_hsv):
@@ -252,9 +255,9 @@ def track_known_fruits(fruits_info, current_frame, detection_results):
                 # if fruit.counter <= MAX_NUM_OF_FRAMES_ON_SCREEN:
                 # fruit.hist = calculate_hist_window(fruit.track_window, img_hsv)  # TODO remove first fruits for
                 #  trajectory fit
-            # If fruit not found extract it.
-            # else:
-            #     to_delete.append(fruit)
+                # If fruit not found extract it.
+                # else:
+                #     to_delete.append(fruit)
         # Extract all fruits not tracked.
         global FRUIT_TO_EXTRACT
         for deleted_fruit in to_delete:
@@ -340,12 +343,9 @@ def check_ad(frame):
     return False
 
 
-def init_everything(integrate_with_algorithmics=INTEGRATE_WITH_ALGORITHMICS, multi = False):
+def init_everything(integrate_with_algorithmics=INTEGRATE_WITH_ALGORITHMICS):
     """
     :param integrate_with_algorithmics: boolean that decides weather to integrate with algorithmics or not.
     """
     global INTEGRATE_WITH_ALGORITHMICS
     INTEGRATE_WITH_ALGORITHMICS = integrate_with_algorithmics
-    if multi:
-        global CONTOUR_AREA_THRESH
-        CONTOUR_AREA_THRESH = 100
