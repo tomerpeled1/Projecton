@@ -14,19 +14,20 @@ import State
 
 
 SAVED_VIDEO_NAME = "2019-03-17 19-59-34.flv "
-LIVE = True
+LIVE = False
 BACKGROUND_FILE_NAME = "bg.png"
 CROP = True
-FLIP = True
+FLIP = False
 CALIBRATE = False
 IMAGE_PROCESSING_ALGORITHMICS_INTEGRATION = True
 ALGORITHMICS_MECHANICS_INTEGRATION = True
-SIMULATION = False
+SIMULATION = True
 BACKGROUND = True
-RESIZE = False
+RESIZE = not LIVE
 AUTOMATIC_START = False
 
-CHOSEN_SLICE = "through_points"
+
+CHOSEN_SLICE = Algo.THROUGH_POINTS
 
 IMAGE_PROCESSING_FEATURES = (FLIP, CROP, LIVE, CALIBRATE, RESIZE)
 INTEGRATION = (IMAGE_PROCESSING_ALGORITHMICS_INTEGRATION, ALGORITHMICS_MECHANICS_INTEGRATION)
@@ -51,7 +52,7 @@ def fruit_shaninja(src, settings, image_processing_features=IMAGE_PROCESSING_FEA
     # Initiate algorithmics if integrated.
     if integration[0]:
         Ip.init_everything(integrate_with_algorithmics=integration[0])
-        Algo.init_everything(slice_type=Algo.SLICE_TYPES[CHOSEN_SLICE], integrate_with_mechanics=integration[1], simulate=simulation)
+        Algo.init_everything(slice_type=CHOSEN_SLICE, integrate_with_mechanics=integration[1], simulate=simulation)
     fruits_info = []  # Initialize fruits known.
     # Create new camera object.
     camera = Camera(src, flip=image_processing_features[0], crop=image_processing_features[1],
@@ -137,10 +138,12 @@ def add_slice_to_queue(slice_points_to_add, sliced_fruits):
     """
     Algo.add_slice_to_queue(slice_points_to_add, sliced_fruits)
 
-
-if __name__ == '__main__':
+def run():
     if LIVE:
         fruit_shaninja(0, Ci.DARK_101_SETTINGS_new2)
         print("finished")
     else:
         fruit_shaninja(SAVED_VIDEO_NAME, Ci.DARK_101_SETTINGS_new2)
+
+if __name__ == '__main__':
+    run()

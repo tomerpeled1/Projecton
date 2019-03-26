@@ -250,11 +250,14 @@ def get_partition(xy_by_t):
     dt = 1.0/PARTITION
     x_points = [xy_by_t(0)[0]]
     y_points = [xy_by_t(0)[1]]
-    for i in range(1, PARTITION + 1):
+    for i in range(1, PARTITION):
         current_x, current_y = xy_by_t(i*dt)
         if distance((x_points[-1], y_points[-1]), (current_x, current_y)) >= 1:
             x_points.append(current_x)
             y_points.append(current_y)
+    x_final, y_final = xy_by_t(1)
+    x_points.append(x_final)
+    y_points.append(y_final)
     return [(x_points[i], y_points[i]) for i in range(len(x_points))]
 
 
@@ -267,7 +270,7 @@ def linear_slice(arm_loc, _):
     """
     x_arm_loc = arm_loc[0]
     y_arm_loc = arm_loc[1]
-    x_final = x_arm_loc - 5
+    x_final = x_arm_loc - 5.0
 
     def xy_by_t(t):
         x_slice = x_arm_loc + (x_final - x_arm_loc) * t * 2
