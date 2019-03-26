@@ -341,7 +341,7 @@ def get_fruit_xy_vectors(fruits):
             #     first_trajectory = zero_trajectory
             #     first_trajectory_total_time = 1
     else:
-        first_trajectory = zero_trajectory
+        first_trajectory = []
         first_trajectory_total_time = 1
 
     xy_of_fruits_list = []
@@ -412,3 +412,9 @@ def run_simulation(points_to_go_through, fruits_sliced):
     # quiting the simulation
     time.sleep(TIME_TO_QUIT_SIMULATION)
     pygame.display.quit()
+
+
+if __name__ == '__main__':
+    for i in range(1):
+        run_simulation([(0.6,0.0), (-7.0,4.0), (7.0,4.0), (0.6,0.0)], [])
+        time.sleep(1)
