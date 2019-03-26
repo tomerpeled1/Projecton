@@ -206,15 +206,16 @@ def create_best_slice(arm_loc, ordered_fruits_and_locs, critical_fruits_locs):
             sliced_fruits.extend([fruit for (fruit, loc) in fruits_and_locs])
             current_arm_loc = temp_slice_points[-1]
             break
-    critical_fruits_not_sliced = order_fruits_and_locs(current_arm_loc, [(fruit, loc) for (fruit, loc) in critical_fruits_locs if fruit not in sliced_fruits])
-    if critical_fruits_not_sliced:
-        critical_fruits_not_sliced_locs = [loc for (fruit, loc) in critical_fruits_not_sliced]
-        remaining_slice = calc_slice(current_arm_loc, critical_fruits_not_sliced_locs)
-        if slice_points:
-            slice_points.extend(remaining_slice[1:])
-        else:
-            slice_points.append(remaining_slice)
-        sliced_fruits.extend([fruit for (fruit, loc) in critical_fruits_not_sliced])
+    if not SLICE_TYPE == THROUGH_POINTS:
+        critical_fruits_not_sliced = order_fruits_and_locs(current_arm_loc, [(fruit, loc) for (fruit, loc) in critical_fruits_locs if fruit not in sliced_fruits])
+        if critical_fruits_not_sliced:
+            critical_fruits_not_sliced_locs = [loc for (fruit, loc) in critical_fruits_not_sliced]
+            remaining_slice = calc_slice(current_arm_loc, critical_fruits_not_sliced_locs)
+            if slice_points:
+                slice_points.extend(remaining_slice[1:])
+            else:
+                slice_points.append(remaining_slice)
+            sliced_fruits.extend([fruit for (fruit, loc) in critical_fruits_not_sliced])
     return slice_points, sliced_fruits
 
 

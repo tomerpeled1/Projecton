@@ -246,6 +246,7 @@ def in_bound(point, percent=SLICE_ZONE):
     # print(x, y)
     return False
 
+
 def get_partition(xy_by_t):
     dt = 1.0/PARTITION
     x_points = [xy_by_t(0)[0]]
@@ -270,7 +271,7 @@ def linear_slice(arm_loc, _):
     """
     x_arm_loc = arm_loc[0]
     y_arm_loc = arm_loc[1]
-    x_final = x_arm_loc - 5.0
+    x_final = x_arm_loc - 7.0
 
     def xy_by_t(t):
         x_slice = x_arm_loc + (x_final - x_arm_loc) * t * 2
