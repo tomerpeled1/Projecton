@@ -52,7 +52,7 @@ def fruit_shaninja(src, settings, image_processing_features=IMAGE_PROCESSING_FEA
     """
     # Initiate algorithmics if integrated.
     if integration[0]:
-        Ip.init_everything(integrate_with_algorithmics=integration[0])
+        Ip.init_everything(integrate_with_algorithmics=integration[0],multi=MULTI)
         Algo.init_everything(slice_type=CHOSEN_SLICE, integrate_with_mechanics=integration[1],
                              simulate=simulation, multi=MULTI)
     fruits_info = []  # Initialize fruits known.
@@ -90,14 +90,14 @@ def fruit_shaninja(src, settings, image_processing_features=IMAGE_PROCESSING_FEA
     counter = 0
     buffer = []  # Buffer of images for debugging purposes.
     current_state = State.State()
-
+    time_of_frame = time.perf_counter()
     # Main while loop.
-    while camera.is_opened() and counter < 1200:
+    while camera.is_opened() and counter < 100:
         if not (Algo.during_slice and MULTI): # dont image proccess during a slice in multiplayer mode
             # t1 = time.perf_counter()
             # print("********************************************************************")
             counter += 1
-            current = camera.next_frame(current)  # Retrieve next frame.
+            current = camera.next_frame(current, time_of_frame)  # Retrieve next frame.
             time_of_frame = time.perf_counter()
             temp_frame = current.copy()  # Copy the frame.
             detection_results = Fd.fruit_detection2(temp_frame, bg, Ip.CONTOUR_AREA_THRESH,
@@ -124,13 +124,13 @@ def fruit_shaninja(src, settings, image_processing_features=IMAGE_PROCESSING_FEA
             # t2 = time.perf_counter()
             if Ip.fruits_for_debug_trajectories:
                 # for i in range(1 ,min(len(Ip.fruits_for_debug_trajectories), 3)):
-                Ip.draw_trajectory(Ip.fruits_for_debug_trajectories[-1], camera.last_big_frame)
+                Ip.draw_trajectory(Ip.fruits_for_debug_trajectories[-1], camera.last_big_frame,time_of_frame)
             cv2.imshow("please work", camera.last_big_frame)
             # print("time for everything", abs(t1 - t2))
             if cv2.waitKey(1) == 27:
                 break
     # Ip.debug_with_buffer(buffer)
-    # Ip.show_original(camera)
+    Ip.show_original(camera,buffer)
 
 def add_slice_to_queue(slice_points_to_add, sliced_fruits):
     """

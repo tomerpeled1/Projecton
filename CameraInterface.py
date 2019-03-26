@@ -138,7 +138,7 @@ class Camera:
         """
         return self.stream.stream.isOpened()
 
-    def next_frame(self, current):
+    def next_frame(self, current, time_of_frame):
         """
         Returns the frame which comes after the current one (when threading we get the same frame multiple times).
         :param current: The current frame.
@@ -153,7 +153,7 @@ class Camera:
                 # Saves image to buffer.
                 self.last_big_frame = to_save
                 if len(self.buffer) < self.MAX_SIZE_BUFFER:
-                    self.buffer.append(to_save)
+                    self.buffer.append((to_save, time_of_frame))
                     # self.out.write(to_save)
                 return to_return
                 # else:
@@ -192,12 +192,12 @@ class Camera:
         """
         (height, width, depth) = frame.shape
         if self.FLIP:
-            frame = frame[:160, width // 2 - 240: width // 2 + 240]
+            frame = frame[:Algo.FRAME_SIZE[0]//3, width // 2 - int(Algo.FRAME_SIZE[1]*3/8): width // 2 + int(Algo.FRAME_SIZE[1]*3/8)]
         else:
-            if not self.MULTI:
-                frame = frame[height - 160: height, width // 2 - 240: width // 2 + 240]
-            else:
-                frame = frame[height - 106: height, width // 2 - 180: width // 2 + 180]
+            # if not self.MULTI:
+            frame = frame[height - Algo.FRAME_SIZE[0]//3: height, width // 2 - int(Algo.FRAME_SIZE[1]*3/8): width // 2 + int(Algo.FRAME_SIZE[1]*3/8)]
+            # else:
+            #     frame = frame[height - 106: height, width // 2 - 180: width // 2 + 180]
 
         return frame
 

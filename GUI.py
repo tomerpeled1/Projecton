@@ -1,4 +1,4 @@
-from tkinter import Tk, Label, Button, PhotoImage
+from tkinter import *
 from PIL import Image, ImageTk
 import FruitShaninja
 
@@ -8,8 +8,8 @@ class GUI:
         master.title("FRUIT SHANINJA")
         # master.geometry("1280x800")
 
-        image = Image.open("Wiki-background.jpg")
-        image = image.resize((640, 400))
+        image = Image.open("WhatsApp Image 2018-11-10 at 23.51.52.jpeg")
+        image = image.resize((400,400))
 
         photo = ImageTk.PhotoImage(image)
         self.background = Label(master, image=photo)
@@ -17,12 +17,14 @@ class GUI:
         # self.background.place(x=0, y=0, relwidth=1, relheight=1)
         self.background.pack()
 
-        self.greet_button = Button(master, text="RUN ZEN MODE", command=FruitShaninja.run)
-        self.greet_button.pack()
+        self.run = Button(master, text="RUN ZEN MODE", command=FruitShaninja.run, bg = "green")
+        self.run.pack()
 
-        self.close_button = Button(master, text="Close", command=master.quit)
+        self.multiplayer = Button(master, text="MULTIPLAYER MODE", command=FruitShaninja.run, bg="blue")
+        self.multiplayer.pack()
+
+        self.close_button = Button(master, text="Close", command=master.quit, bg = "red")
         self.close_button.pack()
-
 
 
 root = Tk()

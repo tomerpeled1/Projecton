@@ -84,6 +84,7 @@ def cm2pixel(cm_loc):
     x_coord_frame = int(x_coord_screen * (float(FRAME_SIZE[1]) / SCREEN_SIZE[1]))
     x_coord_frame = FRAME_SIZE[1] - x_coord_frame
     y_coord_frame = int((float(y_coord_screen / SCREEN_SIZE[0])) * FRAME_SIZE[0])
+    print("FRAME", FRAME_SIZE, "SCREEN", SCREEN_SIZE)
     return y_coord_frame, x_coord_frame, t
 
 
@@ -541,8 +542,9 @@ def init_info(frame_size, screen_size=SCREEN_SIZE):
     global CROP_SIZE, FRAME_SIZE, SCREEN_SIZE
     CROP_SIZE = (frame_size[0] // 3, int(frame_size[1] * 0.75))
     FRAME_SIZE = frame_size
-    SCREEN_SIZE = (frame_size[0] * screen_size[1] / frame_size[1], screen_size[1])
-    # SCREEN_SIZE = (frame_size[0]*screen_size[1]/frame_size[1], frame_size[1]*screen_size[0]/frame_size[0])
+    # SCREEN_SIZE = (frame_size[0] * screen_size[1] / frame_size[1], screen_size[1])
+    # SCREEN_SIZE = (frame_size[0]*screen_size[1]/frame_size[1], frame_size[1]*screen_size[0]/frame_size[1])
+    SCREEN_SIZE = (frame_size[0]/40, frame_size[1]/40)
 
 
 def mechanics_thread_run():
@@ -598,6 +600,7 @@ def init_everything(slice_type=SLICE_TYPE, integrate_with_mechanics=INTEGRATE_WI
 
 
 def init_multi_params():
+
     global FRAME_SIZE
     global CROP_SIZE
     global SCREEN_SIZE
