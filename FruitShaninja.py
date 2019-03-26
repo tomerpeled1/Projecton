@@ -17,7 +17,7 @@ SAVED_VIDEO_NAME = "multi2.avi"
 LIVE = True
 BACKGROUND_FILE_NAME = "bg.png"
 CROP = True
-FLIP = LIVE
+FLIP = True
 CALIBRATE = False
 IMAGE_PROCESSING_ALGORITHMICS_INTEGRATION = True
 ALGORITHMICS_MECHANICS_INTEGRATION = True
@@ -25,7 +25,7 @@ SIMULATION = False
 CAPTURE_BACKGROUND = True
 RESIZE = not LIVE
 AUTOMATIC_START = False
-MULTI = True
+MULTI = False
 
 
 CHOSEN_SLICE = Algo.LINEAR
@@ -131,7 +131,6 @@ def fruit_shaninja(src, settings, image_processing_features=IMAGE_PROCESSING_FEA
                 break
     # Ip.debug_with_buffer(buffer)
     # Ip.show_original(camera)
-    camera.out.release()
 
 def add_slice_to_queue(slice_points_to_add, sliced_fruits):
     """

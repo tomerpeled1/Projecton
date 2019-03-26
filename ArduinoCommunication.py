@@ -33,8 +33,8 @@ LENGTH_OF_COMMAND = 2  # the length of a command to the serial that contains the
 SERIAL_BUFFER_SIZE = 64  # in bytes
 COMMAND_PACKAGE_SIZE = math.floor(SERIAL_BUFFER_SIZE/LENGTH_OF_COMMAND)  # number of commands to write at once
 STEPS_IN_COMMAND = 31  # number of steps to move at every command
-STEPS_FOR_ACCELERATION = int(STEPS_FRACTION / 2)  # number of steps to move at acceleration move
-NUMBER_OF_ACCELERATION_MOVES = 2
+STEPS_FOR_ACCELERATION = int(STEPS_FRACTION / 0.5)  # number of steps to move at acceleration move
+NUMBER_OF_ACCELERATION_MOVES = 1
 
 # TIME CONSTANTS
 T = 1.0  # max value of parameter at slice
@@ -44,7 +44,7 @@ BITS_PER_BYTE = 8  # the number of bits in one byte
 WRITE_DELAY = 1000/(SERIAL_BPS/BITS_PER_BYTE/LENGTH_OF_COMMAND)  # delay in ms after writing to prevent buffer overload
 TRAJECTORY_DIVISION_NUMBER = 20  # the number of parts that the trajectory of the arm is divided to
 DT_DIVIDE_TRAJECTORY = float(T) / TRAJECTORY_DIVISION_NUMBER  # size of step in parameter
-WANTED_RPS = 0.8  # speed of motors in revolutions per second
+WANTED_RPS = 0.6  # speed of motors in revolutions per second
 ONE_STEP_DELAY = 5.0 / WANTED_RPS / STEPS_FRACTION  # in ms
 WAIT_FOR_STOP = 50.0  # time to wait after slice until committing invert slice in ms
 
@@ -445,11 +445,6 @@ def init_multi_arduino_communication():
 # print(time.time()-start)
 
 if __name__ == '__main__':
-    # make_slice_by_trajectory([(0.6,0.0), (-7.0,4.0)], False)
-    # time.sleep(0.1)
-    # make_slice_by_trajectory([(-7.0,4.0), (7.0,4.0)], False)
-    # time.sleep(0.1)
-    # make_slice_by_trajectory([(7.0,4.0), (0.6,0.0)], False)
-    # time.sleep(0.1)
+    make_slice_by_trajectory([(0.6,0.0), (-7.0,4.0), (7.0,4.0), (0.6,0.0)], False)
     # make_slice_by_trajectory([(5.0,0.6), (0.6,0.0)], False)
-    generate_steps_list(7, -70)
+    # generate_steps_list(7, -70)
