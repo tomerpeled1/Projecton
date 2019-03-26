@@ -28,6 +28,7 @@ TIME_BETWEEN_2_FRAMES = 1.0 / CAMERA_FPS  # in sec
 FRAME_SIZE = (480, 640)  # (y,x) in pixels
 CROP_SIZE = (160, 480)  # (y,x) in pixels
 SCREEN_SIZE = (12.0, 16.0)  # (y,x) in cm
+FULL_SCREEN = (12.0, 16.0)
 DISTANCE_FROM_TABLET = Ac.d
 ACC = RELATIVE_ACC * SCREEN_SIZE[0]
 INTEGRATE_WITH_MECHANICS = False  # make True to send slices to ArduinoCommunication
@@ -178,11 +179,10 @@ def create_slice(state, time_to_slice):
     fruits_and_locs = state.get_fruits_locations(time_to_slice, state.fruits_in_range)
     critical_fruits_locs = state.get_fruits_locations(time_to_slice, state.get_critical_fruits())
     arm_loc = state.arm_loc
-    arm_loc_algo_coordinates = mech_to_algo(arm_loc)
-    ordered_fruits_and_locs = order_fruits_and_locs(arm_loc_algo_coordinates, fruits_and_locs)
+    # arm_loc_algo_coordinates = mech_to_algo(arm_loc)
+    ordered_fruits_and_locs = order_fruits_and_locs(arm_loc, fruits_and_locs)
     xy_points_to_go_through, sliced_fruits = create_best_slice(state.arm_loc, ordered_fruits_and_locs,
                                                                critical_fruits_locs)
-
     return xy_points_to_go_through, sliced_fruits
 
 
@@ -505,10 +505,10 @@ def get_pen_loc():
     """
     # location (16cm, 4cm) from the bottom-left corner
     x_location = SCREEN_SIZE[1] / 2 - 1
-    y_location = 5.5
+    y_location = SCREEN_SIZE[0] + 4.0 - FULL_SCREEN[0]
     if MULTI:
         x_location = -1 * x_location
-        y_location = 4.0
+        y_location = y_location
     return x_location, y_location
     # return -SCREEN_SIZE[1]/2+3, 3  # location (3cm, 3cm) from the bottom-left corner
 
