@@ -33,6 +33,8 @@ LENGTH_OF_COMMAND = 2  # the length of a command to the serial that contains the
 SERIAL_BUFFER_SIZE = 64  # in bytes
 COMMAND_PACKAGE_SIZE = math.floor(SERIAL_BUFFER_SIZE/LENGTH_OF_COMMAND)  # number of commands to write at once
 STEPS_IN_COMMAND = STEPS_FRACTION  # number of steps to move at every command
+STEPS_FOR_ACCELERATION = STEPS_FRACTION / 2  # number of steps to move at acceleration move
+NUMBER_OF_ACCELERATION_MOVES = 4
 
 # TIME CONSTANTS
 T = 1.0  # max value of parameter at slice
@@ -236,10 +238,10 @@ def move_2_motors(steps_theta, steps_phi, inverse=False):  # WRITE MAXIMUM 41 ST
     time.sleep(0.01)
 
     # print steps made
-    print("Theta steps:")
-    print(str(steps_theta) + str(sum(steps_theta)))
-    print("Phi steps:")
-    print(str(steps_phi) + str(sum(steps_phi)))
+    # print("Theta steps:")
+    # print(str(steps_theta) + str(sum(steps_theta)))
+    # print("Phi steps:")
+    # print(str(steps_phi) + str(sum(steps_phi)))
 
 
 def sign(x):
@@ -262,7 +264,63 @@ def invert_slice(steps_theta, steps_phi):
     return generate_steps_list(-sum(steps_theta), -sum(steps_phi))
 
 
+def add_padding_for_acceleration(steps_list, padding_steps):
+    padding_list = break_into_equal_steps(padding_steps)
+    for i in range(len(padding_list)):
+        if i % 2 == 0:
+            steps_list = padding_list[i] + steps_list
+        else:
+            steps_list = steps_list + padding_list[i]
+    return steps_list
+
+
+def phi_steps_by_theta_steps_for_acceleration(delta_steps_phi, steps_theta):
+    steps_phi = []
+    for move in steps_theta:
+        if delta_steps_phi > move:
+            steps_phi.append(move)
+            delta_steps_phi -= move
+        else:
+            break
+    if delta_steps_phi < STEPS_IN_COMMAND:
+        if delta_steps_phi > 0:
+            steps_phi.append(delta_steps_phi)
+    else:
+        end_of_steps_phi = break_into_equal_steps(delta_steps_phi)
+        steps_phi = steps_phi + end_of_steps_phi
+    return steps_phi
+
+
 def generate_steps_list(delta_steps_theta, delta_steps_phi):
+    """
+    Generates lists of steps to move in each angle, given the total delta.
+    :param delta_steps_theta: total delta of steps to move in theta
+    :param delta_steps_phi: total delta of steps to move in phi
+    :return: (steps_theta, steps_phi), tuple of lists of steps in each motor
+    """
+    delta_steps_theta_without_acceleration = delta_steps_theta - NUMBER_OF_ACCELERATION_MOVES * STEPS_FOR_ACCELERATION
+    if delta_steps_theta_without_acceleration < 0:
+        delta_steps_theta_without_acceleration = 0
+    padding_steps_theta = delta_steps_theta - delta_steps_theta_without_acceleration
+
+    steps_theta_without_acceleration = break_into_equal_steps(delta_steps_theta_without_acceleration)
+
+    steps_theta = add_padding_for_acceleration(steps_theta_without_acceleration, padding_steps_theta)
+
+    steps_phi = phi_steps_by_theta_steps_for_acceleration(delta_steps_phi, steps_theta)
+
+    steps_theta = add_zeros_at_end(steps_theta, len(steps_phi))
+    steps_phi = add_zeros_at_end(steps_phi, len(steps_theta))
+
+    print("steps_theta: ")
+    print(steps_theta)
+    print("steps_phi: ")
+    print(steps_phi)
+
+    return steps_theta, steps_phi
+
+
+def generate_steps_list2(delta_steps_theta, delta_steps_phi):
     """
     Generates lists of steps to move in each angle, given the total delta.
     :param delta_steps_theta: total delta of steps to move in theta
@@ -305,6 +363,17 @@ def break_into_steps(total_steps, step_per_command):
     if total_steps > 0:
         steps_array += [total_steps]
     return steps_array
+
+
+def break_into_equal_steps(total_steps):
+    """
+    Splits the total amount of steps into portions.
+    :param total_steps: total amount of steps to move
+    :param step_per_command: amount of steps in each command
+    :return: list of steps
+    """
+    steps_per_command = math.ceil(total_steps / STEPS_IN_COMMAND)
+    return break_into_steps(total_steps, steps_per_command)
 
 
 def add_zeros_at_end(array, length):

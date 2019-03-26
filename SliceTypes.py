@@ -243,7 +243,7 @@ def in_bound(point, percent=SLICE_ZONE):
     x, y = point
     if left_bound < x < right_bound and lower_bound < y < upper_bound:
         return True
-    print(x, y)
+    # print(x, y)
     return False
 
 def get_partition(xy_by_t):

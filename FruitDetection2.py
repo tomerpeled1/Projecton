@@ -319,8 +319,8 @@ def separate_overlap(detection_frame, cont, rect, cent, cont_area_thresh):
         # cv2.imshow("masked color", masked_color)
         thresh_contours = [c for c in contours if cv2.contourArea(c) > cont_area_thresh]
 
-        if(len(thresh_contours) > 1):
-            print("this is a problem, too many contours: " + str(len(thresh_contours)))
+        # if(len(thresh_contours) > 1):
+        #     print("this is a problem, too many contours: " + str(len(thresh_contours)))
         if len(thresh_contours) != 0:
             conts.extend(thresh_contours)
             rects.extend([extract_rect(c) for c in thresh_contours])
