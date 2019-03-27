@@ -29,7 +29,6 @@ MULTI = False
 RESTARTED = False
 CAMERA = None
 RAN = False
-BLA = True
 
 
 CHOSEN_SLICE = Algo.LINEAR
