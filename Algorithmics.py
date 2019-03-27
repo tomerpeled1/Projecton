@@ -47,7 +47,7 @@ MINIMAL_NUMBER_OF_FRUITS_FOR_COMBO = 3
 MAX_TIME_FOR_COMBO = 400  # in ms
 
 # on_screen_fruits = []
-SIMULATE = True  # make True to activate simulation
+SIMULATE = False  # make True to activate simulation
 slice_queue_lock = threading.Condition()
 simulation_thread = None
 slice_queue = []
@@ -664,6 +664,9 @@ def on_screen(point):
 
 
 if __name__ == "__main__":
-    slice_and_times = SliceTypes.linear_slice(get_pen_loc(), [])
+    slice_and_times = SliceTypes.linear_slice(algo_to_mech(get_pen_loc()[0]), [])
+    # slice_and_times = SliceTypes.slice_through_fruits(algo_to_mech(get_pen_loc()[0]), [algo_to_mech(15.0, 4.0)])
+    # slice_and_times = SliceTypes.slice_through_fruits(get_pen_loc()[0], [(6.0, 4.0), (9.0, 2.0), (12.0, 3.0), get_pen_loc()[1]])
     while True:
         do_slice(slice_and_times, [])
+    # do_slice(slice_and_times, [])

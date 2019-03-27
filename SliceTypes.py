@@ -293,7 +293,7 @@ def linear_slice(arm_loc, _):
     """
     x_arm_loc = arm_loc[0]
     y_arm_loc = arm_loc[1]
-    x_final = x_arm_loc - 12.0
+    x_final = x_arm_loc - 14.0
     print("start: ", (x_arm_loc,y_arm_loc), "finish: ", (x_final, y_arm_loc))
     if MULTI:
         x_final = x_arm_loc + 9.0

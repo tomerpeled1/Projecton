@@ -44,13 +44,13 @@ BITS_PER_BYTE = 8  # the number of bits in one byte
 WRITE_DELAY = 1000/(SERIAL_BPS/BITS_PER_BYTE/LENGTH_OF_COMMAND)  # delay in ms after writing to prevent buffer overload
 TRAJECTORY_DIVISION_NUMBER = 20  # the number of parts that the trajectory of the arm is divided to
 DT_DIVIDE_TRAJECTORY = float(T) / TRAJECTORY_DIVISION_NUMBER  # size of step in parameter
-WANTED_RPS = 0.8  # speed of motors in revolutions per second
+WANTED_RPS = 1.4  # speed of motors in revolutions per second
 WANTED_RPS_SLOW = 0.1  # speed of motors in revolutions per second
 ONE_STEP_DELAY = 5.0 / WANTED_RPS / STEPS_FRACTION * 2  # in ms
 ONE_STEP_DELAY_SLOW = 5.0 / WANTED_RPS_SLOW / STEPS_FRACTION * 2  # in ms
 ONE_STEP_DELAY_AVERAGE = (ONE_STEP_DELAY + ONE_STEP_DELAY_SLOW) / 2  # in ms
 WAIT_FOR_STOP = 50.0  # time to wait after slice until committing invert slice in ms
-STEPS_FOR_ACCELERATION = int(STEPS_FRACTION * 4 * WANTED_RPS)  # number of steps to move at acceleration move
+STEPS_FOR_ACCELERATION = int(STEPS_FRACTION * 1.0 * WANTED_RPS)  # number of steps to move at acceleration move - factor 0.8 from experiment, 1.0 for safe
 if STEPS_FOR_ACCELERATION > MAX_STEPS_IN_COMMAND: STEPS_FOR_ACCELERATION = MAX_STEPS_IN_COMMAND
 NUMBER_OF_ACCELERATION_MOVES = 1
 
@@ -267,6 +267,8 @@ def move_2_motors(steps_theta, steps_phi, inverse=False):  # WRITE MAXIMUM 41 ST
 
     if len(total_message) > SERIAL_BUFFER_SIZE:
         print("BIG HUGE GIGANTIC EPIC WARNING - beware buffer overflow. length of message: " + str(len(total_message)))
+    else:
+        print("NO PROBLEM WITH BUFFER. length of message: " + str(len(total_message)))
     # wait for slice to end
     # time_of_slice = calc_time_of_slice(steps_theta, steps_phi)
     # time.sleep(0.001 * time_of_slice)
