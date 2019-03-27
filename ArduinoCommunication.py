@@ -52,11 +52,8 @@ ONE_STEP_DELAY = 5.0 / WANTED_RPS / STEPS_FRACTION * 2  # in ms
 ONE_STEP_DELAY_SLOW = 5.0 / WANTED_RPS_SLOW / STEPS_FRACTION * 2  # in ms
 ONE_STEP_DELAY_AVERAGE = (ONE_STEP_DELAY + ONE_STEP_DELAY_SLOW) / 2  # in ms
 WAIT_FOR_STOP = 50.0  # time to wait after slice until committing invert slice in ms
-<<<<<<< HEAD
 STEPS_FOR_ACCELERATION = int(STEPS_FRACTION * 2 * WANTED_RPS)  # number of steps to move at acceleration move
-=======
 STEPS_FOR_ACCELERATION = int(STEPS_FRACTION * 2.0 * WANTED_RPS)  # number of steps to move at acceleration move - factor 1.8 from experiment, 2.0 for safe
->>>>>>> origin/master
 if STEPS_FOR_ACCELERATION > MAX_STEPS_IN_COMMAND: STEPS_FOR_ACCELERATION = MAX_STEPS_IN_COMMAND
 NUMBER_OF_ACCELERATION_MOVES = 1
 
