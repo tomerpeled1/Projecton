@@ -7,6 +7,8 @@ from serial import SerialException
 import math
 import time
 import numpy as np
+import keyboard
+import cv2
 # import matplotlib.pyplot as plt
 
 
@@ -44,7 +46,7 @@ BITS_PER_BYTE = 8  # the number of bits in one byte
 WRITE_DELAY = 1000/(SERIAL_BPS/BITS_PER_BYTE/LENGTH_OF_COMMAND)  # delay in ms after writing to prevent buffer overload
 TRAJECTORY_DIVISION_NUMBER = 20  # the number of parts that the trajectory of the arm is divided to
 DT_DIVIDE_TRAJECTORY = float(T) / TRAJECTORY_DIVISION_NUMBER  # size of step in parameter
-WANTED_RPS = 0.8  # speed of motors in revolutions per second
+WANTED_RPS = 1.4  # speed of motors in revolutions per second
 WANTED_RPS_SLOW = 0.1  # speed of motors in revolutions per second
 ONE_STEP_DELAY = 5.0 / WANTED_RPS / STEPS_FRACTION * 2  # in ms
 ONE_STEP_DELAY_SLOW = 5.0 / WANTED_RPS_SLOW / STEPS_FRACTION * 2  # in ms
@@ -64,7 +66,7 @@ NUMBER_OF_ACCELERATION_MOVES = 1
 # times = int(T / dt)  # the size of the vectors for the simulation
 
 try:
-    ser = serial.Serial('com4', SERIAL_BPS)  # Create Serial port object
+    ser = serial.Serial('com6', SERIAL_BPS)  # Create Serial port object
     time.sleep(2)  # wait for 2 seconds for the communication to get established
 except SerialException:
     print("Didn't create serial.")
@@ -507,6 +509,20 @@ def init_multi_arduino_communication():
     DIMS = (12.0, 8.0)
     d = 17.8
 
+def slice_by_button():
+    print("Started button press mode:")
+    slice = [(7.0,4.0), (-7.0,4.0)]
+    islice = [(-7.0,4.0), (7.0,4.0)]
+    invert = False
+    while True:
+        if keyboard.is_pressed(' '):
+            if not invert:
+                make_slice_by_trajectory(slice, False)
+            else:
+                make_slice_by_trajectory(islice, False)
+            invert = not invert
+
+
 
 # if __name__ == "__main__":
 # print('Lets begin...')
@@ -522,10 +538,11 @@ def init_multi_arduino_communication():
 # print(time.time()-start)
 
 if __name__ == '__main__':
-    for _ in range(10):
-        # make_slice_by_trajectory([(0.6,0.0), (0.6, 2.0), (0.6,4.0), (0.6,7.0), (0.6,9.0), (0.6,7.0), (0.6,4.0), (0.6, 2.0), (0.6,0.0)], False)
-        # make_slice_by_trajectory([(0.6,0.0), (0.6,9.0), (0.6,0.0)], False)
-        make_slice_by_trajectory([(7.0,4.0), (-7.0,4.0), (7.0,4.0)], False)
-        # time.sleep(1)
-    # make_slice_by_trajectory([(5.0,0.6), (0.6,0.0)], False)
-    # generate_steps_list(7, -70)
+    slice_by_button()
+    # for _ in range(10):
+    #     # make_slice_by_trajectory([(0.6,0.0), (0.6, 2.0), (0.6,4.0), (0.6,7.0), (0.6,9.0), (0.6,7.0), (0.6,4.0), (0.6, 2.0), (0.6,0.0)], False)
+    #     # make_slice_by_trajectory([(0.6,0.0), (0.6,9.0), (0.6,0.0)], False)
+    #     make_slice_by_trajectory([(7.0,4.0), (-7.0,4.0), (7.0,4.0)], False)
+    #     # time.sleep(1)
+    # # make_slice_by_trajectory([(5.0,0.6), (0.6,0.0)], False)
+    # # generate_steps_list(7, -70)

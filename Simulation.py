@@ -218,7 +218,6 @@ def draw_points(points_to_draw):
         y_point = point[1]
 
         x_point_simulation, y_point_simulation = xy_board_to_xy_simulation(x_point, y_point)
-
         color = (255, green, 0)
         draw_circle([x_point_simulation, y_point_simulation], 2, screen, color)
         # change the color to be more blue
@@ -350,6 +349,10 @@ def get_fruit_xy_vectors(fruits):
 
     return xy_of_fruits_list
 
+def init_multi():
+    global SCREEN, d
+    SCREEN = (12.0,8.0)
+    d = 17.8
 
 
 # ------------- CALCULATE LOCATIONS -------------

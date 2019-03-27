@@ -10,7 +10,7 @@ import statistics as st
 import SliceTypes
 import time
 import ArduinoCommunication as Ac
-import Simulation as Slm
+import Simulation as Sim
 from threading import Thread
 import threading
 import numpy as np
@@ -285,7 +285,7 @@ def do_slice(points_to_slice, sliced_fruits):
     # time_to_slice = 0
     # run simulation
     if SIMULATE:
-        Slm.run_simulation(parametrization, sliced_fruits)
+        Sim.run_simulation(parametrization, sliced_fruits)
     else:
         Ac.make_slice_by_trajectory(parametrization)
 
@@ -591,7 +591,10 @@ def mechanics_thread_run():
         slice_queue.remove((next_slice, sliced_fruits))
         # Executes slice (still memory not unlocked so that we want start a new slice during the previous one).
         during_slice = True
-        do_slice(next_slice, sliced_fruits)
+        try:
+            do_slice(next_slice, sliced_fruits)
+        except:
+            pass
         during_slice = False
         # Release the access to the memory so that we can enter new slices to queue.
         slice_queue_lock.release()
@@ -635,7 +638,10 @@ def init_multi_params():
     global CROP_SIZE
     global SCREEN_SIZE
     global ACC
-    Ac.init_multi_arduino_communication()
+    if SIMULATE:
+        Sim.init_multi()
+    else:
+        Ac.init_multi_arduino_communication()
     CROP_SIZE = (106, 360)
     SCREEN_SIZE = (8.0, 12.0)
     FULL_SCREEN = (8.0, 12.0)
