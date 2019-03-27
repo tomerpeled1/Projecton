@@ -33,7 +33,7 @@ FULL_SCREEN = (12.0, 16.0)
 DISTANCE_FROM_TABLET = Ac.d
 ARM_LOC_BEGINNING_ALGO = (1.0, 4.0)
 ACC = RELATIVE_ACC * SCREEN_SIZE[0]
-INTEGRATE_WITH_MECHANICS = False  # make True to send slices to ArduinoCommunication
+INTEGRATE_WITH_MECHANICS = True  # make True to send slices to ArduinoCommunication
 
 LINEAR = 0
 RADIUS = 1
