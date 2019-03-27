@@ -23,9 +23,12 @@ IMAGE_PROCESSING_ALGORITHMICS_INTEGRATION = True
 ALGORITHMICS_MECHANICS_INTEGRATION = True
 SIMULATION = False
 CAPTURE_BACKGROUND = True
-RESIZE = False
+RESIZE = not LIVE
 AUTOMATIC_START = False
 MULTI = False
+RESTARTED = False
+CAMERA = None
+RAN = False
 
 
 CHOSEN_SLICE = Algo.LINEAR
@@ -51,26 +54,28 @@ def fruit_shaninja(src, settings, image_processing_features=IMAGE_PROCESSING_FEA
     :param simulation: boolean that decides weather to run the simulation or not.
     """
     # Initiate algorithmics if integrated.
+    global CAMERA
     if integration[0]:
         Ip.init_everything(integrate_with_algorithmics=integration[0], multi=MULTI)
         Algo.init_everything(slice_type=CHOSEN_SLICE, integrate_with_mechanics=integration[1],
                              simulate=simulation, multi=MULTI)
     fruits_info = []  # Initialize fruits known.
     # Create new camera object.
-    camera = Camera(src, flip=image_processing_features[0], crop=image_processing_features[1],
-                    live=image_processing_features[2], calibrate=image_processing_features[3],
-                    resize=image_processing_features[4], multi=MULTI)
-    if camera.LIVE:
-        camera.set_camera_settings(settings)
+    if not RESTARTED:
+        CAMERA = Camera(src, flip=image_processing_features[0], crop=image_processing_features[1],
+                        live=image_processing_features[2], calibrate=image_processing_features[3],
+                        resize=image_processing_features[4], multi=MULTI)
+        if CAMERA.LIVE:
+            CAMERA.set_camera_settings(settings)
 
     if AUTOMATIC_START and not MULTI:  # Execute automatic start
         ad_time = As.automatic_start()
         time_to_wait_for_ad = ad_time - time.perf_counter()
-        if camera.is_opened():
+        if CAMERA.is_opened():
             if time_to_wait_for_ad > 0:
                 print("waiting for ad:", time_to_wait_for_ad)
                 time.sleep(time_to_wait_for_ad)
-            As.pass_ad((camera.read())[1])
+            As.pass_ad((CAMERA.read())[1])
 
     # return  # to test automatic start
 
@@ -79,7 +84,7 @@ def fruit_shaninja(src, settings, image_processing_features=IMAGE_PROCESSING_FEA
     if CAPTURE_BACKGROUND:
         # Allows user to click in order to capture background.
         print("choose background")
-        bg = camera.background_and_wait()
+        bg = CAMERA.background_and_wait()
         cv2.imwrite(BACKGROUND_FILE_NAME, bg)
     else:
         cv2.imshow("Saved Background", bg)
@@ -92,12 +97,12 @@ def fruit_shaninja(src, settings, image_processing_features=IMAGE_PROCESSING_FEA
     current_state = State.State()
     time_of_frame = time.perf_counter()
     # Main while loop.
-    while camera.is_opened() and counter < 100:
+    while CAMERA.is_opened() and counter < 10000000:
         if not (Algo.during_slice and MULTI):  # dont image proccess during a slice in multiplayer mode
             # t1 = time.perf_counter()
             # print("********************************************************************")
             counter += 1
-            current = camera.next_frame(current, time_of_frame)  # Retrieve next frame.
+            current = CAMERA.next_frame(current, time_of_frame)  # Retrieve next frame.
             time_of_frame = time.perf_counter()
             temp_frame = current.copy()  # Copy the frame.
             detection_results = Fd.fruit_detection2(temp_frame, bg, Ip.CONTOUR_AREA_THRESH,
@@ -124,13 +129,13 @@ def fruit_shaninja(src, settings, image_processing_features=IMAGE_PROCESSING_FEA
             # t2 = time.perf_counter()
             if Ip.fruits_for_debug_trajectories:
                 # for i in range(1 ,min(len(Ip.fruits_for_debug_trajectories), 3)):
-                Ip.draw_trajectory(Ip.fruits_for_debug_trajectories[-1], camera.last_big_frame, time_of_frame)
-            cv2.imshow("please work", camera.last_big_frame)
+                Ip.draw_trajectory(Ip.fruits_for_debug_trajectories[-1], CAMERA.last_big_frame, time_of_frame)
+            cv2.imshow("please work", CAMERA.last_big_frame)
             # print("time for everything", abs(t1 - t2))
             if cv2.waitKey(1) == 27:
-                break
+                restart()
     # Ip.debug_with_buffer(buffer)
-    Ip.show_original(camera, buffer)
+    Ip.show_original(CAMERA, buffer)
 
 
 def add_slice_to_queue(slice_points_to_add, sliced_fruits):
@@ -142,12 +147,24 @@ def add_slice_to_queue(slice_points_to_add, sliced_fruits):
     Algo.add_slice_to_queue(slice_points_to_add, sliced_fruits)
 
 
+def restart():
+    global RESTARTED
+    global RAN
+    if RAN:
+        RESTARTED = True
+        run()
+
+
 def run():
+    global RAN
+    if not RAN:
+        RAN = not RAN
     if LIVE:
         fruit_shaninja(0, Ci.DARK_101_SETTINGS_new2)
         print("finished")
     else:
         fruit_shaninja(SAVED_VIDEO_NAME, Ci.DARK_101_SETTINGS_new2)
+
 
 
 if __name__ == '__main__':

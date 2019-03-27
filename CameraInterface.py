@@ -91,8 +91,8 @@ class Camera:
         self.last_big_frame = []
         # Maximal size for buffer to avoid using too much memory.
         self.MAX_SIZE_BUFFER = 500
-        # fourcc = cv2.VideoWriter_fourcc(*'XVID')
-        # self.out = cv2.VideoWriter('multi2322.avi', fourcc, 30.0, (416, 285))
+        fourcc = cv2.VideoWriter_fourcc(*'XVID')
+        self.out = cv2.VideoWriter('EranFuckYou.avi', fourcc, 30.0, (548, 301))
 
     def read(self):
         """
@@ -154,7 +154,7 @@ class Camera:
                 self.last_big_frame = to_save
                 if len(self.buffer) < self.MAX_SIZE_BUFFER:
                     self.buffer.append((to_save, time_of_frame))
-                    # self.out.write(to_save)
+                    self.out.write(to_save)
                 return to_return
                 # else:
                 #     print("GOOD")
