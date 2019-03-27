@@ -13,7 +13,7 @@ import cv2
 import State
 
 
-SAVED_VIDEO_NAME = "saturdayDark.flv"
+SAVED_VIDEO_NAME = "WIN_20181126_23_54_23_Pro_Trim.mp4"
 LIVE = False
 BACKGROUND_FILE_NAME = "bg.png"
 CROP = True

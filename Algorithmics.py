@@ -9,7 +9,7 @@ import math
 import statistics as st
 import SliceTypes
 import time
-import ArduinoCommunication as Ac
+import ArduinoCommunication3 as Ac
 import Simulation as Slm
 from threading import Thread
 import threading
@@ -563,7 +563,6 @@ def init_info(frame_size, screen_size=SCREEN_SIZE):
     # SCREEN_SIZE = (frame_size[0] / PIXELS_PER_CM, frame_size[1] / PIXELS_PER_CM)
 
 
-
 def mechanics_thread_run():
     """
     The function which runs in a different thread and executes the slices.
@@ -664,9 +663,15 @@ def on_screen(point):
 
 
 if __name__ == "__main__":
-    slice_and_times = SliceTypes.linear_slice(algo_to_mech(get_pen_loc()[0]), [])
-    # slice_and_times = SliceTypes.slice_through_fruits(algo_to_mech(get_pen_loc()[0]), [algo_to_mech(15.0, 4.0)])
-    # slice_and_times = SliceTypes.slice_through_fruits(get_pen_loc()[0], [(6.0, 4.0), (9.0, 2.0), (12.0, 3.0), get_pen_loc()[1]])
+    # slice_and_times = SliceTypes.linear_slice(algo_to_mech(get_pen_loc()[0]), [])
+    # slice_and_times = SliceTypes.slice_through_fruits(algo_to_mech(get_pen_loc()[0]), [algo_to_mech((15.0, 4.0))])
+    # slice_and_times = SliceTypes.slice_through_fruits(algo_to_mech(get_pen_loc()[0]), [algo_to_mech((15.0, 3.0))])
+    # slice_and_times = SliceTypes.slice_through_fruits(algo_to_mech(get_pen_loc()[0]), [algo_to_mech((15.0, 2.0))])
+    slice_and_times = SliceTypes.slice_through_fruits(algo_to_mech(get_pen_loc()[0]), [algo_to_mech((5.0, 7.0)),
+                                                                                       algo_to_mech((8.0, 1.0)),
+                                                                                       algo_to_mech((11.0, 7.0)),
+                                                                                       algo_to_mech((15.0, 3.0)),
+                                                                                       algo_to_mech(get_pen_loc()[1])])
     while True:
         do_slice(slice_and_times, [])
     # do_slice(slice_and_times, [])
