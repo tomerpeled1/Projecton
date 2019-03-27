@@ -195,7 +195,6 @@ class Camera:
         if self.FLIP:
             # frame = frame[:160, width // 2 - int(Algo.FRAME_SIZE[1]*3/8): width // 2 + int(Algo.FRAME_SIZE[1]*3/8)]
             frame = frame[:160, width // 2 - 240: width // 2 + 240]
-            frame = frame
         else:
             if not self.MULTI:
                 frame = frame[height - 160: height, width // 2 - 240: width // 2 + 240]
