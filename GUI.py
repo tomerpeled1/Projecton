@@ -23,6 +23,10 @@ class GUI:
         self.multiplayer = Button(master, text="MULTIPLAYER MODE", command=FruitShaninja.run, bg="blue")
         self.multiplayer.pack()
 
+        self.restart = Button(master, text="RESTART", command=FruitShaninja.restart, bg="yellow")
+        self.restart.pack()
+        self.restart.place(x = 0, y = 400, height=30, width=55)
+
         self.close_button = Button(master, text="Close", command=master.quit, bg = "red")
         self.close_button.pack()
 
