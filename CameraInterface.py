@@ -181,7 +181,8 @@ class Camera:
         frame = frame[self.tr_crop_dimensions[1]:self.bl_crop_dimensions[1],
                 self.bl_crop_dimensions[0]:self.tr_crop_dimensions[0]]
         # Updates the screen size in algorithm module.
-        Algo.init_info(frame.shape[:2])
+        if not Algo.INITIALIZED:
+            Algo.init_info(frame.shape[:2])
         return frame
 
     def crop_image(self, frame):
