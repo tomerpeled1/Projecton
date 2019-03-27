@@ -13,25 +13,26 @@ import cv2
 import State
 
 
-SAVED_VIDEO_NAME = "2019-03-17 19-59-34.flv"
-LIVE = True
+SAVED_VIDEO_NAME = "EranFuckYou.avi "
+LIVE = False
 BACKGROUND_FILE_NAME = "bg.png"
-CROP = False
-FLIP = True
+CROP = True
+FLIP = False
 CALIBRATE = False
-IMAGE_PROCESSING_ALGORITHMICS_INTEGRATION = False
-ALGORITHMICS_MECHANICS_INTEGRATION = False
+IMAGE_PROCESSING_ALGORITHMICS_INTEGRATION = True
+ALGORITHMICS_MECHANICS_INTEGRATION = True
 SIMULATION = True
 CAPTURE_BACKGROUND = True
 RESIZE = False
 AUTOMATIC_START = False
-MULTI = False
+MULTI = True
 RESTARTED = False
 CAMERA = None
 RAN = False
 
 
-CHOSEN_SLICE = Algo.THROUGH_POINTS
+
+CHOSEN_SLICE = Algo.LINEAR
 
 IMAGE_PROCESSING_FEATURES = (FLIP, CROP, LIVE, CALIBRATE, RESIZE)
 INTEGRATION = (IMAGE_PROCESSING_ALGORITHMICS_INTEGRATION, ALGORITHMICS_MECHANICS_INTEGRATION)
@@ -96,8 +97,10 @@ def fruit_shaninja(src, settings, image_processing_features=IMAGE_PROCESSING_FEA
     buffer = []  # Buffer of images for debugging purposes.
     current_state = State.State()
     time_of_frame = time.perf_counter()
+    counter = 1 ## TODO remove
     # Main while loop.
-    while CAMERA.is_opened() and counter < 10000000:
+    while CAMERA.is_opened() and counter < 1000000:
+        t = time.perf_counter()
         if not (Algo.during_slice and MULTI):  # dont image proccess during a slice in multiplayer mode
             # t1 = time.perf_counter()
             # print("********************************************************************")
@@ -134,6 +137,8 @@ def fruit_shaninja(src, settings, image_processing_features=IMAGE_PROCESSING_FEA
             # print("time for everything", abs(t1 - t2))
             if cv2.waitKey(1) == 27:
                 restart()
+        print(str(counter) + " time for detection: " + str(time.perf_counter() - t))
+        counter += 1
     # Ip.debug_with_buffer(buffer)
     Ip.show_original(CAMERA, buffer)
 

@@ -21,8 +21,10 @@ PINEAPPLE_HIST = cv2.calcHist([pine_image], [0], None, [180], [1, 180])
 # PINEAPPLE_HIST = PINEAPPLE_HIST[1:]
 NORM_PINEAPPLE_HIST = cv2.normalize(PINEAPPLE_HIST, PINEAPPLE_HIST, norm_type=cv2.NORM_L1)
 
-PINEAPPLE_THRESHOLD = 0.4
+PINEAPPLE_THRESHOLD = 0.7
 k=1
+
+counter = 1
 
 def fruit_detection2(frame, background, contour_area_thresh, time_of_frame):
     """
@@ -135,7 +137,9 @@ def fruit_detection2(frame, background, contour_area_thresh, time_of_frame):
             rects.extend(new_rects)
             centers.extend(new_centers)
 
-    # print("time for detection: " + str(time.perf_counter()-t))
+    global counter
+    # print(str(counter) + "time for detection: " + str(time.perf_counter()-t))
+    counter += 1
 
     return DetectionResults.DetectionResults(conts, rects, centers,
                                              time_of_frame)  # list of lists, representing all fruits found
