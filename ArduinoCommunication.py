@@ -44,13 +44,13 @@ BITS_PER_BYTE = 8  # the number of bits in one byte
 WRITE_DELAY = 1000/(SERIAL_BPS/BITS_PER_BYTE/LENGTH_OF_COMMAND)  # delay in ms after writing to prevent buffer overload
 TRAJECTORY_DIVISION_NUMBER = 20  # the number of parts that the trajectory of the arm is divided to
 DT_DIVIDE_TRAJECTORY = float(T) / TRAJECTORY_DIVISION_NUMBER  # size of step in parameter
-WANTED_RPS = 0.8  # speed of motors in revolutions per second
+WANTED_RPS = 1.4  # speed of motors in revolutions per second
 WANTED_RPS_SLOW = 0.1  # speed of motors in revolutions per second
 ONE_STEP_DELAY = 5.0 / WANTED_RPS / STEPS_FRACTION * 2  # in ms
 ONE_STEP_DELAY_SLOW = 5.0 / WANTED_RPS_SLOW / STEPS_FRACTION * 2  # in ms
 ONE_STEP_DELAY_AVERAGE = (ONE_STEP_DELAY + ONE_STEP_DELAY_SLOW) / 2  # in ms
 WAIT_FOR_STOP = 50.0  # time to wait after slice until committing invert slice in ms
-STEPS_FOR_ACCELERATION = int(STEPS_FRACTION * 4 * WANTED_RPS)  # number of steps to move at acceleration move
+STEPS_FOR_ACCELERATION = int(STEPS_FRACTION * 2 * WANTED_RPS)  # number of steps to move at acceleration move
 if STEPS_FOR_ACCELERATION > MAX_STEPS_IN_COMMAND: STEPS_FOR_ACCELERATION = MAX_STEPS_IN_COMMAND
 NUMBER_OF_ACCELERATION_MOVES = 1
 
@@ -116,19 +116,24 @@ def make_slice_by_trajectory(points, invert=True):
     :param points: list of tuples, each tuple is a point the arm should go through
     :param invert: if true then make also invert slice
     """
+    steps_phi, steps_theta = generate_steps_from_points(points)
+    move_2_motors(steps_theta, steps_phi)
+    if invert:
+        i_steps_theta, i_steps_phi = invert_slice(steps_theta, steps_phi)
+        move_2_motors(i_steps_theta, i_steps_phi, True)
+
+
+def generate_steps_from_points(points):
     steps_theta, steps_phi = list(), list()
-    for i in range(len(points)-1):
+    for i in range(len(points) - 1):
         current_point = xy2angles(points[i])  # in (theta,phi)
-        next_point = xy2angles(points[i+1])  # in (theta,phi)
+        next_point = xy2angles(points[i + 1])  # in (theta,phi)
         current_steps_theta, current_steps_phi = generate_steps_list(rad2steps(next_point[0] - current_point[0]),
                                                                      rad2steps(next_point[1] - current_point[1]))
         for j in range(len(current_steps_theta)):
             steps_theta.append(current_steps_theta[j])
             steps_phi.append(current_steps_phi[j])
-    move_2_motors(steps_theta, steps_phi)
-    if invert:
-        i_steps_theta, i_steps_phi = invert_slice(steps_theta, steps_phi)
-        move_2_motors(i_steps_theta, i_steps_phi, True)
+    return steps_phi, steps_theta
 
 
 def steps_in_slice_same_loop(steps_theta, steps_phi):
@@ -259,10 +264,7 @@ def move_2_motors(steps_theta, steps_phi, inverse=False):  # WRITE MAXIMUM 41 ST
     # print("message to write in serial: ")
     # print(total_message)
     # time_of_slice = ((abs_sum(steps_theta) + abs_sum(steps_phi)) * ONE_STEP_DELAY)
-    steps_in_slice = steps_in_slice_different_loops(steps_theta, steps_phi)  # TODO move to function
-
-    time_of_slice = (steps_in_slice - STEPS_FOR_ACCELERATION * 2 * NUMBER_OF_ACCELERATION_MOVES) * ONE_STEP_DELAY + \
-                    STEPS_FOR_ACCELERATION * 2 * NUMBER_OF_ACCELERATION_MOVES * ONE_STEP_DELAY_AVERAGE
+    time_of_slice = calc_time_of_slice(steps_theta, steps_phi)
     time.sleep(0.001 * time_of_slice)
 
     if len(total_message) > SERIAL_BUFFER_SIZE:
@@ -408,13 +410,19 @@ def generate_steps_list(delta_steps_theta, delta_steps_phi):
     return steps_theta, steps_phi
 
 
-# def calc_time_of_slice(steps_theta, steps_phi):
-#     """
-#     Calculates the duration of the given slice.
-#     :param steps_theta: steps of slice in theta
-#     :param steps_phi: steps of slice in phi
-#     :return: duration of given slice in ms
-#     """
+def calc_time_of_slice(steps_theta, steps_phi):
+    """
+     Calculates the duration of the given slice. IN MILISECONDS
+     :param steps_theta: steps of slice in theta
+     :param steps_phi: steps of slice in phi
+     :return: duration of given slice in ms
+     """
+    steps_in_slice = steps_in_slice_different_loops(steps_theta, steps_phi)
+
+    time_of_slice = (steps_in_slice - STEPS_FOR_ACCELERATION * 2 * NUMBER_OF_ACCELERATION_MOVES) * ONE_STEP_DELAY + \
+                    STEPS_FOR_ACCELERATION * 2 * NUMBER_OF_ACCELERATION_MOVES * ONE_STEP_DELAY_AVERAGE
+    return time_of_slice
+
 #     steps_counter = 20  # take spare
 #     for i in range(len(steps_theta)):
 #         steps_counter += abs(steps_theta[i]) + abs(steps_phi[i])

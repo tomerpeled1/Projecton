@@ -14,18 +14,22 @@ import State
 
 
 SAVED_VIDEO_NAME = "2019-03-17 19-59-34.flv"
-LIVE = True
+LIVE = False
 BACKGROUND_FILE_NAME = "bg.png"
-CROP = False
+CROP = True
 FLIP = True
-CALIBRATE = False
+CALIBRATE = True
 IMAGE_PROCESSING_ALGORITHMICS_INTEGRATION = False
 ALGORITHMICS_MECHANICS_INTEGRATION = False
-SIMULATION = True
+SIMULATION = False
 CAPTURE_BACKGROUND = True
 RESIZE = False
 AUTOMATIC_START = False
 MULTI = False
+DOCKING = True # TODO add to algo
+
+
+# don't change
 RESTARTED = False
 CAMERA = None
 RAN = False
@@ -88,7 +92,7 @@ def fruit_shaninja(src, settings, image_processing_features=IMAGE_PROCESSING_FEA
         cv2.imwrite(BACKGROUND_FILE_NAME, bg)
     else:
         cv2.imshow("Saved Background", bg)
-        print("press any key to continue.")
+        print("press any key_x to continue.")
         cv2.waitKey(0)
 
     current = bg
@@ -97,7 +101,7 @@ def fruit_shaninja(src, settings, image_processing_features=IMAGE_PROCESSING_FEA
     current_state = State.State()
     time_of_frame = time.perf_counter()
     # Main while loop.
-    while CAMERA.is_opened() and counter < 10000000:
+    while CAMERA.is_opened() and counter < 1200000000:
         if not (Algo.during_slice and MULTI):  # dont image proccess during a slice in multiplayer mode
             # t1 = time.perf_counter()
             # print("********************************************************************")
@@ -123,7 +127,9 @@ def fruit_shaninja(src, settings, image_processing_features=IMAGE_PROCESSING_FEA
                     if integration[0]:
                         add_slice_to_queue(points_to_slice, sliced_fruits)
                         current_state.remove_sliced_fruits(sliced_fruits)
-
+                        if DOCKING:
+                            current_state.swap_docking()
+            CAMERA.out.write(temp_frame)
             cv2.imshow("temp_frame", temp_frame)
             buffer.append(temp_frame)  # Inserts frame to buffer.
             # t2 = time.perf_counter()

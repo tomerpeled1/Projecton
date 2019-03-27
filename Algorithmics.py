@@ -44,7 +44,7 @@ SLICE_TYPE = LINEAR
 
 SLICE_QUALITY_FACTOR_THRESH = 0
 MINIMAL_NUMBER_OF_FRUITS_FOR_COMBO = 3
-MAX_TIME_FOR_COMBO = 400  # in ms
+MAX_TIME_FOR_COMBO = 1000  # in ms
 
 # on_screen_fruits = []
 SIMULATE = True  # make True to activate simulation
@@ -195,7 +195,7 @@ def create_slice(state, time_to_slice):
 
 
 def order_fruits_and_locs(arm_loc, fruits_and_locs):
-    return sorted(fruits_and_locs, key=key(arm_loc))
+    return sorted(fruits_and_locs, key=key_x(arm_loc))
 
 
 def create_best_slice(arm_loc, ordered_fruits_and_locs, critical_fruits_locs, docking):
@@ -203,7 +203,8 @@ def create_best_slice(arm_loc, ordered_fruits_and_locs, critical_fruits_locs, do
     creates the best slice it can with the given fruits on screen.
     :param arm_loc: the location of the arm initially.
     :param ordered_fruits_and_locs: list of (fruit, loc) sorted by distance on x axis from the arm loc.
-    :param critical_fruits_locs: fruits about to be losr.
+    :param critical_fruits_locs: fruits about to be lose.
+    :param docking: point in (x,y) for final location of arm (enter empty tuple for no docking)
     :return: points to slice through and the fruits sliced.
     """
     current_arm_loc = arm_loc
@@ -211,8 +212,8 @@ def create_best_slice(arm_loc, ordered_fruits_and_locs, critical_fruits_locs, do
     sliced_fruits = []
     for fruits_and_locs in combinations_of_elements(ordered_fruits_and_locs):
         locs = [loc for (fruit, loc) in fruits_and_locs]
-        temp_slice_points = calc_slice(arm_loc, locs, docking)
-        if good_slice(temp_slice_points):
+        temp_slice_points = calc_slice(arm_loc, locs, tuple())
+        if good_slice(temp_slice_points):  # TODO implement good_slice
             slice_points.extend(temp_slice_points)
             sliced_fruits.extend([fruit for (fruit, loc) in fruits_and_locs])
             current_arm_loc = temp_slice_points[-1]
@@ -223,12 +224,16 @@ def create_best_slice(arm_loc, ordered_fruits_and_locs, critical_fruits_locs, do
                                                             fruit not in sliced_fruits])
         if critical_fruits_not_sliced:
             critical_fruits_not_sliced_locs = [loc for (fruit, loc) in critical_fruits_not_sliced]
-            remaining_slice = calc_slice(current_arm_loc, critical_fruits_not_sliced_locs, docking)
+            remaining_slice = calc_slice(current_arm_loc, critical_fruits_not_sliced_locs, tuple())
             if slice_points:
                 slice_points.extend(remaining_slice[1:])
             else:
                 slice_points.append(remaining_slice)
             sliced_fruits.extend([fruit for (fruit, loc) in critical_fruits_not_sliced])
+
+    slice_points.append(docking)
+    # current_arm_loc = docking
+
     return slice_points, sliced_fruits
 
 
@@ -245,22 +250,37 @@ def combinations_of_elements(s):
                                               for r in range(len(s), MINIMAL_NUMBER_OF_FRUITS_FOR_COMBO - 1, -1)))
 
 
+def time_for_slice(points):
+    if MULTI:
+        points = flip_points_for_multiplayer(points)
+    steps_theta, steps_phi = Ac.generate_steps_from_points(points)
+    return Ac.calc_time_of_slice(steps_theta, steps_phi)
+
+
 def good_slice(points_of_slice_to_evaluate):
     """
     Determines whether or not a slice is "good enough" (creates combo).
     :param points_of_slice_to_evaluate: the slice which we want to test.
     :return: true if the slice should be done.
     """
-    # return time_for_slice(points_of_slice_to_evaluate) < MAX_TIME_FOR_COMBO
-    return True
+    return time_for_slice(points_of_slice_to_evaluate) < MAX_TIME_FOR_COMBO
+    # return True
 
 
-def key(arm_loc):
+def key_x(arm_loc):
     def distance_from_arm_in_x(fruit_and_loc):
-        fruit, loc = fruit_and_loc
+        _, loc = fruit_and_loc
         return abs(loc[0] - arm_loc[0])
 
     return distance_from_arm_in_x
+
+
+def key_theta(arm_loc):
+    def distance_from_arm_in_theta(fruit_and_loc):
+        _, loc = fruit_and_loc
+        return abs(Ac.xy2angles(algo_to_mech(loc))[0] - Ac.xy2angles(algo_to_mech(arm_loc))[0])
+
+    return distance_from_arm_in_theta
 
 
 def flip_points_for_multiplayer(points):
@@ -495,6 +515,7 @@ def calc_slice(arm_loc, points, docking):
     Calculate the slice that goes through the given points.
     :param arm_loc: location of arm at beginning of slice
     :param points: points the slice should go through in (x,y)
+    :param docking: point in (x,y) for final location of arm (enter empty tuple for no docking)
     :return: calculated slice as parametrization, timer, time_to_slice
     """
     points = [algo_to_mech(point) for point in points]
@@ -551,7 +572,6 @@ def init_info(frame_size, screen_size=SCREEN_SIZE):
     """
     Initializes the sizes for the screen so that the algorithmics work properly.
     :param frame_size: size of frame in pixels
-    :param crop_size: size of cropped frame in pixels
     :param screen_size: size of screen in cm
     """
     global CROP_SIZE, FRAME_SIZE, SCREEN_SIZE, INITIALIZED
@@ -595,6 +615,7 @@ def init_everything(slice_type=SLICE_TYPE, integrate_with_mechanics=INTEGRATE_WI
     :param slice_type: the strategy we want to use this game
     :param integrate_with_mechanics: boolean that decides weather to integrate with mechanics or not.
     :param simulate: boolean that decides weather to activate simulation or not.
+    :param multi: True for multiplayer
     """
     global INTEGRATE_WITH_MECHANICS
     INTEGRATE_WITH_MECHANICS = integrate_with_mechanics
