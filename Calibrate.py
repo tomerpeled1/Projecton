@@ -36,6 +36,8 @@ def calibrate(frame):
         # Checks if the contour is large enough to be screen size.
         if cv2.contourArea(c) > 50000:
             white.append(c)
+    if len(white) == 0:
+        raise Exception("Turn on screen dumbass")
     rect = get_bounding_rect(white[0])
     cv2.drawContours(frame, white, -1, (0, 255, 0), 2)
     cv2.imshow("calibrated", frame)
