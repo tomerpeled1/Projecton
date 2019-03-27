@@ -31,6 +31,7 @@ CROP_SIZE = (160, 480)  # (y,x) in pixels
 SCREEN_SIZE = (12.0, 16.0)  # (y,x) in cm
 FULL_SCREEN = (12.0, 16.0)
 DISTANCE_FROM_TABLET = Ac.d
+ARM_LOC_BEGINNING_ALGO = (0.0, 4.0)
 ACC = RELATIVE_ACC * SCREEN_SIZE[0]
 INTEGRATE_WITH_MECHANICS = False  # make True to send slices to ArduinoCommunication
 
@@ -505,8 +506,8 @@ def get_pen_loc():
     :return: the location of the pen (x, y) in mechanics coordinates in cm
     """
     # location (16cm, 4cm) from the bottom-left corner
-    x_location = 0.0
-    y_location = SCREEN_SIZE[0] + 4.0 - FULL_SCREEN[0]
+    x_location = ARM_LOC_BEGINNING_ALGO[0]
+    y_location = SCREEN_SIZE[0] + ARM_LOC_BEGINNING_ALGO[1] - FULL_SCREEN[0]
     if MULTI:
         x_location = -1 * x_location
         y_location = y_location
