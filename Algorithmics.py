@@ -30,7 +30,7 @@ CROP_SIZE = (160, 480)  # (y,x) in pixels
 SCREEN_SIZE = (12.0, 16.0)  # (y,x) in cm
 DISTANCE_FROM_TABLET = Ac.d
 ACC = RELATIVE_ACC * SCREEN_SIZE[0]
-INTEGRATE_WITH_MECHANICS = False  # make True to send slices to ArduinoCommunication
+INTEGRATE_WITH_MECHANICS = True  # make True to send slices to ArduinoCommunication
 
 LINEAR = 0
 RADIUS = 1
@@ -42,7 +42,7 @@ MINIMAL_NUMBER_OF_FRUITS_FOR_COMBO = 1
 MAX_TIME_FOR_COMBO = 400  # in ms
 
 # on_screen_fruits = []
-SIMULATE = True  # make True to activate simulation
+SIMULATE = False  # make True to activate simulation
 slice_queue_lock = threading.Condition()
 simulation_thread = None
 slice_queue = []
@@ -83,7 +83,7 @@ def cm2pixel(cm_loc):
     x_coord_frame = int(x_coord_screen * (float(FRAME_SIZE[1]) / SCREEN_SIZE[1]))
     x_coord_frame = FRAME_SIZE[1] - x_coord_frame
     y_coord_frame = int((float(y_coord_screen / SCREEN_SIZE[0])) * FRAME_SIZE[0])
-    print("FRAME", FRAME_SIZE, "SCREEN", SCREEN_SIZE)
+    # print("FRAME", FRAME_SIZE, "SCREEN", SCREEN_SIZE)
     return y_coord_frame, x_coord_frame, t
 
 
@@ -497,7 +497,7 @@ def calc_slice(arm_loc, points):
     elif SLICE_TYPE == RADIUS:
         return SliceTypes.radius_slice(arm_loc, points)
     elif SLICE_TYPE == THROUGH_POINTS:
-        return SliceTypes.slice_through_many_points(arm_loc, points)
+        return SliceTypes.slice_through_fruits(arm_loc, points)
 
 
 def get_pen_loc():

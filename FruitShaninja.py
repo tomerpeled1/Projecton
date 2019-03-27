@@ -13,7 +13,7 @@ import cv2
 import State
 
 
-SAVED_VIDEO_NAME = "2019-03-17 19-59-34.flv"
+SAVED_VIDEO_NAME = "multi2.avi"
 LIVE = True
 BACKGROUND_FILE_NAME = "bg.png"
 CROP = True
@@ -23,12 +23,12 @@ IMAGE_PROCESSING_ALGORITHMICS_INTEGRATION = True
 ALGORITHMICS_MECHANICS_INTEGRATION = True
 SIMULATION = False
 CAPTURE_BACKGROUND = True
-RESIZE = False
+RESIZE = not LIVE
 AUTOMATIC_START = False
 MULTI = False
 
 
-CHOSEN_SLICE = Algo.LINEAR
+CHOSEN_SLICE = Algo.THROUGH_POINTS
 
 IMAGE_PROCESSING_FEATURES = (FLIP, CROP, LIVE, CALIBRATE, RESIZE)
 INTEGRATION = (IMAGE_PROCESSING_ALGORITHMICS_INTEGRATION, ALGORITHMICS_MECHANICS_INTEGRATION)
@@ -92,8 +92,8 @@ def fruit_shaninja(src, settings, image_processing_features=IMAGE_PROCESSING_FEA
     current_state = State.State()
     time_of_frame = time.perf_counter()
     # Main while loop.
-    while camera.is_opened() and counter < 100:
-        if not (Algo.during_slice and MULTI):  # dont image proccess during a slice in multiplayer mode
+    while camera.is_opened() and counter < 100000000:
+        if not (Algo.during_slice and MULTI): # dont image proccess during a slice in multiplayer mode
             # t1 = time.perf_counter()
             # print("********************************************************************")
             counter += 1

@@ -12,7 +12,7 @@ d = 15  # distance of major axis from screen in cm
 SCREEN = [16, 12]  # (x,y) dimensions of screen in cm
 SLICE_ZONE = 0.0
 PARTITION = 20
-MINIMAL_DISTANCE_FOR_PARTITION = 1
+MINIMAL_DISTANCE_FOR_PARTITION = 20
 LINEAR = 0
 ANGLES = 1
 MULTI = False
@@ -211,6 +211,17 @@ def slice_through_many_points(arm_loc, ordered_points, move_between_points=LINEA
     return xy_points
 
 
+def slice_through_fruits(arm_loc, points):
+    """
+
+    :param arm_loc:
+    :param points:
+    :return:
+    """
+    return [arm_loc] + points
+
+
+
 def unite_slice(slice_parts):
     # print ("*&*&*&*&* SLICE_PARTS ", slice_parts)
     n = len(slice_parts)
@@ -264,7 +275,7 @@ def get_partition(xy_by_t):
     y_points = [xy_by_t(0)[1]]
     for i in range(1, PARTITION):
         current_x, current_y = xy_by_t(i * dt)
-        if distance((x_points[-1], y_points[-1]), (current_x, current_y)) >= 1:
+        if distance((x_points[-1], y_points[-1]), (current_x, current_y)) >= MINIMAL_DISTANCE_FOR_PARTITION:
             x_points.append(current_x)
             y_points.append(current_y)
     x_final, y_final = xy_by_t(1)
@@ -293,4 +304,5 @@ def linear_slice(arm_loc, _):
         return x_slice, y_slice
 
     xy_points = get_partition(xy_by_t)
+    print("xy points: " + str(xy_points))
     return xy_points

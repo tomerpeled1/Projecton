@@ -32,8 +32,8 @@ START_SLICE = '~'
 LENGTH_OF_COMMAND = 2  # the length of a command to the serial that contains the number of steps for each motor and the
 SERIAL_BUFFER_SIZE = 64  # in bytes
 COMMAND_PACKAGE_SIZE = math.floor(SERIAL_BUFFER_SIZE/LENGTH_OF_COMMAND)  # number of commands to write at once
-STEPS_IN_COMMAND = 31  # number of steps to move at every command
-MAX_STEPS_IN_COMMAND = 31  # max number of steps to move at every command
+STEPS_IN_COMMAND = 6  # number of steps to move at every command
+MAX_STEPS_IN_COMMAND = 60  # max number of steps to move at every command
 
 
 # TIME CONSTANTS
@@ -44,7 +44,7 @@ BITS_PER_BYTE = 8  # the number of bits in one byte
 WRITE_DELAY = 1000/(SERIAL_BPS/BITS_PER_BYTE/LENGTH_OF_COMMAND)  # delay in ms after writing to prevent buffer overload
 TRAJECTORY_DIVISION_NUMBER = 20  # the number of parts that the trajectory of the arm is divided to
 DT_DIVIDE_TRAJECTORY = float(T) / TRAJECTORY_DIVISION_NUMBER  # size of step in parameter
-WANTED_RPS = 0.8  # speed of motors in revolutions per second
+WANTED_RPS = 1.4  # speed of motors in revolutions per second
 WANTED_RPS_SLOW = 0.1  # speed of motors in revolutions per second
 ONE_STEP_DELAY = 5.0 / WANTED_RPS / STEPS_FRACTION * 2  # in ms
 ONE_STEP_DELAY_SLOW = 5.0 / WANTED_RPS_SLOW / STEPS_FRACTION * 2  # in ms
@@ -64,7 +64,7 @@ NUMBER_OF_ACCELERATION_MOVES = 1
 # times = int(T / dt)  # the size of the vectors for the simulation
 
 try:
-    ser = serial.Serial('com6', SERIAL_BPS)  # Create Serial port object
+    ser = serial.Serial('com5', SERIAL_BPS)  # Create Serial port object
     time.sleep(2)  # wait for 2 seconds for the communication to get established
 except SerialException:
     print("Didn't create serial.")
@@ -256,8 +256,8 @@ def move_2_motors(steps_theta, steps_phi, inverse=False):  # WRITE MAXIMUM 41 ST
     print(str(steps_theta) + str(sum(steps_theta)))
     print("Phi steps:")
     print(str(steps_phi) + str(sum(steps_phi)))
-    print("message to write in serial: ")
-    print(total_message)
+    # print("message to write in serial: ")
+    # print(total_message)
     # time_of_slice = ((abs_sum(steps_theta) + abs_sum(steps_phi)) * ONE_STEP_DELAY)
     steps_in_slice = steps_in_slice_different_loops(steps_theta, steps_phi)  # TODO move to function
 
@@ -266,7 +266,7 @@ def move_2_motors(steps_theta, steps_phi, inverse=False):  # WRITE MAXIMUM 41 ST
     time.sleep(0.001 * time_of_slice)
 
     if len(total_message) > SERIAL_BUFFER_SIZE:
-        print("BIG HUGE GIGANTIC EPIC WARNING - beware buffer overflow.")
+        print("BIG HUGE GIGANTIC EPIC WARNING - beware buffer overflow. length of message: " + str(len(total_message)))
     # wait for slice to end
     # time_of_slice = calc_time_of_slice(steps_theta, steps_phi)
     # time.sleep(0.001 * time_of_slice)
@@ -304,7 +304,7 @@ def add_padding_for_acceleration(steps_list, padding_steps):
     :param padding_steps: total amount of steps for padding
     :return: padded list of steps
     """
-    padding_list = break_into_steps(padding_steps, STEPS_FOR_ACCELERATION)
+    padding_list = break_into_equal_steps(padding_steps, STEPS_FOR_ACCELERATION)
     for i in range(len(padding_list)):
         if i % 2 == 0:
             steps_list = [padding_list[i]] + steps_list
@@ -325,12 +325,20 @@ def phi_steps_by_theta_steps_for_acceleration(delta_steps_phi, steps_theta):
         if delta_steps_phi > 0:
             steps_phi.append(delta_steps_phi)
     else:
-        end_of_steps_phi = break_into_equal_steps(delta_steps_phi)
+        end_of_steps_phi = break_into_equal_steps(delta_steps_phi, MAX_STEPS_IN_COMMAND)
         steps_phi = steps_phi + end_of_steps_phi
     return steps_phi
 
 
-def generate_steps_list(delta_steps_theta, delta_steps_phi):
+def break_into_equal_steps2(delta_steps_phi, num_of_commands):
+    steps = [0 for _ in range(num_of_commands)]
+    while delta_steps_phi > 0:
+        steps[delta_steps_phi % num_of_commands] += 1
+        delta_steps_phi -= 1
+    return steps
+
+
+def generate_steps_list_same_loop(delta_steps_theta, delta_steps_phi):
     """
     Generates lists of steps to move in each angle, given the total delta.
     :param delta_steps_theta: total delta of steps to move in theta
@@ -347,7 +355,7 @@ def generate_steps_list(delta_steps_theta, delta_steps_phi):
         delta_steps_theta_without_acceleration = 0
     padding_steps_theta = delta_steps_theta - delta_steps_theta_without_acceleration
 
-    steps_theta_without_acceleration = break_into_equal_steps(delta_steps_theta_without_acceleration)
+    steps_theta_without_acceleration = break_into_equal_steps(delta_steps_theta_without_acceleration, STEPS_IN_COMMAND)
 
     steps_theta = add_padding_for_acceleration(steps_theta_without_acceleration, padding_steps_theta)
 
@@ -367,18 +375,37 @@ def generate_steps_list(delta_steps_theta, delta_steps_phi):
     return steps_theta, steps_phi
 
 
-# def generate_steps_list2(delta_steps_theta, delta_steps_phi):
-#     """
-#     Generates lists of steps to move in each angle, given the total delta.
-#     :param delta_steps_theta: total delta of steps to move in theta
-#     :param delta_steps_phi: total delta of steps to move in phi
-#     :return: (steps_theta, steps_phi), tuple of lists of steps in each motor
-#     """
-#     steps_theta = [sign(delta_steps_theta) * a for a in break_into_steps(abs(delta_steps_theta), STEPS_IN_COMMAND)]
-#     steps_phi = [sign(delta_steps_phi) * a for a in break_into_steps(abs(delta_steps_phi), STEPS_IN_COMMAND)]
-#     steps_theta = add_zeros_at_end(steps_theta, len(steps_phi))
-#     steps_phi = add_zeros_at_end(steps_phi, len(steps_theta))
-#     return steps_theta, steps_phi
+def generate_steps_list(delta_steps_theta, delta_steps_phi):
+    """
+    Generates lists of steps to move in each angle, given the total delta.
+    :param delta_steps_theta: total delta of steps to move in theta
+    :param delta_steps_phi: total delta of steps to move in phi
+    :return: (steps_theta, steps_phi), tuple of lists of steps in each motor
+    """
+    theta_sign = sign(delta_steps_theta)
+    phi_sign = sign(delta_steps_phi)
+    delta_steps_theta = abs(delta_steps_theta)
+    delta_steps_phi = abs(delta_steps_phi)
+
+    steps_phi = break_into_equal_steps(delta_steps_phi, MAX_STEPS_IN_COMMAND)
+
+    delta_steps_theta_without_acceleration = delta_steps_theta - 2 * NUMBER_OF_ACCELERATION_MOVES * \
+                                             STEPS_FOR_ACCELERATION
+    if delta_steps_theta_without_acceleration < 0:
+        delta_steps_theta_without_acceleration = 0
+    padding_steps_theta = delta_steps_theta - delta_steps_theta_without_acceleration
+
+    steps_theta_without_acceleration = break_into_equal_steps(delta_steps_theta_without_acceleration, STEPS_IN_COMMAND)
+    if len(steps_theta_without_acceleration) < len(steps_phi)-2*NUMBER_OF_ACCELERATION_MOVES:
+        steps_theta_without_acceleration = break_into_equal_steps2(delta_steps_theta, len(steps_phi)-2*NUMBER_OF_ACCELERATION_MOVES)
+    steps_theta = add_padding_for_acceleration(steps_theta_without_acceleration, padding_steps_theta)
+
+    if len(steps_theta) > len(steps_phi): steps_phi = break_into_equal_steps2(delta_steps_phi, len(steps_theta))
+
+    if theta_sign < 0: steps_theta = [-steps for steps in steps_theta]
+    if phi_sign < 0: steps_phi = [-steps for steps in steps_phi]
+
+    return steps_theta, steps_phi
 
 
 # def calc_time_of_slice(steps_theta, steps_phi):
@@ -412,16 +439,17 @@ def break_into_steps(total_steps, step_per_command):
     return steps_array
 
 
-def break_into_equal_steps(total_steps):
+def break_into_equal_steps(total_steps, command_steps):
     """
     Splits the total amount of steps into equal portions.
     :param total_steps: total amount of steps to move
+    :param command_steps: max amount of steps in command of the equal commands
     :return: list of steps
     """
     if total_steps == 0:
         return []
-    steps_per_command = math.ceil(total_steps/math.ceil(total_steps / STEPS_IN_COMMAND))
-    return break_into_steps(total_steps, steps_per_command)
+    num_of_steps = math.ceil(total_steps / command_steps)
+    return break_into_equal_steps2(total_steps, num_of_steps)
 
 
 def add_zeros_at_end(array, length):
@@ -431,6 +459,21 @@ def add_zeros_at_end(array, length):
     """
     if len(array) < length:
         array += [0] * (length - len(array))
+    return array
+
+
+def add_ones_at_end(array, length):
+    """
+    Adds ones to the end of the given array to make it in the given length.
+    :return: same array, with 1s at its end, in the given length
+    """
+    last = None
+    if len(array) != 0:
+        last = array.pop()
+    if len(array) < length:
+        array += [1] * (length - len(array))
+    if last is not None:
+        array += [last]
     return array
 
 
@@ -481,7 +524,8 @@ def init_multi_arduino_communication():
 if __name__ == '__main__':
     for _ in range(10):
         # make_slice_by_trajectory([(0.6,0.0), (0.6, 2.0), (0.6,4.0), (0.6,7.0), (0.6,9.0), (0.6,7.0), (0.6,4.0), (0.6, 2.0), (0.6,0.0)], False)
-        make_slice_by_trajectory([(0.6,0.0), (0.6,9.0), (0.6,0.0)], False)
+        # make_slice_by_trajectory([(0.6,0.0), (0.6,9.0), (0.6,0.0)], False)
+        make_slice_by_trajectory([(7.0,4.0), (-7.0,4.0), (7.0,4.0)], False)
         # time.sleep(1)
     # make_slice_by_trajectory([(5.0,0.6), (0.6,0.0)], False)
     # generate_steps_list(7, -70)
