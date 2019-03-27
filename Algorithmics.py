@@ -17,18 +17,21 @@ import numpy as np
 import itertools
 
 # ----------------- CONSTANTS -------------------
+PIXELS_PER_CM = 40
 MULTI = False
 
 # first acc is measured, second is from fazkanoot
-# RELATIVE_ACC = 1.478  # from experiences we did it tracker program
+RELATIVE_ACC = 1.478  # from experiences we did it tracker program
 PART_OF_SCREEN_FOR_IP = 0.0
-RELATIVE_ACC = 1.0   # not from experiences we did it tracker program
+# RELATIVE_ACC = 1.6   # not from experiences we did it tracker program
 CAMERA_FPS = 30  # frames per second
 TIME_BETWEEN_2_FRAMES = 1.0 / CAMERA_FPS  # in sec
 FRAME_SIZE = (480, 640)  # (y,x) in pixels
 CROP_SIZE = (160, 480)  # (y,x) in pixels
 SCREEN_SIZE = (12.0, 16.0)  # (y,x) in cm
+FULL_SCREEN = (12.0, 16.0)
 DISTANCE_FROM_TABLET = Ac.d
+ARM_LOC_BEGINNING_ALGO = (0.0, 4.0)
 ACC = RELATIVE_ACC * SCREEN_SIZE[0]
 INTEGRATE_WITH_MECHANICS = True  # make True to send slices to ArduinoCommunication
 
@@ -179,11 +182,10 @@ def create_slice(state, time_to_slice):
     fruits_and_locs = state.get_fruits_locations(time_to_slice, state.fruits_in_range)
     critical_fruits_locs = state.get_fruits_locations(time_to_slice, state.get_critical_fruits())
     arm_loc = state.arm_loc
-    arm_loc_algo_coordinates = mech_to_algo(arm_loc)
-    ordered_fruits_and_locs = order_fruits_and_locs(arm_loc_algo_coordinates, fruits_and_locs)
+    # arm_loc_algo_coordinates = mech_to_algo(arm_loc)
+    ordered_fruits_and_locs = order_fruits_and_locs(arm_loc, fruits_and_locs)
     xy_points_to_go_through, sliced_fruits = create_best_slice(state.arm_loc, ordered_fruits_and_locs,
                                                                critical_fruits_locs)
-
     return xy_points_to_go_through, sliced_fruits
 
 
@@ -505,11 +507,11 @@ def get_pen_loc():
     :return: the location of the pen (x, y) in mechanics coordinates in cm
     """
     # location (16cm, 4cm) from the bottom-left corner
-    x_location = SCREEN_SIZE[1] / 2 - 1
-    y_location = 5.5
+    x_location = ARM_LOC_BEGINNING_ALGO[0]
+    y_location = SCREEN_SIZE[0] + ARM_LOC_BEGINNING_ALGO[1] - FULL_SCREEN[0]
     if MULTI:
         x_location = -1 * x_location
-        y_location = 4.0
+        y_location = y_location
     return x_location, y_location
     # return -SCREEN_SIZE[1]/2+3, 3  # location (3cm, 3cm) from the bottom-left corner
 
@@ -539,12 +541,13 @@ def init_info(frame_size, screen_size=SCREEN_SIZE):
     :param crop_size: size of cropped frame in pixels
     :param screen_size: size of screen in cm
     """
-    global CROP_SIZE, FRAME_SIZE, SCREEN_SIZE
-    CROP_SIZE = (frame_size[0] // 3, int(frame_size[1] * 0.75))
+    global CROP_SIZE, FRAME_SIZE, SCREEN_SIZE, ACC
+    # CROP_SIZE = (frame_size[0] // 3, int(frame_size[1] * 0.75))
     FRAME_SIZE = frame_size
-    # SCREEN_SIZE = (frame_size[0] * screen_size[1] / frame_size[1], screen_size[1])
+    SCREEN_SIZE = (frame_size[0] * screen_size[1] / frame_size[1], screen_size[1])
     # SCREEN_SIZE = (frame_size[0]*screen_size[1]/frame_size[1], frame_size[1]*screen_size[0]/frame_size[1])
-    SCREEN_SIZE = (frame_size[0]/40, frame_size[1]/40)
+    # SCREEN_SIZE = (frame_size[0] / PIXELS_PER_CM, frame_size[1] / PIXELS_PER_CM)
+
 
 
 def mechanics_thread_run():

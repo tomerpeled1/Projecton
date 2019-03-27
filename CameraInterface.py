@@ -91,8 +91,8 @@ class Camera:
         self.last_big_frame = []
         # Maximal size for buffer to avoid using too much memory.
         self.MAX_SIZE_BUFFER = 500
-        # fourcc = cv2.VideoWriter_fourcc(*'XVID')
-        # self.out = cv2.VideoWriter('multi2322.avi', fourcc, 30.0, (416, 285))
+        fourcc = cv2.VideoWriter_fourcc(*'XVID')
+        self.out = cv2.VideoWriter('EranFuckYou.avi', fourcc, 30.0, (548, 301))
 
     def read(self):
         """
@@ -154,7 +154,7 @@ class Camera:
                 self.last_big_frame = to_save
                 if len(self.buffer) < self.MAX_SIZE_BUFFER:
                     self.buffer.append((to_save, time_of_frame))
-                    # self.out.write(to_save)
+                    self.out.write(to_save)
                 return to_return
                 # else:
                 #     print("GOOD")
@@ -181,7 +181,8 @@ class Camera:
         frame = frame[self.tr_crop_dimensions[1]:self.bl_crop_dimensions[1],
                 self.bl_crop_dimensions[0]:self.tr_crop_dimensions[0]]
         # Updates the screen size in algorithm module.
-        Algo.init_info(frame.shape[:2])
+        if not Algo.INITIALIZED:
+            Algo.init_info(frame.shape[:2])
         return frame
 
     def crop_image(self, frame):
@@ -192,12 +193,13 @@ class Camera:
         """
         (height, width, depth) = frame.shape
         if self.FLIP:
-            frame = frame[:Algo.FRAME_SIZE[0]//3, width // 2 - int(Algo.FRAME_SIZE[1]*3/8): width // 2 + int(Algo.FRAME_SIZE[1]*3/8)]
+            # frame = frame[:160, width // 2 - int(Algo.FRAME_SIZE[1]*3/8): width // 2 + int(Algo.FRAME_SIZE[1]*3/8)]
+            frame = frame[:160, width // 2 - 240: width // 2 + 240]
         else:
-            # if not self.MULTI:
-            frame = frame[height - Algo.FRAME_SIZE[0]//3: height, width // 2 - int(Algo.FRAME_SIZE[1]*3/8): width // 2 + int(Algo.FRAME_SIZE[1]*3/8)]
-            # else:
-            #     frame = frame[height - 106: height, width // 2 - 180: width // 2 + 180]
+            if not self.MULTI:
+                frame = frame[height - 160: height, width // 2 - 240: width // 2 + 240]
+            else:
+                frame = frame[height - 106: height, width // 2 - 180: width // 2 + 180]
 
         return frame
 
