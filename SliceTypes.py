@@ -10,7 +10,7 @@ r = 10  # second arm length in cm
 R = 15  # first arm length in cm
 d = 15  # distance of major axis from screen in cm
 SCREEN = [16, 12]  # (x,y) dimensions of screen in cm
-SLICE_ZONE = 0.0
+SLICE_ZONE = 0.4
 PARTITION = 20
 MINIMAL_DISTANCE_FOR_PARTITION = 20
 LINEAR = 0
@@ -293,7 +293,7 @@ def linear_slice(arm_loc, _):
     """
     x_arm_loc = arm_loc[0]
     y_arm_loc = arm_loc[1]
-    x_final = x_arm_loc - 14.0
+    x_final = x_arm_loc - 12.0
     print("start: ", (x_arm_loc,y_arm_loc), "finish: ", (x_final, y_arm_loc))
     if MULTI:
         x_final = x_arm_loc + 9.0

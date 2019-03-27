@@ -21,9 +21,9 @@ PIXELS_PER_CM = 40
 MULTI = False
 
 # first acc is measured, second is from fazkanoot
-RELATIVE_ACC = 1.478  # from experiences we did it tracker program
+# RELATIVE_ACC = 1.478  # from experiences we did it tracker program
 PART_OF_SCREEN_FOR_IP = 0.0
-# RELATIVE_ACC = 1.6   # not from experiences we did it tracker program
+RELATIVE_ACC = 1.4   # not from experiences we did it tracker program
 CAMERA_FPS = 30  # frames per second
 TIME_BETWEEN_2_FRAMES = 1.0 / CAMERA_FPS  # in sec
 FRAME_SIZE = (480, 640)  # (y,x) in pixels
@@ -32,6 +32,8 @@ SCREEN_SIZE = (12.0, 16.0)  # (y,x) in cm
 FULL_SCREEN = (12.0, 16.0)
 DISTANCE_FROM_TABLET = Ac.d
 ARM_LOC_BEGINNING_ALGO = (1.0, 4.0)
+ARM_LOC_DOCKING = (15.0, 4.0)
+
 ACC = RELATIVE_ACC * SCREEN_SIZE[0]
 INTEGRATE_WITH_MECHANICS = True  # make True to send slices to ArduinoCommunication
 
@@ -41,7 +43,7 @@ THROUGH_POINTS = 2
 SLICE_TYPE = LINEAR
 
 SLICE_QUALITY_FACTOR_THRESH = 0
-MINIMAL_NUMBER_OF_FRUITS_FOR_COMBO = 1
+MINIMAL_NUMBER_OF_FRUITS_FOR_COMBO = 3
 MAX_TIME_FOR_COMBO = 400  # in ms
 
 # on_screen_fruits = []
@@ -50,6 +52,7 @@ slice_queue_lock = threading.Condition()
 simulation_thread = None
 slice_queue = []
 during_slice = False
+DOCKING = True
 
 INITIALIZED = False
 
@@ -183,10 +186,11 @@ def create_slice(state, time_to_slice):
     fruits_and_locs = state.get_fruits_locations(time_to_slice, state.fruits_in_range)
     critical_fruits_locs = state.get_fruits_locations(time_to_slice, state.get_critical_fruits())
     arm_loc = state.arm_loc
+    docking = state.docking
     # arm_loc_algo_coordinates = mech_to_algo(arm_loc)
     ordered_fruits_and_locs = order_fruits_and_locs(arm_loc, fruits_and_locs)
     xy_points_to_go_through, sliced_fruits = create_best_slice(state.arm_loc, ordered_fruits_and_locs,
-                                                               critical_fruits_locs)
+                                                               critical_fruits_locs, docking)
     return xy_points_to_go_through, sliced_fruits
 
 
@@ -194,7 +198,7 @@ def order_fruits_and_locs(arm_loc, fruits_and_locs):
     return sorted(fruits_and_locs, key=key(arm_loc))
 
 
-def create_best_slice(arm_loc, ordered_fruits_and_locs, critical_fruits_locs):
+def create_best_slice(arm_loc, ordered_fruits_and_locs, critical_fruits_locs, docking):
     """
     creates the best slice it can with the given fruits on screen.
     :param arm_loc: the location of the arm initially.
@@ -207,7 +211,7 @@ def create_best_slice(arm_loc, ordered_fruits_and_locs, critical_fruits_locs):
     sliced_fruits = []
     for fruits_and_locs in combinations_of_elements(ordered_fruits_and_locs):
         locs = [loc for (fruit, loc) in fruits_and_locs]
-        temp_slice_points = calc_slice(arm_loc, locs)
+        temp_slice_points = calc_slice(arm_loc, locs, docking)
         if good_slice(temp_slice_points):
             slice_points.extend(temp_slice_points)
             sliced_fruits.extend([fruit for (fruit, loc) in fruits_and_locs])
@@ -219,7 +223,7 @@ def create_best_slice(arm_loc, ordered_fruits_and_locs, critical_fruits_locs):
                                                             fruit not in sliced_fruits])
         if critical_fruits_not_sliced:
             critical_fruits_not_sliced_locs = [loc for (fruit, loc) in critical_fruits_not_sliced]
-            remaining_slice = calc_slice(current_arm_loc, critical_fruits_not_sliced_locs)
+            remaining_slice = calc_slice(current_arm_loc, critical_fruits_not_sliced_locs, docking)
             if slice_points:
                 slice_points.extend(remaining_slice[1:])
             else:
@@ -486,22 +490,23 @@ def mech_to_algo(point):
     return Ac.DIMS[0] / 2 - point[0], point[1] - (Ac.DIMS[1] - SCREEN_SIZE[0])
 
 
-def calc_slice(arm_loc, points):
+def calc_slice(arm_loc, points, docking):
     """
     Calculate the slice that goes through the given points.
     :param arm_loc: location of arm at beginning of slice
     :param points: points the slice should go through in (x,y)
     :return: calculated slice as parametrization, timer, time_to_slice
     """
-
     points = [algo_to_mech(point) for point in points]
+    if docking != ():
+        points += [algo_to_mech(docking)]
     mech_arm_loc = algo_to_mech(arm_loc)
     if SLICE_TYPE == LINEAR:
         return SliceTypes.linear_slice(mech_arm_loc, points)
     elif SLICE_TYPE == RADIUS:
         return SliceTypes.radius_slice(mech_arm_loc, points)
     elif SLICE_TYPE == THROUGH_POINTS:
-        return SliceTypes.slice_through_many_points(mech_arm_loc, points)
+        return SliceTypes.slice_through_fruits(mech_arm_loc, points)
 
 
 def get_pen_loc():
@@ -511,10 +516,16 @@ def get_pen_loc():
     # location (16cm, 4cm) from the bottom-left corner
     x_location = ARM_LOC_BEGINNING_ALGO[0]
     y_location = SCREEN_SIZE[0] + ARM_LOC_BEGINNING_ALGO[1] - FULL_SCREEN[0]
+    x_docking = ARM_LOC_DOCKING[0]
+    y_docking = SCREEN_SIZE[0] + ARM_LOC_DOCKING[1] - FULL_SCREEN[0]
     if MULTI:
         x_location = -1 * x_location
-        y_location = y_location
-    return x_location, y_location
+        # y_location = y_location
+        x_docking = -1 * x_docking
+    if DOCKING:
+        return (x_location, y_location), (x_docking, y_docking)
+    else:
+        return (x_location, y_location), ()
     # return -SCREEN_SIZE[1]/2+3, 3  # location (3cm, 3cm) from the bottom-left corner
 
 

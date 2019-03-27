@@ -2,9 +2,9 @@ import time
 import Algorithmics as Algo
 
 
-ARM_DELAY = 0
+ARM_DELAY = 0.1
 AVERAGE_SLICE_TIME = 0.5
-CRITICAL_TIME = 0.5
+CRITICAL_TIME = 0.2
 
 
 class State:
@@ -17,7 +17,8 @@ class State:
         self.fruits_out_of_range = []
         self.fruits_in_range = []
         self.current_time = time.perf_counter()
-        self.arm_loc = Algo.get_pen_loc()
+        self.arm_loc, self.docking = Algo.get_pen_loc()
+
 
     def update_state(self, new_fruits, current_time):
         """
