@@ -13,15 +13,15 @@ import cv2
 import State
 
 
-SAVED_VIDEO_NAME = "WIN_20181126_23_54_23_Pro_Trim.mp4"
-LIVE = False
+SAVED_VIDEO_NAME = "2019-03-17 19-59-34.flv"
+LIVE = True
 BACKGROUND_FILE_NAME = "bg.png"
-CROP = True
-FLIP = False
+CROP = False
+FLIP = True
 CALIBRATE = False
-IMAGE_PROCESSING_ALGORITHMICS_INTEGRATION = True
-ALGORITHMICS_MECHANICS_INTEGRATION = True
-SIMULATION = False
+IMAGE_PROCESSING_ALGORITHMICS_INTEGRATION = False
+ALGORITHMICS_MECHANICS_INTEGRATION = False
+SIMULATION = True
 CAPTURE_BACKGROUND = True
 RESIZE = False
 AUTOMATIC_START = False
@@ -31,7 +31,8 @@ CAMERA = None
 RAN = False
 
 
-CHOSEN_SLICE = Algo.THROUGH_POINTS
+
+CHOSEN_SLICE = Algo.LINEAR
 
 IMAGE_PROCESSING_FEATURES = (FLIP, CROP, LIVE, CALIBRATE, RESIZE)
 INTEGRATION = (IMAGE_PROCESSING_ALGORITHMICS_INTEGRATION, ALGORITHMICS_MECHANICS_INTEGRATION)
@@ -59,6 +60,7 @@ def fruit_shaninja(src, settings, image_processing_features=IMAGE_PROCESSING_FEA
         Ip.init_everything(integrate_with_algorithmics=integration[0], multi=MULTI)
         Algo.init_everything(slice_type=CHOSEN_SLICE, integrate_with_mechanics=integration[1],
                              simulate=simulation, multi=MULTI)
+
     fruits_info = []  # Initialize fruits known.
     # Create new camera object.
     if not RESTARTED:
@@ -96,15 +98,18 @@ def fruit_shaninja(src, settings, image_processing_features=IMAGE_PROCESSING_FEA
     buffer = []  # Buffer of images for debugging purposes.
     current_state = State.State()
     time_of_frame = time.perf_counter()
+    counter = 1 ## TODO remove
     # Main while loop.
-    while CAMERA.is_opened() and counter < 10000000:
-        if not (Algo.during_slice and MULTI):  # dont image proccess during a slice in multiplayer mode
+    while CAMERA.is_opened() and counter < 1000000:
+        t = time.perf_counter()
+          # dont image proccess during a slice in multiplayer mode
             # t1 = time.perf_counter()
             # print("********************************************************************")
-            counter += 1
-            current = CAMERA.next_frame(current, time_of_frame)  # Retrieve next frame.
-            time_of_frame = time.perf_counter()
-            temp_frame = current.copy()  # Copy the frame.
+        counter += 1
+        current = CAMERA.next_frame(current, time_of_frame)  # Retrieve next frame.
+        time_of_frame = time.perf_counter()
+        temp_frame = current.copy()  # Copy the frame.
+        if not (Algo.during_slice and MULTI):
             detection_results = Fd.fruit_detection2(temp_frame, bg, Ip.CONTOUR_AREA_THRESH,
                                                     time_of_frame)  # Run detection on fruits.
             cv2.drawContours(temp_frame, detection_results.conts, -1, (0, 255, 0), 2)  # Draw the fruits as detected.
@@ -134,8 +139,10 @@ def fruit_shaninja(src, settings, image_processing_features=IMAGE_PROCESSING_FEA
             # print("time for everything", abs(t1 - t2))
             if cv2.waitKey(1) == 27:
                 restart()
+        # print(str(counter) + " time for detection: " + str(time.perf_counter() - t))
+            counter += 1
     # Ip.debug_with_buffer(buffer)
-    Ip.show_original(CAMERA, buffer)
+    # Ip.show_original(CAMERA, buffer)
 
 
 def add_slice_to_queue(slice_points_to_add, sliced_fruits):

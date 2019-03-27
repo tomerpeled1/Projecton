@@ -10,7 +10,7 @@ import statistics as st
 import SliceTypes
 import time
 import ArduinoCommunication3 as Ac
-import Simulation as Slm
+import Simulation as Sim
 from threading import Thread
 import threading
 import numpy as np
@@ -47,7 +47,7 @@ MINIMAL_NUMBER_OF_FRUITS_FOR_COMBO = 3
 MAX_TIME_FOR_COMBO = 400  # in ms
 
 # on_screen_fruits = []
-SIMULATE = False  # make True to activate simulation
+SIMULATE = True  # make True to activate simulation
 slice_queue_lock = threading.Condition()
 simulation_thread = None
 slice_queue = []
@@ -264,9 +264,12 @@ def key(arm_loc):
 
 
 def flip_points_for_multiplayer(points):
-    points = [(SCREEN_SIZE[1] - p[0], SCREEN_SIZE[0] - p[1]) for p in points]
+    points = [flip_point_for_multiplayer(p) for p in points]
     print("after flip: ", points)
     return points
+
+def flip_point_for_multiplayer(p):
+    return SCREEN_SIZE[1] - p[0], SCREEN_SIZE[0] - p[1]
 
 
 def do_slice(points_to_slice, sliced_fruits):
@@ -275,14 +278,14 @@ def do_slice(points_to_slice, sliced_fruits):
     :param points_to_slice: list of points the slice should go through
     :param sliced_fruits: fruits that the slice is supposed to cut (for simulation)
     """
-    if MULTI:
-        points_to_slice = flip_points_for_multiplayer(points_to_slice)
+    # if MULTI:
+    #     points_to_slice = flip_points_for_multiplayer(points_to_slice)
     parametrization = points_to_slice
 
     # time_to_slice = 0
     # run simulation
     if SIMULATE:
-        Slm.run_simulation(parametrization, sliced_fruits)
+        Sim.run_simulation(parametrization, sliced_fruits)
     else:
         Ac.make_slice_by_trajectory(parametrization)
 
@@ -478,6 +481,8 @@ def algo_to_mech(point):
     :param point: (x,y) in algorithmics and trajectory coordinates
     :return: (x,y) in mechanics and Arduino coordinates
     """
+    if MULTI:
+        return Ac.DIMS[0] / 2 - point[0], point[1]
     return Ac.DIMS[0] / 2 - point[0], point[1] + (Ac.DIMS[1] - SCREEN_SIZE[0])
 
 
@@ -497,6 +502,10 @@ def calc_slice(arm_loc, points, docking):
     :param points: points the slice should go through in (x,y)
     :return: calculated slice as parametrization, timer, time_to_slice
     """
+    if MULTI:
+        arm_loc = flip_point_for_multiplayer(arm_loc)
+        docking = flip_point_for_multiplayer(docking)
+        points = flip_points_for_multiplayer(points)
     points = [algo_to_mech(point) for point in points]
     if docking != ():
         points += [algo_to_mech(docking)]
@@ -518,10 +527,10 @@ def get_pen_loc():
     y_location = SCREEN_SIZE[0] + ARM_LOC_BEGINNING_ALGO[1] - FULL_SCREEN[0]
     x_docking = ARM_LOC_DOCKING[0]
     y_docking = SCREEN_SIZE[0] + ARM_LOC_DOCKING[1] - FULL_SCREEN[0]
-    if MULTI:
-        x_location = -1 * x_location
-        # y_location = y_location
-        x_docking = -1 * x_docking
+    # if MULTI:
+    #     x_location = -1 * x_location
+    #     # y_location = y_location
+    #     x_docking = -1 * x_docking
     if DOCKING:
         return (x_location, y_location), (x_docking, y_docking)
     else:
@@ -581,7 +590,10 @@ def mechanics_thread_run():
         slice_queue.remove((next_slice, sliced_fruits))
         # Executes slice (still memory not unlocked so that we want start a new slice during the previous one).
         during_slice = True
-        do_slice(next_slice, sliced_fruits)
+        try:
+            do_slice(next_slice, sliced_fruits)
+        except:
+            pass
         during_slice = False
         # Release the access to the memory so that we can enter new slices to queue.
         slice_queue_lock.release()
@@ -606,6 +618,10 @@ def init_everything(slice_type=SLICE_TYPE, integrate_with_mechanics=INTEGRATE_WI
     if MULTI:
         init_multi_params()
         SliceTypes.init_multi(MULTI)
+        global ARM_LOC_BEGINNING_ALGO
+        global ARM_LOC_DOCKING
+        ARM_LOC_BEGINNING_ALGO = (11.0, 3.0)
+        ARM_LOC_DOCKING = (1.0, 3.0)
     # In case we want to integrate with mechanics (simulation or arduino) we must open a new thread for it.
     if INTEGRATE_WITH_MECHANICS:
         global simulation_thread
@@ -616,15 +632,18 @@ def init_everything(slice_type=SLICE_TYPE, integrate_with_mechanics=INTEGRATE_WI
 
 
 def init_multi_params():
-
+    global FULL_SCREEN
     global FRAME_SIZE
     global CROP_SIZE
     global SCREEN_SIZE
     global ACC
-    Ac.init_multi_arduino_communication()
-    FRAME_SIZE = (320, 480)
+    if SIMULATE:
+        Sim.init_multi()
+    else:
+        Ac.init_multi_arduino_communication()
     CROP_SIZE = (106, 360)
     SCREEN_SIZE = (8.0, 12.0)
+    FULL_SCREEN = (8.0, 12.0)
     ACC = RELATIVE_ACC * SCREEN_SIZE[0]
     # TODO add VY_MAX and this
 

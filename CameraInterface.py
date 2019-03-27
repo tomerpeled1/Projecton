@@ -91,8 +91,8 @@ class Camera:
         self.last_big_frame = []
         # Maximal size for buffer to avoid using too much memory.
         self.MAX_SIZE_BUFFER = 500
-        fourcc = cv2.VideoWriter_fourcc(*'XVID')
-        self.out = cv2.VideoWriter('EranFuckYou.avi', fourcc, 30.0, (548, 301))
+        # fourcc = cv2.VideoWriter_fourcc(*'XVID')
+        # self.out = cv2.VideoWriter('EranFuckYou2.avi', fourcc, 30.0, (411, 282))
 
     def read(self):
         """
@@ -102,8 +102,8 @@ class Camera:
         frame = self.stream.read()
         to_save = []
         # Option for calibration.
-        if self.LIVE:
-            frame = self.crop_to_screen_size(frame)
+        # if self.LIVE:
+        frame = self.crop_to_screen_size(frame)
         self.current = frame
         if self.RESIZE:
             # cv2.imshow("before resized", frame)
@@ -154,7 +154,7 @@ class Camera:
                 self.last_big_frame = to_save
                 if len(self.buffer) < self.MAX_SIZE_BUFFER:
                     self.buffer.append((to_save, time_of_frame))
-                    self.out.write(to_save)
+                    # self.out.write(to_save)
                 return to_return
                 # else:
                 #     print("GOOD")
@@ -178,11 +178,12 @@ class Camera:
         :param frame: The frame to crop.
         :return: The frame cropped with the calibration dimensions.
         """
-        frame = frame[self.tr_crop_dimensions[1]:self.bl_crop_dimensions[1],
-                self.bl_crop_dimensions[0]:self.tr_crop_dimensions[0]]
+        if self.LIVE:
+            frame = frame[self.tr_crop_dimensions[1]:self.bl_crop_dimensions[1],
+                    self.bl_crop_dimensions[0]:self.tr_crop_dimensions[0]]
         # Updates the screen size in algorithm module.
         if not Algo.INITIALIZED:
-            Algo.init_info(frame.shape[:2])
+            Algo.init_info(frame.shape[:2], Algo.SCREEN_SIZE)
         return frame
 
     def crop_image(self, frame):
@@ -201,6 +202,8 @@ class Camera:
                 cropped = frame[height - 160: height, width // 2 - 240: width // 2 + 240]
             else:
                 cropped = frame[height - 106: height, width // 2 - 180: width // 2 + 180]
+
+                # cropped = frame[:106, width // 2 - 180: width // 2 + 180]
         return cropped
 
 

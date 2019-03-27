@@ -3,6 +3,7 @@ Implements the SavedVideoWrapper class.
 """
 
 import cv2
+import time
 
 
 class SavedVideoWrapper:
@@ -22,7 +23,8 @@ class SavedVideoWrapper:
         :return: frame from video
         """
         _, frame = self.stream.read()
-        cv2.waitKey(15)
+        # cv2.waitKey(15)
+        time.sleep(0.02)
         return frame
 
     def stop(self):
