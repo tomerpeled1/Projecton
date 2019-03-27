@@ -17,12 +17,13 @@ import numpy as np
 import itertools
 
 # ----------------- CONSTANTS -------------------
+PIXELS_PER_CM = 40
 MULTI = False
 
 # first acc is measured, second is from fazkanoot
-# RELATIVE_ACC = 1.478  # from experiences we did it tracker program
+RELATIVE_ACC = 1.478  # from experiences we did it tracker program
 PART_OF_SCREEN_FOR_IP = 0.0
-RELATIVE_ACC = 1.0   # not from experiences we did it tracker program
+# RELATIVE_ACC = 1.6   # not from experiences we did it tracker program
 CAMERA_FPS = 30  # frames per second
 TIME_BETWEEN_2_FRAMES = 1.0 / CAMERA_FPS  # in sec
 FRAME_SIZE = (480, 640)  # (y,x) in pixels
@@ -84,7 +85,6 @@ def cm2pixel(cm_loc):
     x_coord_frame = int(x_coord_screen * (float(FRAME_SIZE[1]) / SCREEN_SIZE[1]))
     x_coord_frame = FRAME_SIZE[1] - x_coord_frame
     y_coord_frame = int((float(y_coord_screen / SCREEN_SIZE[0])) * FRAME_SIZE[0])
-    print("FRAME", FRAME_SIZE, "SCREEN", SCREEN_SIZE)
     return y_coord_frame, x_coord_frame, t
 
 
@@ -539,12 +539,13 @@ def init_info(frame_size, screen_size=SCREEN_SIZE):
     :param crop_size: size of cropped frame in pixels
     :param screen_size: size of screen in cm
     """
-    global CROP_SIZE, FRAME_SIZE, SCREEN_SIZE
-    CROP_SIZE = (frame_size[0] // 3, int(frame_size[1] * 0.75))
+    global CROP_SIZE, FRAME_SIZE, SCREEN_SIZE, ACC
+    # CROP_SIZE = (frame_size[0] // 3, int(frame_size[1] * 0.75))
     FRAME_SIZE = frame_size
-    # SCREEN_SIZE = (frame_size[0] * screen_size[1] / frame_size[1], screen_size[1])
+    SCREEN_SIZE = (frame_size[0] * screen_size[1] / frame_size[1], screen_size[1])
     # SCREEN_SIZE = (frame_size[0]*screen_size[1]/frame_size[1], frame_size[1]*screen_size[0]/frame_size[1])
-    SCREEN_SIZE = (frame_size[0]/40, frame_size[1]/40)
+    # SCREEN_SIZE = (frame_size[0] / PIXELS_PER_CM, frame_size[1] / PIXELS_PER_CM)
+
 
 
 def mechanics_thread_run():

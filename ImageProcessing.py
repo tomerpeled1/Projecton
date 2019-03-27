@@ -89,7 +89,7 @@ def draw_trajectory(fruit, frame, time_of_frame):
     # draw the prediction real time
     x,y = xy_by_t(time_of_frame - fruit.time_created)
     y_pix, x_pix ,_=  Algo.cm2pixel((x, y, time_of_frame - fruit.time_created))
-    cv2.circle(frame, (x_pix, y_pix), 6, (60, 255, 0), -1)
+    cv2.circle(frame, (x_pix, y_pix), 6, ( 60, 255, 0), -1)
 
 
     # centers = [center[0] for center in fruit.centers]
@@ -292,20 +292,26 @@ def debug_with_buffer(buffer, buffer_of_shaninja):
     """
     i = 0
     while True:
-        for fruit in fruits_for_debug_trajectories:
-            # draw_center(fruit, buffer[i])
-            draw_trajectory(fruit, buffer[i][0],time_of_frame=0)
-            x, y = fruit.trajectory.calc_trajectory()(buffer[i][1] - fruit.time_created)
-            y_pix, x_pix, _ = Algo.cm2pixel((x, y, 0))
-            cv2.circle(buffer[i][0], (x_pix, y_pix), 6, (188, 0, 255), -1)
+        try:
+            for fruit in fruits_for_debug_trajectories:
+                # draw_center(fruit, buffer[i])
+                draw_trajectory(fruit, buffer[i][0],time_of_frame=0)
+                x, y = fruit.trajectory.calc_trajectory()(buffer[i][1] - fruit.time_created)
+                y_pix, x_pix, _ = Algo.cm2pixel((x, y, 0))
+                cv2.circle(buffer[i][0], (x_pix, y_pix), 6, (188, 0, 255), -1)
 
-        cv2.imshow("debug", buffer[i][0])
-        cv2.imshow("Shaninja", buffer_of_shaninja[i])
-        x = cv2.waitKey(1)
-        if x == 49:  # '1' key
-            i -= 1
-        elif x == 50:  # '2' key
-            i += 1
+            cv2.imshow("debug", buffer[i][0])
+            cv2.imshow("Shaninja", buffer_of_shaninja[i])
+            x = cv2.waitKey(1)
+            if x == 49:  # '1' key
+                i -= 1
+            elif x == 50:  # '2' key
+                i += 1
+            elif x == 27:
+                return
+        except IndexError:
+            print("can't move forward")
+            i-=1
 
 
 def show_original(camera,buffer_of_shaninja):

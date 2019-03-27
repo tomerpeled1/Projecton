@@ -192,12 +192,13 @@ class Camera:
         """
         (height, width, depth) = frame.shape
         if self.FLIP:
-            frame = frame[:Algo.FRAME_SIZE[0]//3, width // 2 - int(Algo.FRAME_SIZE[1]*3/8): width // 2 + int(Algo.FRAME_SIZE[1]*3/8)]
+            # frame = frame[:160, width // 2 - int(Algo.FRAME_SIZE[1]*3/8): width // 2 + int(Algo.FRAME_SIZE[1]*3/8)]
+            frame = frame[:160, width // 2 - 240: width // 2 + 240]
         else:
-            # if not self.MULTI:
-            frame = frame[height - Algo.FRAME_SIZE[0]//3: height, width // 2 - int(Algo.FRAME_SIZE[1]*3/8): width // 2 + int(Algo.FRAME_SIZE[1]*3/8)]
-            # else:
-            #     frame = frame[height - 106: height, width // 2 - 180: width // 2 + 180]
+            if not self.MULTI:
+                frame = frame[height - 160: height, width // 2 - 240: width // 2 + 240]
+            else:
+                frame = frame[height - 106: height, width // 2 - 180: width // 2 + 180]
 
         return frame
 
