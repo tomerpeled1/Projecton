@@ -9,7 +9,7 @@ import math
 import statistics as st
 import SliceTypes
 import time
-import ArduinoCommunication3 as Ac
+import ArduinoCommunication4 as Ac
 import Simulation as Sim
 from threading import Thread
 import threading
@@ -32,7 +32,7 @@ SCREEN_SIZE = (12.0, 16.0)  # (y,x) in cm
 FULL_SCREEN = (12.0, 16.0)
 DISTANCE_FROM_TABLET = Ac.d
 ARM_LOC_BEGINNING_ALGO = (1.0, 4.0)
-ARM_LOC_DOCKING = (15.0, 4.0)
+ARM_LOC_DOCKING = (15.0, 0.0)
 
 ACC = RELATIVE_ACC * SCREEN_SIZE[0]
 INTEGRATE_WITH_MECHANICS = True  # make True to send slices to ArduinoCommunication
@@ -47,7 +47,7 @@ MINIMAL_NUMBER_OF_FRUITS_FOR_COMBO = 3
 MAX_TIME_FOR_COMBO = 400  # in ms
 
 # on_screen_fruits = []
-SIMULATE = True  # make True to activate simulation
+SIMULATE = False  # make True to activate simulation
 slice_queue_lock = threading.Condition()
 simulation_thread = None
 slice_queue = []
@@ -686,11 +686,23 @@ if __name__ == "__main__":
     # slice_and_times = SliceTypes.slice_through_fruits(algo_to_mech(get_pen_loc()[0]), [algo_to_mech((15.0, 4.0))])
     # slice_and_times = SliceTypes.slice_through_fruits(algo_to_mech(get_pen_loc()[0]), [algo_to_mech((15.0, 3.0))])
     # slice_and_times = SliceTypes.slice_through_fruits(algo_to_mech(get_pen_loc()[0]), [algo_to_mech((15.0, 2.0))])
-    slice_and_times = SliceTypes.slice_through_fruits(algo_to_mech(get_pen_loc()[0]), [algo_to_mech((5.0, 7.0)),
-                                                                                       algo_to_mech((8.0, 1.0)),
-                                                                                       algo_to_mech((11.0, 7.0)),
-                                                                                       algo_to_mech((15.0, 3.0)),
+    # slice_and_times = SliceTypes.slice_through_fruits(algo_to_mech(get_pen_loc()[0]), [algo_to_mech((5.0, 5.0)),
+    #                                                                                    algo_to_mech((10.0, 3.0)),
+    #                                                                                    algo_to_mech(get_pen_loc()[1])])
+    # slice_and_times = SliceTypes.slice_through_fruits(algo_to_mech(get_pen_loc()[0]), [algo_to_mech((5.0, 5.0)),
+    #                                                                                    algo_to_mech((8.0, 3.0)),
+    #                                                                                    algo_to_mech((12.0, 6.0)),
+    #                                                                                    algo_to_mech(get_pen_loc()[1])])
+    slice_and_times = SliceTypes.slice_through_fruits(algo_to_mech(get_pen_loc()[0]), [algo_to_mech((5.0, 5.0)),
+                                                                                       algo_to_mech((8.0, 3.0)),
+                                                                                       algo_to_mech((11.0, 5.0)),
+                                                                                       algo_to_mech((15.0, 6.0)),
                                                                                        algo_to_mech(get_pen_loc()[1])])
+    # slice_and_times = SliceTypes.slice_through_fruits(algo_to_mech(get_pen_loc()[0]), [algo_to_mech((5.0, 5.0)),
+    #                                                                                    algo_to_mech((10.0, 3.0)),
+    #                                                                                    algo_to_mech((8.0, 5.0)),
+    #                                                                                    algo_to_mech((15.0, 6.0)),
+    #                                                                                    algo_to_mech(get_pen_loc()[1])])
     while True:
         do_slice(slice_and_times, [])
     # do_slice(slice_and_times, [])

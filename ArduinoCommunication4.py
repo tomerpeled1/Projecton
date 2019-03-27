@@ -7,6 +7,8 @@ from serial import SerialException
 import math
 import time
 import numpy as np
+import keyboard
+import cv2
 # import matplotlib.pyplot as plt
 
 
@@ -32,7 +34,7 @@ START_SLICE = '~'
 LENGTH_OF_COMMAND = 2  # the length of a command to the serial that contains the number of steps for each motor and the
 SERIAL_BUFFER_SIZE = 64  # in bytes
 COMMAND_PACKAGE_SIZE = math.floor(SERIAL_BUFFER_SIZE/LENGTH_OF_COMMAND)  # number of commands to write at once
-STEPS_IN_COMMAND = 8  # number of steps to move at every command
+STEPS_IN_COMMAND = 6  # number of steps to move at every command
 MAX_STEPS_IN_COMMAND = 60  # max number of steps to move at every command
 
 
@@ -44,13 +46,13 @@ BITS_PER_BYTE = 8  # the number of bits in one byte
 WRITE_DELAY = 1000/(SERIAL_BPS/BITS_PER_BYTE/LENGTH_OF_COMMAND)  # delay in ms after writing to prevent buffer overload
 TRAJECTORY_DIVISION_NUMBER = 20  # the number of parts that the trajectory of the arm is divided to
 DT_DIVIDE_TRAJECTORY = float(T) / TRAJECTORY_DIVISION_NUMBER  # size of step in parameter
-WANTED_RPS = 0.8  # speed of motors in revolutions per second
+WANTED_RPS = 0.5  # speed of motors in revolutions per second
 WANTED_RPS_SLOW = 0.1  # speed of motors in revolutions per second
 ONE_STEP_DELAY = 5.0 / WANTED_RPS / STEPS_FRACTION * 2  # in ms
 ONE_STEP_DELAY_SLOW = 5.0 / WANTED_RPS_SLOW / STEPS_FRACTION * 2  # in ms
 ONE_STEP_DELAY_AVERAGE = (ONE_STEP_DELAY + ONE_STEP_DELAY_SLOW) / 2  # in ms
 WAIT_FOR_STOP = 50.0  # time to wait after slice until committing invert slice in ms
-STEPS_FOR_ACCELERATION = int(STEPS_FRACTION * 3.0 * WANTED_RPS)  # number of steps to move at acceleration move - factor 1.8 from experiment, 2.0 for safe
+STEPS_FOR_ACCELERATION = int(STEPS_FRACTION * 2.0 * WANTED_RPS)  # number of steps to move at acceleration move - factor 1.8 from experiment, 2.0 for safe
 if STEPS_FOR_ACCELERATION > MAX_STEPS_IN_COMMAND: STEPS_FOR_ACCELERATION = MAX_STEPS_IN_COMMAND
 NUMBER_OF_ACCELERATION_MOVES = 1
 
@@ -353,6 +355,8 @@ def generate_steps_list_same_loop(delta_steps_theta, delta_steps_phi):
     delta_steps_phi = abs(delta_steps_phi)
     delta_steps_theta_without_acceleration = delta_steps_theta - 2 * NUMBER_OF_ACCELERATION_MOVES * \
                                              STEPS_FOR_ACCELERATION
+    if delta_steps_theta_without_acceleration < 0:
+        delta_steps_theta_without_acceleration = 0
     padding_steps_theta = delta_steps_theta - delta_steps_theta_without_acceleration
 
     steps_theta_without_acceleration = break_into_equal_steps(delta_steps_theta_without_acceleration, STEPS_IN_COMMAND)
@@ -385,9 +389,6 @@ def generate_steps_list(delta_steps_theta, delta_steps_phi):
     theta_sign = sign(delta_steps_theta)
     phi_sign = sign(delta_steps_phi)
     delta_steps_theta = abs(delta_steps_theta)
-
-    if delta_steps_theta < 2 * STEPS_FOR_ACCELERATION:
-        delta_steps_theta = 2 * STEPS_FOR_ACCELERATION
     delta_steps_phi = abs(delta_steps_phi)
 
     steps_phi = break_into_equal_steps(delta_steps_phi, MAX_STEPS_IN_COMMAND)
@@ -397,9 +398,10 @@ def generate_steps_list(delta_steps_theta, delta_steps_phi):
     if delta_steps_theta_without_acceleration < 0:
         delta_steps_theta_without_acceleration = 0
     padding_steps_theta = delta_steps_theta - delta_steps_theta_without_acceleration
+
     steps_theta_without_acceleration = break_into_equal_steps(delta_steps_theta_without_acceleration, STEPS_IN_COMMAND)
     if len(steps_theta_without_acceleration) < len(steps_phi)-2*NUMBER_OF_ACCELERATION_MOVES:
-        steps_theta_without_acceleration = break_into_equal_steps2(delta_steps_theta_without_acceleration, len(steps_phi)-2*NUMBER_OF_ACCELERATION_MOVES)
+        steps_theta_without_acceleration = break_into_equal_steps2(delta_steps_theta, len(steps_phi)-2*NUMBER_OF_ACCELERATION_MOVES)
     steps_theta = add_padding_for_acceleration(steps_theta_without_acceleration, padding_steps_theta)
 
     if len(steps_theta) > len(steps_phi): steps_phi = break_into_equal_steps2(delta_steps_phi, len(steps_theta))
@@ -509,6 +511,20 @@ def init_multi_arduino_communication():
     DIMS = (12.0, 8.0)
     d = 17.8
 
+def slice_by_button():
+    print("Started button press mode:")
+    slice = [(7.0,4.0), (-7.0,4.0)]
+    islice = [(-7.0,4.0), (7.0,4.0)]
+    invert = False
+    while True:
+        if keyboard.is_pressed(' '):
+            if not invert:
+                make_slice_by_trajectory(slice, False)
+            else:
+                make_slice_by_trajectory(islice, False)
+            invert = not invert
+
+
 
 # if __name__ == "__main__":
 # print('Lets begin...')
@@ -524,10 +540,11 @@ def init_multi_arduino_communication():
 # print(time.time()-start)
 
 if __name__ == '__main__':
-    for _ in range(10):
-        # make_slice_by_trajectory([(0.6,0.0), (0.6, 2.0), (0.6,4.0), (0.6,7.0), (0.6,9.0), (0.6,7.0), (0.6,4.0), (0.6, 2.0), (0.6,0.0)], False)
-        # make_slice_by_trajectory([(0.6,0.0), (0.6,9.0), (0.6,0.0)], False)
-        make_slice_by_trajectory([(7.0,4.0), (-7.0,4.0), (7.0,4.0)], False)
-        # time.sleep(1)
-    # make_slice_by_trajectory([(5.0,0.6), (0.6,0.0)], False)
-    # generate_steps_list(7, -70)
+    slice_by_button()
+    # for _ in range(10):
+    #     # make_slice_by_trajectory([(0.6,0.0), (0.6, 2.0), (0.6,4.0), (0.6,7.0), (0.6,9.0), (0.6,7.0), (0.6,4.0), (0.6, 2.0), (0.6,0.0)], False)
+    #     # make_slice_by_trajectory([(0.6,0.0), (0.6,9.0), (0.6,0.0)], False)
+    #     make_slice_by_trajectory([(7.0,4.0), (-7.0,4.0), (7.0,4.0)], False)
+    #     # time.sleep(1)
+    # # make_slice_by_trajectory([(5.0,0.6), (0.6,0.0)], False)
+    # # generate_steps_list(7, -70)
