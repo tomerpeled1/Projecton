@@ -31,7 +31,7 @@ CROP_SIZE = (160, 480)  # (y,x) in pixels
 SCREEN_SIZE = (12.0, 16.0)  # (y,x) in cm
 FULL_SCREEN = (12.0, 16.0)
 DISTANCE_FROM_TABLET = Ac.d
-ARM_LOC_BEGINNING_ALGO = (0.0, 4.0)
+ARM_LOC_BEGINNING_ALGO = (1.0, 4.0)
 ACC = RELATIVE_ACC * SCREEN_SIZE[0]
 INTEGRATE_WITH_MECHANICS = False  # make True to send slices to ArduinoCommunication
 
@@ -50,6 +50,8 @@ slice_queue_lock = threading.Condition()
 simulation_thread = None
 slice_queue = []
 during_slice = False
+
+INITIALIZED = False
 
 VY_MAX = 24
 VY_MIN = 7
@@ -493,12 +495,13 @@ def calc_slice(arm_loc, points):
     """
 
     points = [algo_to_mech(point) for point in points]
+    mech_arm_loc = algo_to_mech(arm_loc)
     if SLICE_TYPE == LINEAR:
-        return SliceTypes.linear_slice(arm_loc, points)
+        return SliceTypes.linear_slice(mech_arm_loc, points)
     elif SLICE_TYPE == RADIUS:
-        return SliceTypes.radius_slice(arm_loc, points)
+        return SliceTypes.radius_slice(mech_arm_loc, points)
     elif SLICE_TYPE == THROUGH_POINTS:
-        return SliceTypes.slice_through_many_points(arm_loc, points)
+        return SliceTypes.slice_through_many_points(mech_arm_loc, points)
 
 
 def get_pen_loc():
@@ -540,7 +543,8 @@ def init_info(frame_size, screen_size=SCREEN_SIZE):
     :param crop_size: size of cropped frame in pixels
     :param screen_size: size of screen in cm
     """
-    global CROP_SIZE, FRAME_SIZE, SCREEN_SIZE, ACC
+    global CROP_SIZE, FRAME_SIZE, SCREEN_SIZE, INITIALIZED
+    INITIALIZED = True
     # CROP_SIZE = (frame_size[0] // 3, int(frame_size[1] * 0.75))
     FRAME_SIZE = frame_size
     SCREEN_SIZE = (frame_size[0] * screen_size[1] / frame_size[1], screen_size[1])

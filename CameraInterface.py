@@ -187,6 +187,7 @@ class Camera:
 
     def crop_image(self, frame):
         """
+        return frame
         Crops an image to a bottom third.
         :param frame: The frame to crop.
         :return: The bottom third of the frame (saved in the same memory location).
@@ -194,14 +195,14 @@ class Camera:
         (height, width, depth) = frame.shape
         if self.FLIP:
             # frame = frame[:160, width // 2 - int(Algo.FRAME_SIZE[1]*3/8): width // 2 + int(Algo.FRAME_SIZE[1]*3/8)]
-            frame = frame[:160, width // 2 - 240: width // 2 + 240]
+            cropped = frame[:160, width // 2 - 240: width // 2 + 240]
         else:
             if not self.MULTI:
-                frame = frame[height - 160: height, width // 2 - 240: width // 2 + 240]
+                cropped = frame[height - 160: height, width // 2 - 240: width // 2 + 240]
             else:
-                frame = frame[height - 106: height, width // 2 - 180: width // 2 + 180]
+                cropped = frame[height - 106: height, width // 2 - 180: width // 2 + 180]
+        return cropped
 
-        return frame
 
     def background_and_wait(self):
         """
