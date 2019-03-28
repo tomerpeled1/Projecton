@@ -91,6 +91,8 @@ class Camera:
         self.last_big_frame = []
         # Maximal size for buffer to avoid using too much memory.
         self.MAX_SIZE_BUFFER = 500
+        fourcc = cv2.VideoWriter_fourcc(*'XVID')
+        self.out = cv2.VideoWriter('detection.avi', fourcc, 30.0, (480, 160))
         # fourcc = cv2.VideoWriter_fourcc(*'XVID')
         # self.out = cv2.VideoWriter('EranFuckYou2.avi', fourcc, 30.0, (411, 282))
 
@@ -282,8 +284,21 @@ class Camera:
 
 
 if __name__ == '__main__':
-    cam = Camera(0, True, False, True, True, True)
+    # cam = Camera(0, True, False, True, True, True.)
+    cam = Camera(0,calibrate=True)
+    cam.set_camera_settings(DARK_101_SETTINGS_new2)
+
     frame, to_save = cam.read()
-    cv2.imshow("frame", frame)
+
+    # x = cv2.waitKey(1)
+    # while x!=27:
+    frame, to_save = cam.read()
+    while True:
+        frame, to_save = cam.read()
+        cv2.imshow("calibrate", frame)
+        # Calibrate the camera with a click on space.
+        if cv2.waitKey(1) == 32:
+            (bl, tr) = calib(frame)
+            break
     cv2.waitKey(0)
-    cv2.imwrite("AD_IMAGE.png", frame)
+    rect = calib(frame)

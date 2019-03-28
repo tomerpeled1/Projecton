@@ -35,7 +35,7 @@ def set_camera_settings(cam):
     TODO add documentation
     :param cam:
     """
-    #       key value
+    #       key_x value
     # cam.set(3, 1080)  # width
     # cam.set(4, 720)  # height
     # cam.set(10, 120)  # brightness      min: 0   , max: 255 , increment:1
@@ -44,7 +44,7 @@ def set_camera_settings(cam):
     # cam.set(13, 13)  # hue
     cam.set(14, 120)  # gain              min: 0   , max: 127 , increment:1
     cam.set(15, -7)  # exposure           min: -7  , max: -1  , increment:1
-    # cam.set(17, 5000)  # white_balance  min: 4000, max: 7000, increment:1
+    cam.set(17, 4000)  # white_balance  min: 4000, max: 7000, increment:1
     cam.set(28, 13)  # focus              min: 0   , max: 255 , increment:5
 
 

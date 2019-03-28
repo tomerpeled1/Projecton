@@ -19,6 +19,8 @@ class State:
         self.current_time = time.perf_counter()
         self.arm_loc, self.docking = Algo.get_pen_loc()
 
+    def swap_docking(self):
+        self.docking, self.arm_loc = self.arm_loc, self.docking
 
     def update_state(self, new_fruits, current_time):
         """
@@ -90,6 +92,12 @@ class State:
         for index in range(len(fruits_out_of_range_locs)):
             flag = Algo.on_screen(fruits_out_of_range_locs[index][1])
             if not flag:
+                # print("*************************", fruits_out_of_range_locs[index][0], "centers: ",
+                #       fruits_out_of_range_locs[index][0].centers)
+                f = fruits_out_of_range_locs[index][0]
+                # print("self.time: ", self.current_time, "center: ", fruits_out_of_range_locs[index][1])
+                # for t in [k*0.05 for k in range(40)]:
+                    # print("t = ", t, "center from trajectory: ", f.trajectory.calc_trajectory()(t))
                 self.fruits_out_of_range.remove(fruits_out_of_range_locs[index][0])
 
 

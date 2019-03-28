@@ -204,7 +204,8 @@ def create_best_slice(arm_loc, ordered_fruits_and_locs, critical_fruits_locs, do
     creates the best slice it can with the given fruits on screen.
     :param arm_loc: the location of the arm initially.
     :param ordered_fruits_and_locs: list of (fruit, loc) sorted by distance on x axis from the arm loc.
-    :param critical_fruits_locs: fruits about to be losr.
+    :param critical_fruits_locs: fruits about to be lose.
+    :param docking: point in (x,y) for final location of arm (enter empty tuple for no docking)
     :return: points to slice through and the fruits sliced.
     """
     current_arm_loc = arm_loc
@@ -248,6 +249,13 @@ def combinations_of_elements(s):
                                               for r in range(len(s), MINIMAL_NUMBER_OF_FRUITS_FOR_COMBO - 1, -1)))
 
 
+def time_for_slice(points):
+    if MULTI:
+        points = flip_points_for_multiplayer(points)
+    steps_theta, steps_phi = Ac.generate_steps_from_points(points)
+    return Ac.calc_time_of_slice(steps_theta, steps_phi)
+
+
 def good_slice(points_of_slice_to_evaluate):
     """
     Determines whether or not a slice is "good enough" (creates combo).
@@ -258,9 +266,9 @@ def good_slice(points_of_slice_to_evaluate):
     return True
 
 
-def key(arm_loc):
+def key_x(arm_loc):
     def distance_from_arm_in_x(fruit_and_loc):
-        fruit, loc = fruit_and_loc
+        _, loc = fruit_and_loc
         return abs(loc[0] - arm_loc[0])
 
     return distance_from_arm_in_x
@@ -272,6 +280,14 @@ def key_theta(arm_loc):
 
     return distance_from_arm_in_x
 
+
+
+def key_theta(arm_loc):
+    def distance_from_arm_in_theta(fruit_and_loc):
+        _, loc = fruit_and_loc
+        return abs(Ac.xy2angles(algo_to_mech(loc))[0] - Ac.xy2angles(algo_to_mech(arm_loc))[0])
+
+    return distance_from_arm_in_theta
 
 
 def flip_points_for_multiplayer(points):
@@ -550,6 +566,7 @@ def calc_slice(arm_loc, points, docking):
     Calculate the slice that goes through the given points.
     :param arm_loc: location of arm at beginning of slice
     :param points: points the slice should go through in (x,y)
+    :param docking: point in (x,y) for final location of arm (enter empty tuple for no docking)
     :return: calculated slice as parametrization, timer, time_to_slice
     """
     if MULTI:
@@ -610,7 +627,6 @@ def init_info(frame_size, screen_size=SCREEN_SIZE):
     """
     Initializes the sizes for the screen so that the algorithmics work properly.
     :param frame_size: size of frame in pixels
-    :param crop_size: size of cropped frame in pixels
     :param screen_size: size of screen in cm
     """
     global CROP_SIZE, FRAME_SIZE, SCREEN_SIZE, INITIALIZED
@@ -620,6 +636,7 @@ def init_info(frame_size, screen_size=SCREEN_SIZE):
     SCREEN_SIZE = (frame_size[0] * screen_size[1] / frame_size[1], screen_size[1])
     # SCREEN_SIZE = (frame_size[0]*screen_size[1]/frame_size[1], frame_size[1]*screen_size[0]/frame_size[1])
     # SCREEN_SIZE = (frame_size[0] / PIXELS_PER_CM, frame_size[1] / PIXELS_PER_CM)
+
 
 
 def mechanics_thread_run():
@@ -656,6 +673,7 @@ def init_everything(slice_type=SLICE_TYPE, integrate_with_mechanics=INTEGRATE_WI
     :param slice_type: the strategy we want to use this game
     :param integrate_with_mechanics: boolean that decides weather to integrate with mechanics or not.
     :param simulate: boolean that decides weather to activate simulation or not.
+    :param multi: True for multiplayer
     """
     global INTEGRATE_WITH_MECHANICS
     INTEGRATE_WITH_MECHANICS = integrate_with_mechanics
@@ -730,27 +748,6 @@ def on_screen(point):
 
 
 if __name__ == "__main__":
-    # slice_and_times = SliceTypes.linear_slice(algo_to_mech(get_pen_loc()[0]), [])
-    # slice_and_times = SliceTypes.slice_through_fruits(algo_to_mech(get_pen_loc()[0]), [algo_to_mech((15.0, 4.0))])
-    # slice_and_times = SliceTypes.slice_through_fruits(algo_to_mech(get_pen_loc()[0]), [algo_to_mech((15.0, 3.0))])
-    # slice_and_times = SliceTypes.slice_through_fruits(algo_to_mech(get_pen_loc()[0]), [algo_to_mech((15.0, 2.0))])
-    # slice_and_times = SliceTypes.slice_through_fruits(algo_to_mech(get_pen_loc()[0]), [algo_to_mech((5.0, 5.0)),
-    #                                                                                    algo_to_mech((10.0, 3.0)),
-    #                                                                                    algo_to_mech(get_pen_loc()[1])])
-    # slice_and_times = SliceTypes.slice_through_fruits(algo_to_mech(get_pen_loc()[0]), [algo_to_mech((5.0, 5.0)),
-    #                                                                                    algo_to_mech((8.0, 3.0)),
-    #                                                                                    algo_to_mech((12.0, 6.0)),
-    #                                                                                    algo_to_mech(get_pen_loc()[1])])
-    slice_and_times = SliceTypes.slice_through_fruits(algo_to_mech(get_pen_loc()[0]), [algo_to_mech((5.0, 5.0)),
-                                                                                       algo_to_mech((8.0, 3.0)),
-                                                                                       algo_to_mech((11.0, 5.0)),
-                                                                                       algo_to_mech((15.0, 6.0)),
-                                                                                       algo_to_mech(get_pen_loc()[1])])
-    # slice_and_times = SliceTypes.slice_through_fruits(algo_to_mech(get_pen_loc()[0]), [algo_to_mech((5.0, 5.0)),
-    #                                                                                    algo_to_mech((10.0, 3.0)),
-    #                                                                                    algo_to_mech((8.0, 5.0)),
-    #                                                                                    algo_to_mech((15.0, 6.0)),
-    #                                                                                    algo_to_mech(get_pen_loc()[1])])
+    slice_and_times = SliceTypes.linear_slice(get_pen_loc(), [])
     while True:
         do_slice(slice_and_times, [])
-    # do_slice(slice_and_times, [])

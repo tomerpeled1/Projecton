@@ -265,8 +265,8 @@ if (((args.video_file) and (cap.open(str(args.video_file))))
 
         # cv2.waitKey() is a keyboard binding function (argument is the time in milliseconds).
         # It waits for specified milliseconds for any keyboard event.
-        # If you press any key in that time, the program continues.
-        # If 0 is passed, it waits indefinitely for a key stroke.
+        # If you press any key_x in that time, the program continues.
+        # If 0 is passed, it waits indefinitely for a key_x stroke.
         # (bitwise and with 0xFF to extract least significant byte of multi-byte response)
         # here we use a wait time in ms. that takes account of processing time already used in the loop
 
@@ -274,11 +274,11 @@ if (((args.video_file) and (cap.open(str(args.video_file))))
 
         key = cv2.waitKey(max(2, 40 - int(math.ceil(stop_t)))) & 0xFF
 
-        # It can also be set to detect specific key strokes by recording which key is pressed
+        # It can also be set to detect specific key_x strokes by recording which key_x is pressed
 
         # e.g. if user presses "x" then exit  / press "f" for fullscreen display
 
-        # if (key == ord('p')):
+        # if (key_x == ord('p')):
         #     time.sleep(1.5)
         if (key == ord('x')):
             keep_processing = False

@@ -13,19 +13,23 @@ import cv2
 import State
 
 
-SAVED_VIDEO_NAME = "EranFuckYou.avi"
+SAVED_VIDEO_NAME = "2019-03-17 19-59-34.flv"
 LIVE = True
 BACKGROUND_FILE_NAME = "bg.png"
-CROP = True
+CROP = False
 FLIP = True
 CALIBRATE = False
-IMAGE_PROCESSING_ALGORITHMICS_INTEGRATION = True
-ALGORITHMICS_MECHANICS_INTEGRATION = True
-SIMULATION = False
+IMAGE_PROCESSING_ALGORITHMICS_INTEGRATION = False
+ALGORITHMICS_MECHANICS_INTEGRATION = False
+SIMULATION = True
 CAPTURE_BACKGROUND = True
 RESIZE = False
 AUTOMATIC_START = False
 MULTI = False
+DOCKING = True # TODO add to algo
+
+
+# don't change
 RESTARTED = False
 CAMERA = None
 RAN = False
@@ -60,7 +64,6 @@ def fruit_shaninja(src, settings, image_processing_features=IMAGE_PROCESSING_FEA
         Ip.init_everything(integrate_with_algorithmics=integration[0], multi=MULTI)
         Algo.init_everything(slice_type=CHOSEN_SLICE, integrate_with_mechanics=integration[1],
                              simulate=simulation, multi=MULTI)
-
     fruits_info = []  # Initialize fruits known.
     # Create new camera object.
     if not RESTARTED:
@@ -90,7 +93,7 @@ def fruit_shaninja(src, settings, image_processing_features=IMAGE_PROCESSING_FEA
         cv2.imwrite(BACKGROUND_FILE_NAME, bg)
     else:
         cv2.imshow("Saved Background", bg)
-        print("press any key to continue.")
+        print("press any key_x to continue.")
         cv2.waitKey(0)
 
     current = bg
@@ -98,7 +101,6 @@ def fruit_shaninja(src, settings, image_processing_features=IMAGE_PROCESSING_FEA
     buffer = []  # Buffer of images for debugging purposes.
     current_state = State.State()
     time_of_frame = time.perf_counter()
-    counter = 1 ## TODO remove
     # Main while loop.
     while CAMERA.is_opened() and counter < 1000000:
         t = time.perf_counter()
