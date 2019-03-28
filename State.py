@@ -2,10 +2,10 @@ import time
 import Algorithmics as Algo
 
 
-ARM_DELAY = 0.1
+ARM_DELAY = 0.25
 AVERAGE_SLICE_TIME = 0.5
-CRITICAL_TIME = 0.2
-
+CRITICAL_TIME = 0.3
+MINIMUM_NUM_OF_FRUITS_TO_SLICE = 2
 
 class State:
 
@@ -19,6 +19,8 @@ class State:
         self.current_time = time.perf_counter()
         self.arm_loc, self.docking = Algo.get_pen_loc()
 
+    def swap_docking(self):
+        self.docking, self.arm_loc = self.arm_loc, self.docking
 
     def update_state(self, new_fruits, current_time):
         """
@@ -43,7 +45,7 @@ class State:
         Determines whether or not should we slice right now.
         :return: tuple - (True, slice, sliced_fruits) if the state is good, (False, None, []) otherwise.
         """
-        if len(self.fruits_in_range) > 2:
+        if len(self.fruits_in_range) >= MINIMUM_NUM_OF_FRUITS_TO_SLICE:
             current_slice_points, sliced_fruits = Algo.create_slice(self, 0)
             if current_slice_points:
                 return True, current_slice_points, sliced_fruits

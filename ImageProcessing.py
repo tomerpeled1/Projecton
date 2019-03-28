@@ -82,9 +82,9 @@ def draw_trajectory(fruit, frame, time_of_frame):
 
         # if t in [0.8]:
         #     cv2.circle(frame, (xt_pixel, yt_pixel), 5, (255, 0, 255), -1)
-    centers = [Algo.crop2frame(center[0]) for center in fruit.centers]
-    for center in centers:
-        cv2.circle(frame, (center[0], center[1]), 3, (0, 255, 0), -1)
+    # centers = [Algo.crop2frame(center[0]) for center in fruit.centers]
+    # for center in centers:
+    #     cv2.circle(frame, (center[0], center[1]), 3, (0, 255, 0), -1)
 
     # draw the prediction real time
     x,y = xy_by_t(time_of_frame - fruit.time_created)
@@ -207,7 +207,7 @@ def update_trajectories(fruits_to_extract):
             try:
                 fruit.trajectory = Algo.get_trajectory_by_fruit_locations(centers_cm)
                 fruits_for_debug_trajectories.append(fruit)
-                print("added")
+                # print("added")
             except Exception:
                 print("exception")
                 continue
@@ -285,11 +285,19 @@ def insert_new_fruits(detection_results, fruits_info, current):
     fruits_info += get_fruits_info(detection_results, current)
 
 
-def debug_with_buffer(buffer, buffer_of_shaninja):
+def debug_with_buffer(buffer, buffer_of_shaninja, camera):
     """
     Debugging method which shows images and allows you to pass easily between them.
     :param buffer: List of frames.
     """
+    for j in range(len(buffer)):
+        for fruit in fruits_for_debug_trajectories:
+            # draw_center(fruit, buffer[i])
+            draw_trajectory(fruit, buffer[j][0], time_of_frame=0)
+            x, y = fruit.trajectory.calc_trajectory()(buffer[j][1] - fruit.time_created)
+            y_pix, x_pix, _ = Algo.cm2pixel((x, y, 0))
+            cv2.circle(buffer[j][0], (x_pix, y_pix), 6, (0, 255, 0), -1)
+
     i = 0
     while True:
         try:
@@ -300,12 +308,13 @@ def debug_with_buffer(buffer, buffer_of_shaninja):
                 y_pix, x_pix, _ = Algo.cm2pixel((x, y, 0))
                 cv2.circle(buffer[i][0], (x_pix, y_pix), 6, (188, 0, 255), -1)
 
+
             cv2.imshow("debug", buffer[i][0])
             cv2.imshow("Shaninja", buffer_of_shaninja[i])
             x = cv2.waitKey(1)
-            if x == 49:  # '1' key
+            if x == 49:  # '1' key_x
                 i -= 1
-            elif x == 50:  # '2' key
+            elif x == 50:  # '2' key_x
                 i += 1
             elif x == 27:
                 return
@@ -319,7 +328,7 @@ def show_original(camera,buffer_of_shaninja):
     Show original frames taken by camera.
     :param camera: Camera object of camera
     """
-    debug_with_buffer(camera.buffer, buffer_of_shaninja)
+    debug_with_buffer(camera.buffer, buffer_of_shaninja,camera)
 
 
 def draw(fruit, frame):

@@ -46,7 +46,7 @@ BITS_PER_BYTE = 8  # the number of bits in one byte
 WRITE_DELAY = 1000/(SERIAL_BPS/BITS_PER_BYTE/LENGTH_OF_COMMAND)  # delay in ms after writing to prevent buffer overload
 TRAJECTORY_DIVISION_NUMBER = 20  # the number of parts that the trajectory of the arm is divided to
 DT_DIVIDE_TRAJECTORY = float(T) / TRAJECTORY_DIVISION_NUMBER  # size of step in parameter
-WANTED_RPS = 1.4  # speed of motors in revolutions per second
+WANTED_RPS = 0.5  # speed of motors in revolutions per second
 WANTED_RPS_SLOW = 0.1  # speed of motors in revolutions per second
 ONE_STEP_DELAY = 5.0 / WANTED_RPS / STEPS_FRACTION * 2  # in ms
 ONE_STEP_DELAY_SLOW = 5.0 / WANTED_RPS_SLOW / STEPS_FRACTION * 2  # in ms
@@ -118,24 +118,19 @@ def make_slice_by_trajectory(points, invert=True):
     :param points: list of tuples, each tuple is a point the arm should go through
     :param invert: if true then make also invert slice
     """
-    steps_phi, steps_theta = generate_steps_from_points(points)
-    move_2_motors(steps_theta, steps_phi)
-    if invert:
-        i_steps_theta, i_steps_phi = invert_slice(steps_theta, steps_phi)
-        move_2_motors(i_steps_theta, i_steps_phi, True)
-
-
-def generate_steps_from_points(points):
     steps_theta, steps_phi = list(), list()
-    for i in range(len(points) - 1):
+    for i in range(len(points)-1):
         current_point = xy2angles(points[i])  # in (theta,phi)
-        next_point = xy2angles(points[i + 1])  # in (theta,phi)
+        next_point = xy2angles(points[i+1])  # in (theta,phi)
         current_steps_theta, current_steps_phi = generate_steps_list(rad2steps(next_point[0] - current_point[0]),
                                                                      rad2steps(next_point[1] - current_point[1]))
         for j in range(len(current_steps_theta)):
             steps_theta.append(current_steps_theta[j])
             steps_phi.append(current_steps_phi[j])
-    return steps_phi, steps_theta
+    move_2_motors(steps_theta, steps_phi)
+    if invert:
+        i_steps_theta, i_steps_phi = invert_slice(steps_theta, steps_phi)
+        move_2_motors(i_steps_theta, i_steps_phi, True)
 
 
 def steps_in_slice_same_loop(steps_theta, steps_phi):
@@ -175,7 +170,12 @@ def xy2angles(point):
         alpha += math.pi
     # a = -1 + (1 + (-ARMS[0]**2 - ARMS[1]**2 + r**2) * (1.0 / (2 * ARMS[0] * ARMS[1]))) % 2
     # beta = math.acos(a)
-    beta = math.acos((ARMS[0]**2 + ARMS[1]**2 - r**2) / (2 * ARMS[0] * ARMS[1]))  # angle between arms
+    try:
+        beta = math.acos((ARMS[0]**2 + ARMS[1]**2 - r**2) / (2 * ARMS[0] * ARMS[1]))  # angle between arms
+    except:
+        print(x, y)
+        print("ERRRRRRRRRRRRRRRRRRRRRRRRRRRROOOOOOOOOOOOOOOOOOOOOOOOOOOOORRRRRRRRRRRRRRRRRRRRR")
+        exit()
     # b = -1 + (1 + (ARMS[0]**2 - ARMS[1]**2 + r**2) * (1.0 / (2 * ARMS[0] * r))) % 2
     # delta = math.acos(b)  # angle between r and 1st arm
     delta = math.acos((r**2 + ARMS[0]**2 - ARMS[1]**2) / (2 * r * ARMS[0]))
@@ -266,7 +266,10 @@ def move_2_motors(steps_theta, steps_phi, inverse=False):  # WRITE MAXIMUM 41 ST
     # print("message to write in serial: ")
     # print(total_message)
     # time_of_slice = ((abs_sum(steps_theta) + abs_sum(steps_phi)) * ONE_STEP_DELAY)
-    time_of_slice = calc_time_of_slice(steps_theta, steps_phi)
+    steps_in_slice = steps_in_slice_different_loops(steps_theta, steps_phi)  # TODO move to function
+
+    time_of_slice = (steps_in_slice - STEPS_FOR_ACCELERATION * 2 * NUMBER_OF_ACCELERATION_MOVES) * ONE_STEP_DELAY + \
+                    STEPS_FOR_ACCELERATION * 2 * NUMBER_OF_ACCELERATION_MOVES * ONE_STEP_DELAY_AVERAGE
     time.sleep(0.001 * time_of_slice)
 
     if len(total_message) > SERIAL_BUFFER_SIZE:
@@ -403,7 +406,7 @@ def generate_steps_list(delta_steps_theta, delta_steps_phi):
 
     steps_theta_without_acceleration = break_into_equal_steps(delta_steps_theta_without_acceleration, STEPS_IN_COMMAND)
     if len(steps_theta_without_acceleration) < len(steps_phi)-2*NUMBER_OF_ACCELERATION_MOVES:
-        steps_theta_without_acceleration = break_into_equal_steps2(delta_steps_theta_without_acceleration, len(steps_phi)-2*NUMBER_OF_ACCELERATION_MOVES)
+        steps_theta_without_acceleration = break_into_equal_steps2(delta_steps_theta, len(steps_phi)-2*NUMBER_OF_ACCELERATION_MOVES)
     steps_theta = add_padding_for_acceleration(steps_theta_without_acceleration, padding_steps_theta)
 
     if len(steps_theta) > len(steps_phi): steps_phi = break_into_equal_steps2(delta_steps_phi, len(steps_theta))
@@ -414,19 +417,13 @@ def generate_steps_list(delta_steps_theta, delta_steps_phi):
     return steps_theta, steps_phi
 
 
-def calc_time_of_slice(steps_theta, steps_phi):
-    """
-     Calculates the duration of the given slice. IN MILISECONDS
-     :param steps_theta: steps of slice in theta
-     :param steps_phi: steps of slice in phi
-     :return: duration of given slice in ms
-     """
-    steps_in_slice = steps_in_slice_different_loops(steps_theta, steps_phi)
-
-    time_of_slice = (steps_in_slice - STEPS_FOR_ACCELERATION * 2 * NUMBER_OF_ACCELERATION_MOVES) * ONE_STEP_DELAY + \
-                    STEPS_FOR_ACCELERATION * 2 * NUMBER_OF_ACCELERATION_MOVES * ONE_STEP_DELAY_AVERAGE
-    return time_of_slice
-
+# def calc_time_of_slice(steps_theta, steps_phi):
+#     """
+#     Calculates the duration of the given slice.
+#     :param steps_theta: steps of slice in theta
+#     :param steps_phi: steps of slice in phi
+#     :return: duration of given slice in ms
+#     """
 #     steps_counter = 20  # take spare
 #     for i in range(len(steps_theta)):
 #         steps_counter += abs(steps_theta[i]) + abs(steps_phi[i])

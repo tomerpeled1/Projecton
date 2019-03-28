@@ -27,6 +27,8 @@ def calibrate(frame):
     :return: A rectangle in the regular format, where the bounds of the screens are.
     """
     im_gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
+    cv2.imshow("gray", im_gray)
+    cv2.waitKey(0)
     _, thresh = cv2.threshold(im_gray, 200, 255, 0)
     _, contours, __ = cv2.findContours(thresh, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
     white = []
@@ -34,6 +36,8 @@ def calibrate(frame):
         # Checks if the contour is large enough to be screen size.
         if cv2.contourArea(c) > 50000:
             white.append(c)
+    if len(white) == 0:
+        raise Exception("Turn on screen dumbass")
     rect = get_bounding_rect(white[0])
     cv2.drawContours(frame, white, -1, (0, 255, 0), 2)
     cv2.imshow("calibrated", frame)

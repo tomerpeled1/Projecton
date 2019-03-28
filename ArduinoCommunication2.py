@@ -7,8 +7,6 @@ from serial import SerialException
 import math
 import time
 import numpy as np
-import keyboard
-import cv2
 # import matplotlib.pyplot as plt
 
 
@@ -29,13 +27,13 @@ d = 14.7  # distance from motor to screen in cm
 START_SLICE_LENGTH = 4
 
 # SERIAL CONSTANTS
-END_WRITING = '}'
 START_SLICE = '~'
 LENGTH_OF_COMMAND = 2  # the length of a command to the serial that contains the number of steps for each motor and the
 SERIAL_BUFFER_SIZE = 64  # in bytes
 COMMAND_PACKAGE_SIZE = math.floor(SERIAL_BUFFER_SIZE/LENGTH_OF_COMMAND)  # number of commands to write at once
 STEPS_IN_COMMAND = 6  # number of steps to move at every command
-MAX_STEPS_IN_COMMAND = 60  # max number of steps to move at every command
+MAX_STEPS_IN_COMMAND = 62  # max number of steps to move at every command
+ZERO_CHAR = 62
 
 
 # TIME CONSTANTS
@@ -66,7 +64,7 @@ NUMBER_OF_ACCELERATION_MOVES = 1
 # times = int(T / dt)  # the size of the vectors for the simulation
 
 try:
-    ser = serial.Serial('com6', SERIAL_BPS)  # Create Serial port object
+    ser = serial.Serial('com4', SERIAL_BPS)  # Create Serial port object
     time.sleep(2)  # wait for 2 seconds for the communication to get established
 except SerialException:
     print("Didn't create serial.")
@@ -118,24 +116,22 @@ def make_slice_by_trajectory(points, invert=True):
     :param points: list of tuples, each tuple is a point the arm should go through
     :param invert: if true then make also invert slice
     """
-    steps_phi, steps_theta = generate_steps_from_points(points)
-    move_2_motors(steps_theta, steps_phi)
-    if invert:
-        i_steps_theta, i_steps_phi = invert_slice(steps_theta, steps_phi)
-        move_2_motors(i_steps_theta, i_steps_phi, True)
-
-
-def generate_steps_from_points(points):
     steps_theta, steps_phi = list(), list()
-    for i in range(len(points) - 1):
+    for i in range(len(points)-1):
         current_point = xy2angles(points[i])  # in (theta,phi)
-        next_point = xy2angles(points[i + 1])  # in (theta,phi)
+        next_point = xy2angles(points[i+1])  # in (theta,phi)
+
         current_steps_theta, current_steps_phi = generate_steps_list(rad2steps(next_point[0] - current_point[0]),
-                                                                     rad2steps(next_point[1] - current_point[1]))
+                            rad2steps(next_point[1] - current_point[1]))
         for j in range(len(current_steps_theta)):
             steps_theta.append(current_steps_theta[j])
             steps_phi.append(current_steps_phi[j])
-    return steps_phi, steps_theta
+    # add inverse:
+    i_steps_theta, i_steps_phi = invert_slice(steps_theta, steps_phi)
+    steps_theta.extend(i_steps_theta)
+    steps_phi.extend(i_steps_phi)
+
+    move_2_motors(steps_theta, steps_phi)
 
 
 def steps_in_slice_same_loop(steps_theta, steps_phi):
@@ -213,7 +209,7 @@ def encode_message(steps_theta, steps_phi):
     :param steps_phi: steps to move in phi motor
     :return: '[steps-theta-bit][steps-phi-bit]'
     """
-    return chr(steps_theta + 64) + chr(steps_phi + 64)
+    return chr(steps_theta + ZERO_CHAR) + chr(steps_phi + ZERO_CHAR)
 
 
 def move_2_motors(steps_theta, steps_phi, inverse=False):  # WRITE MAXIMUM 41 STEPS PER SLICE TODO check if inverse
@@ -225,47 +221,20 @@ def move_2_motors(steps_theta, steps_phi, inverse=False):  # WRITE MAXIMUM 41 ST
     :param inverse: True if this is an inverse slice, False otherwise
     """
 
-    # t1 = time.perf_counter()
-    # print("Divide trajectory to " + str(len(steps_theta)) + " parts")
-
     # send trajectory to Arduino
     total_message = ""  # save the whole message for debugging
-    for i in range(math.floor(len(steps_theta)/COMMAND_PACKAGE_SIZE)):  # send messages in packages
-        message = ""
-        for j in range(COMMAND_PACKAGE_SIZE):
-            index = i * COMMAND_PACKAGE_SIZE + j
-            message += encode_message(steps_theta[index], steps_phi[index])
-        ser.write(str.encode(message))
-        time.sleep(0.001 * COMMAND_PACKAGE_SIZE * WRITE_DELAY)
-        total_message += message
+    for i in range(len(steps_theta)):  # send messages in packages
+        total_message += encode_message(steps_theta[i], steps_phi[i])
     # send last package
-    message = ""
-    for i in range(len(steps_theta) - len(steps_theta) % COMMAND_PACKAGE_SIZE, len(steps_theta)):
-        message += encode_message(steps_theta[i], steps_phi[i])
-    ser.write(str.encode(message))
-    # time.sleep(0.001*WRITE_DELAY*(len(steps_theta) % COMMAND_PACKAGE_SIZE))
-    time.sleep(0.001 * len(message) * WRITE_DELAY)
-    total_message += message
-    # t2 = time.perf_counter()
-    # print("time for writing: ", t2-t1)
-    ser.write(str.encode(END_WRITING))
-    total_message += END_WRITING
-
-    # if it is an inverse slice, wait to prevent drifting
-    # if inverse and time.perf_counter() < t1 + WAIT_FOR_STOP:
-    #     time.sleep(0.001 * (WAIT_FOR_STOP + t1 - time.perf_counter()))
+    total_message += START_SLICE
 
     # commit slice
-    # print("CUT THEM!!!")
-    ser.write(str.encode(START_SLICE))
-    total_message += START_SLICE
+    ser.write(str.encode(total_message))
     print("Theta steps:")
     print(str(steps_theta) + str(sum(steps_theta)))
     print("Phi steps:")
     print(str(steps_phi) + str(sum(steps_phi)))
-    # print("message to write in serial: ")
-    # print(total_message)
-    # time_of_slice = ((abs_sum(steps_theta) + abs_sum(steps_phi)) * ONE_STEP_DELAY)
+
     time_of_slice = calc_time_of_slice(steps_theta, steps_phi)
     time.sleep(0.001 * time_of_slice)
 
@@ -273,14 +242,6 @@ def move_2_motors(steps_theta, steps_phi, inverse=False):  # WRITE MAXIMUM 41 ST
         print("BIG HUGE GIGANTIC EPIC WARNING - beware buffer overflow. length of message: " + str(len(total_message)))
     else:
         print("NO PROBLEM WITH BUFFER. length of message: " + str(len(total_message)))
-    # wait for slice to end
-    # time_of_slice = calc_time_of_slice(steps_theta, steps_phi)
-    # time.sleep(0.001 * time_of_slice)
-    # additional sleep
-    # ser.write(str.encode(total_message))
-    # time.sleep(1)
-
-    # print steps made
 
 
 def sign(x):
@@ -390,23 +351,15 @@ def generate_steps_list(delta_steps_theta, delta_steps_phi):
     """
     theta_sign = sign(delta_steps_theta)
     phi_sign = sign(delta_steps_phi)
+
     delta_steps_theta = abs(delta_steps_theta)
     delta_steps_phi = abs(delta_steps_phi)
 
+    steps_theta = break_into_equal_steps(delta_steps_theta, MAX_STEPS_IN_COMMAND)
     steps_phi = break_into_equal_steps(delta_steps_phi, MAX_STEPS_IN_COMMAND)
 
-    delta_steps_theta_without_acceleration = delta_steps_theta - 2 * NUMBER_OF_ACCELERATION_MOVES * \
-                                             STEPS_FOR_ACCELERATION
-    if delta_steps_theta_without_acceleration < 0:
-        delta_steps_theta_without_acceleration = 0
-    padding_steps_theta = delta_steps_theta - delta_steps_theta_without_acceleration
-
-    steps_theta_without_acceleration = break_into_equal_steps(delta_steps_theta_without_acceleration, STEPS_IN_COMMAND)
-    if len(steps_theta_without_acceleration) < len(steps_phi)-2*NUMBER_OF_ACCELERATION_MOVES:
-        steps_theta_without_acceleration = break_into_equal_steps2(delta_steps_theta_without_acceleration, len(steps_phi)-2*NUMBER_OF_ACCELERATION_MOVES)
-    steps_theta = add_padding_for_acceleration(steps_theta_without_acceleration, padding_steps_theta)
-
     if len(steps_theta) > len(steps_phi): steps_phi = break_into_equal_steps2(delta_steps_phi, len(steps_theta))
+    if len(steps_theta) < len(steps_phi): steps_theta = break_into_equal_steps2(delta_steps_theta, len(steps_phi))
 
     if theta_sign < 0: steps_theta = [-steps for steps in steps_theta]
     if phi_sign < 0: steps_phi = [-steps for steps in steps_phi]
@@ -416,23 +369,16 @@ def generate_steps_list(delta_steps_theta, delta_steps_phi):
 
 def calc_time_of_slice(steps_theta, steps_phi):
     """
-     Calculates the duration of the given slice. IN MILISECONDS
-     :param steps_theta: steps of slice in theta
-     :param steps_phi: steps of slice in phi
-     :return: duration of given slice in ms
-     """
-    steps_in_slice = steps_in_slice_different_loops(steps_theta, steps_phi)
+    Calculates the duration of the given slice.
+    :param steps_theta: steps of slice in theta
+    :param steps_phi: steps of slice in phi
+    :return: duration of given slice in ms
+    """
+    steps_in_slice = steps_in_slice_different_loops(steps_theta, steps_phi)  # TODO move to function
 
     time_of_slice = (steps_in_slice - STEPS_FOR_ACCELERATION * 2 * NUMBER_OF_ACCELERATION_MOVES) * ONE_STEP_DELAY + \
                     STEPS_FOR_ACCELERATION * 2 * NUMBER_OF_ACCELERATION_MOVES * ONE_STEP_DELAY_AVERAGE
     return time_of_slice
-
-#     steps_counter = 20  # take spare
-#     for i in range(len(steps_theta)):
-#         steps_counter += abs(steps_theta[i]) + abs(steps_phi[i])
-#     time_of_slice = steps_counter * ONE_STEP_DELAY
-#     # print("time of slice is supposed to be " + str(time_of_slice/1000) + " seconds")
-#     return time_of_slice
 
 
 def break_into_steps(total_steps, step_per_command):
@@ -519,20 +465,6 @@ def init_multi_arduino_communication():
     DIMS = (12.0, 8.0)
     d = 17.8
 
-def slice_by_button():
-    print("Started button press mode:")
-    slice = [(7.0,4.0), (-7.0,4.0)]
-    islice = [(-7.0,4.0), (7.0,4.0)]
-    invert = False
-    while True:
-        if keyboard.is_pressed(' '):
-            if not invert:
-                make_slice_by_trajectory(slice, False)
-            else:
-                make_slice_by_trajectory(islice, False)
-            invert = not invert
-
-
 
 # if __name__ == "__main__":
 # print('Lets begin...')
@@ -548,11 +480,10 @@ def slice_by_button():
 # print(time.time()-start)
 
 if __name__ == '__main__':
-    slice_by_button()
-    # for _ in range(10):
-    #     # make_slice_by_trajectory([(0.6,0.0), (0.6, 2.0), (0.6,4.0), (0.6,7.0), (0.6,9.0), (0.6,7.0), (0.6,4.0), (0.6, 2.0), (0.6,0.0)], False)
-    #     # make_slice_by_trajectory([(0.6,0.0), (0.6,9.0), (0.6,0.0)], False)
-    #     make_slice_by_trajectory([(7.0,4.0), (-7.0,4.0), (7.0,4.0)], False)
-    #     # time.sleep(1)
-    # # make_slice_by_trajectory([(5.0,0.6), (0.6,0.0)], False)
-    # # generate_steps_list(7, -70)
+    for _ in range(10):
+        # make_slice_by_trajectory([(0.6,0.0), (0.6, 2.0), (0.6,4.0), (0.6,7.0), (0.6,9.0), (0.6,7.0), (0.6,4.0), (0.6, 2.0), (0.6,0.0)], False)
+        # make_slice_by_trajectory([(0.6,0.0), (0.6,9.0), (0.6,0.0)], False)
+        make_slice_by_trajectory([(7.0,4.0), (-7.0,4.0), (7.0,4.0)], False)
+        # time.sleep(1)
+    # make_slice_by_trajectory([(5.0,0.6), (0.6,0.0)], False)
+    # generate_steps_list(7, -70)

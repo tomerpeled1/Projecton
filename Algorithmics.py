@@ -9,8 +9,8 @@ import math
 import statistics as st
 import SliceTypes
 import time
-import ArduinoCommunication as Ac
-import Simulation as Slm
+import ArduinoCommunication4 as Ac
+import Simulation as Sim
 from threading import Thread
 import threading
 import numpy as np
@@ -33,7 +33,6 @@ FULL_SCREEN = (12.0, 16.0)
 DISTANCE_FROM_TABLET = Ac.d
 ARM_LOC_BEGINNING_ALGO = (1.0, 4.0)
 ARM_LOC_DOCKING = (15.0, 4.0)
-
 ACC = RELATIVE_ACC * SCREEN_SIZE[0]
 INTEGRATE_WITH_MECHANICS = True  # make True to send slices to ArduinoCommunication
 
@@ -183,7 +182,9 @@ def create_slice(state, time_to_slice):
     :param time_to_slice: the desired time to execute the slice.
     :return: tuple of (xy_points,  sliced_fruits)
     """
-    fruits_and_locs = state.get_fruits_locations(time_to_slice, state.fruits_in_range)
+
+    fruits_and_locs = [(fruit,loc) for (fruit, loc) in state.get_fruits_locations(time_to_slice, state.fruits_in_range)
+                       if not point_out_of_screen_or_bound_algo_coords(loc)]
     critical_fruits_locs = state.get_fruits_locations(time_to_slice, state.get_critical_fruits())
     arm_loc = state.arm_loc
     docking = state.docking
@@ -195,7 +196,7 @@ def create_slice(state, time_to_slice):
 
 
 def order_fruits_and_locs(arm_loc, fruits_and_locs):
-    return sorted(fruits_and_locs, key=key(arm_loc))
+    return sorted(fruits_and_locs, key=key_theta(arm_loc))
 
 
 def create_best_slice(arm_loc, ordered_fruits_and_locs, critical_fruits_locs, docking):
@@ -203,7 +204,8 @@ def create_best_slice(arm_loc, ordered_fruits_and_locs, critical_fruits_locs, do
     creates the best slice it can with the given fruits on screen.
     :param arm_loc: the location of the arm initially.
     :param ordered_fruits_and_locs: list of (fruit, loc) sorted by distance on x axis from the arm loc.
-    :param critical_fruits_locs: fruits about to be losr.
+    :param critical_fruits_locs: fruits about to be lose.
+    :param docking: point in (x,y) for final location of arm (enter empty tuple for no docking)
     :return: points to slice through and the fruits sliced.
     """
     current_arm_loc = arm_loc
@@ -211,7 +213,7 @@ def create_best_slice(arm_loc, ordered_fruits_and_locs, critical_fruits_locs, do
     sliced_fruits = []
     for fruits_and_locs in combinations_of_elements(ordered_fruits_and_locs):
         locs = [loc for (fruit, loc) in fruits_and_locs]
-        temp_slice_points = calc_slice(arm_loc, locs, docking)
+        temp_slice_points = calc_slice(arm_loc, locs, tuple())
         if good_slice(temp_slice_points):
             slice_points.extend(temp_slice_points)
             sliced_fruits.extend([fruit for (fruit, loc) in fruits_and_locs])
@@ -223,12 +225,14 @@ def create_best_slice(arm_loc, ordered_fruits_and_locs, critical_fruits_locs, do
                                                             fruit not in sliced_fruits])
         if critical_fruits_not_sliced:
             critical_fruits_not_sliced_locs = [loc for (fruit, loc) in critical_fruits_not_sliced]
-            remaining_slice = calc_slice(current_arm_loc, critical_fruits_not_sliced_locs, docking)
+            remaining_slice = calc_slice(current_arm_loc, critical_fruits_not_sliced_locs, tuple())
             if slice_points:
                 slice_points.extend(remaining_slice[1:])
             else:
                 slice_points.append(remaining_slice)
             sliced_fruits.extend([fruit for (fruit, loc) in critical_fruits_not_sliced])
+    if DOCKING:
+        slice_points.append(algo_to_mech(docking))
     return slice_points, sliced_fruits
 
 
@@ -245,6 +249,13 @@ def combinations_of_elements(s):
                                               for r in range(len(s), MINIMAL_NUMBER_OF_FRUITS_FOR_COMBO - 1, -1)))
 
 
+def time_for_slice(points):
+    if MULTI:
+        points = flip_points_for_multiplayer(points)
+    steps_theta, steps_phi = Ac.generate_steps_from_points(points)
+    return Ac.calc_time_of_slice(steps_theta, steps_phi)
+
+
 def good_slice(points_of_slice_to_evaluate):
     """
     Determines whether or not a slice is "good enough" (creates combo).
@@ -255,18 +266,37 @@ def good_slice(points_of_slice_to_evaluate):
     return True
 
 
-def key(arm_loc):
+def key_x(arm_loc):
     def distance_from_arm_in_x(fruit_and_loc):
-        fruit, loc = fruit_and_loc
+        _, loc = fruit_and_loc
         return abs(loc[0] - arm_loc[0])
 
     return distance_from_arm_in_x
 
+def key_theta(arm_loc):
+    def distance_from_arm_in_x(fruit_and_loc):
+        fruit, loc = fruit_and_loc
+        return abs(Ac.xy2angles(algo_to_mech(loc))[0] - Ac.xy2angles(algo_to_mech(arm_loc))[0])
+
+    return distance_from_arm_in_x
+
+
+
+def key_theta(arm_loc):
+    def distance_from_arm_in_theta(fruit_and_loc):
+        _, loc = fruit_and_loc
+        return abs(Ac.xy2angles(algo_to_mech(loc))[0] - Ac.xy2angles(algo_to_mech(arm_loc))[0])
+
+    return distance_from_arm_in_theta
+
 
 def flip_points_for_multiplayer(points):
-    points = [(SCREEN_SIZE[1] - p[0], SCREEN_SIZE[0] - p[1]) for p in points]
+    points = [flip_point_for_multiplayer(p) for p in points]
     print("after flip: ", points)
     return points
+
+def flip_point_for_multiplayer(p):
+    return SCREEN_SIZE[1] - p[0], SCREEN_SIZE[0] - p[1]
 
 
 def do_slice(points_to_slice, sliced_fruits):
@@ -275,16 +305,55 @@ def do_slice(points_to_slice, sliced_fruits):
     :param points_to_slice: list of points the slice should go through
     :param sliced_fruits: fruits that the slice is supposed to cut (for simulation)
     """
-    if MULTI:
-        points_to_slice = flip_points_for_multiplayer(points_to_slice)
+    # if MULTI:
+    #     points_to_slice = flip_points_for_multiplayer(points_to_slice)
     parametrization = points_to_slice
-
+    print(parametrization)
+    if points_out_of_screen_or_bound(parametrization):
+        print("doing linear slice")
+        parametrization = SliceTypes.linear_slice(algo_to_mech(get_pen_loc()[0]), [])
     # time_to_slice = 0
     # run simulation
     if SIMULATE:
-        Slm.run_simulation(parametrization, sliced_fruits)
+        Sim.run_simulation(parametrization, sliced_fruits)
     else:
         Ac.make_slice_by_trajectory(parametrization)
+
+def points_out_of_screen_or_bound(points):
+    for point in points:
+        if point_out_of_screen(point) or point_out_of_bound(point):
+            return True
+    return False
+
+def point_out_of_screen_or_bound_algo_coords(point):
+    if point_out_of_screen_algo(point) or point_out_of_bound_algo(point):
+        return True
+
+
+def point_out_of_screen(point):
+    (x, y) = point
+    return x_out_of_bound(x) or y_out_of_bound(y)
+
+def point_out_of_screen_algo(point):
+    x, y = point
+    return not(0<x<SCREEN_SIZE[1] and 0<y<SCREEN_SIZE[0])
+
+def point_out_of_bound(point):
+    return SliceTypes.distance(point, SliceTypes.ORIGIN) >=  SliceTypes.get_max_dis()
+
+
+def point_out_of_bound_algo(point):
+    x,y=point
+    return SliceTypes.distance(point, (SCREEN_SIZE[1]/2, FULL_SCREEN[0] - SCREEN_SIZE[0] + SliceTypes.d)) >=\
+           SliceTypes.get_max_dis()
+
+
+
+def x_out_of_bound(x):
+    return not -SCREEN_SIZE[1] / 2 < x < SCREEN_SIZE[1] / 2
+
+def y_out_of_bound(y):
+    return not 0 < y < SCREEN_SIZE[0]
 
 
 def add_slice_to_queue(slice_to_add, sliced_fruits):
@@ -478,6 +547,8 @@ def algo_to_mech(point):
     :param point: (x,y) in algorithmics and trajectory coordinates
     :return: (x,y) in mechanics and Arduino coordinates
     """
+    if MULTI:
+        return Ac.DIMS[0] / 2 - point[0], point[1]
     return Ac.DIMS[0] / 2 - point[0], point[1] + (Ac.DIMS[1] - SCREEN_SIZE[0])
 
 
@@ -495,8 +566,13 @@ def calc_slice(arm_loc, points, docking):
     Calculate the slice that goes through the given points.
     :param arm_loc: location of arm at beginning of slice
     :param points: points the slice should go through in (x,y)
+    :param docking: point in (x,y) for final location of arm (enter empty tuple for no docking)
     :return: calculated slice as parametrization, timer, time_to_slice
     """
+    if MULTI:
+        arm_loc = flip_point_for_multiplayer(arm_loc)
+        docking = flip_point_for_multiplayer(docking)
+        points = flip_points_for_multiplayer(points)
     points = [algo_to_mech(point) for point in points]
     if docking != ():
         points += [algo_to_mech(docking)]
@@ -518,10 +594,10 @@ def get_pen_loc():
     y_location = SCREEN_SIZE[0] + ARM_LOC_BEGINNING_ALGO[1] - FULL_SCREEN[0]
     x_docking = ARM_LOC_DOCKING[0]
     y_docking = SCREEN_SIZE[0] + ARM_LOC_DOCKING[1] - FULL_SCREEN[0]
-    if MULTI:
-        x_location = -1 * x_location
-        # y_location = y_location
-        x_docking = -1 * x_docking
+    # if MULTI:
+    #     x_location = -1 * x_location
+    #     # y_location = y_location
+    #     x_docking = -1 * x_docking
     if DOCKING:
         return (x_location, y_location), (x_docking, y_docking)
     else:
@@ -551,7 +627,6 @@ def init_info(frame_size, screen_size=SCREEN_SIZE):
     """
     Initializes the sizes for the screen so that the algorithmics work properly.
     :param frame_size: size of frame in pixels
-    :param crop_size: size of cropped frame in pixels
     :param screen_size: size of screen in cm
     """
     global CROP_SIZE, FRAME_SIZE, SCREEN_SIZE, INITIALIZED
@@ -582,7 +657,10 @@ def mechanics_thread_run():
         slice_queue.remove((next_slice, sliced_fruits))
         # Executes slice (still memory not unlocked so that we want start a new slice during the previous one).
         during_slice = True
-        do_slice(next_slice, sliced_fruits)
+        try:
+            do_slice(next_slice, sliced_fruits)
+        except:
+            pass
         during_slice = False
         # Release the access to the memory so that we can enter new slices to queue.
         slice_queue_lock.release()
@@ -595,6 +673,7 @@ def init_everything(slice_type=SLICE_TYPE, integrate_with_mechanics=INTEGRATE_WI
     :param slice_type: the strategy we want to use this game
     :param integrate_with_mechanics: boolean that decides weather to integrate with mechanics or not.
     :param simulate: boolean that decides weather to activate simulation or not.
+    :param multi: True for multiplayer
     """
     global INTEGRATE_WITH_MECHANICS
     INTEGRATE_WITH_MECHANICS = integrate_with_mechanics
@@ -607,6 +686,10 @@ def init_everything(slice_type=SLICE_TYPE, integrate_with_mechanics=INTEGRATE_WI
     if MULTI:
         init_multi_params()
         SliceTypes.init_multi(MULTI)
+        global ARM_LOC_BEGINNING_ALGO
+        global ARM_LOC_DOCKING
+        ARM_LOC_BEGINNING_ALGO = (1.0, 3.0)
+        ARM_LOC_DOCKING = (11.0, 3.0)
     # In case we want to integrate with mechanics (simulation or arduino) we must open a new thread for it.
     if INTEGRATE_WITH_MECHANICS:
         global simulation_thread
@@ -617,15 +700,16 @@ def init_everything(slice_type=SLICE_TYPE, integrate_with_mechanics=INTEGRATE_WI
 
 
 def init_multi_params():
-
+    global FULL_SCREEN
     global FRAME_SIZE
     global CROP_SIZE
     global SCREEN_SIZE
     global ACC
+    Sim.init_multi()
     Ac.init_multi_arduino_communication()
-    FRAME_SIZE = (320, 480)
     CROP_SIZE = (106, 360)
     SCREEN_SIZE = (8.0, 12.0)
+    FULL_SCREEN = (8.0, 12.0)
     ACC = RELATIVE_ACC * SCREEN_SIZE[0]
     # TODO add VY_MAX and this
 
