@@ -207,7 +207,7 @@ def update_trajectories(fruits_to_extract):
             try:
                 fruit.trajectory = Algo.get_trajectory_by_fruit_locations(centers_cm)
                 fruits_for_debug_trajectories.append(fruit)
-                print("added")
+                # print("added")
             except Exception:
                 print("exception")
                 continue

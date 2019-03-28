@@ -46,13 +46,13 @@ BITS_PER_BYTE = 8  # the number of bits in one byte
 WRITE_DELAY = 1000/(SERIAL_BPS/BITS_PER_BYTE/LENGTH_OF_COMMAND)  # delay in ms after writing to prevent buffer overload
 TRAJECTORY_DIVISION_NUMBER = 20  # the number of parts that the trajectory of the arm is divided to
 DT_DIVIDE_TRAJECTORY = float(T) / TRAJECTORY_DIVISION_NUMBER  # size of step in parameter
-WANTED_RPS = 1.4  # speed of motors in revolutions per second
+WANTED_RPS = 1.2                # speed of motors in revolutions per second
 WANTED_RPS_SLOW = 0.1  # speed of motors in revolutions per second
 ONE_STEP_DELAY = 5.0 / WANTED_RPS / STEPS_FRACTION * 2  # in ms
 ONE_STEP_DELAY_SLOW = 5.0 / WANTED_RPS_SLOW / STEPS_FRACTION * 2  # in ms
 ONE_STEP_DELAY_AVERAGE = (ONE_STEP_DELAY + ONE_STEP_DELAY_SLOW) / 2  # in ms
 WAIT_FOR_STOP = 50.0  # time to wait after slice until committing invert slice in ms
-STEPS_FOR_ACCELERATION = int(STEPS_FRACTION * 2.0 * WANTED_RPS)  # number of steps to move at acceleration move - factor 1.8 from experiment, 2.0 for safe
+STEPS_FOR_ACCELERATION = int(STEPS_FRACTION * 4.0 * WANTED_RPS)  # number of steps to move at acceleration move - factor 1.8 from experiment, 2.0 for safe
 if STEPS_FOR_ACCELERATION > MAX_STEPS_IN_COMMAND: STEPS_FOR_ACCELERATION = MAX_STEPS_IN_COMMAND
 NUMBER_OF_ACCELERATION_MOVES = 1
 
@@ -401,7 +401,7 @@ def generate_steps_list(delta_steps_theta, delta_steps_phi):
 
     steps_theta_without_acceleration = break_into_equal_steps(delta_steps_theta_without_acceleration, STEPS_IN_COMMAND)
     if len(steps_theta_without_acceleration) < len(steps_phi)-2*NUMBER_OF_ACCELERATION_MOVES:
-        steps_theta_without_acceleration = break_into_equal_steps2(delta_steps_theta, len(steps_phi)-2*NUMBER_OF_ACCELERATION_MOVES)
+        steps_theta_without_acceleration = break_into_equal_steps2(delta_steps_theta_without_acceleration, len(steps_phi)-2*NUMBER_OF_ACCELERATION_MOVES)
     steps_theta = add_padding_for_acceleration(steps_theta_without_acceleration, padding_steps_theta)
 
     if len(steps_theta) > len(steps_phi): steps_phi = break_into_equal_steps2(delta_steps_phi, len(steps_theta))
@@ -519,10 +519,8 @@ def slice_by_button():
     while True:
         if keyboard.is_pressed(' '):
             if not invert:
-                make_slice_by_trajectory(slice, False)
-            else:
-                make_slice_by_trajectory(islice, False)
-            invert = not invert
+                make_slice_by_trajectory(slice, True)
+            # else     invert
 
 
 

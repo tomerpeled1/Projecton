@@ -66,7 +66,7 @@ NUMBER_OF_ACCELERATION_MOVES = 1
 # times = int(T / dt)  # the size of the vectors for the simulation
 
 try:
-    ser = serial.Serial('com5', SERIAL_BPS)  # Create Serial port object
+    ser = serial.Serial('com6', SERIAL_BPS)  # Create Serial port object
     time.sleep(2)  # wait for 2 seconds for the communication to get established
 except SerialException:
     print("Didn't create serial.")
@@ -170,7 +170,12 @@ def xy2angles(point):
         alpha += math.pi
     # a = -1 + (1 + (-ARMS[0]**2 - ARMS[1]**2 + r**2) * (1.0 / (2 * ARMS[0] * ARMS[1]))) % 2
     # beta = math.acos(a)
-    beta = math.acos((ARMS[0]**2 + ARMS[1]**2 - r**2) / (2 * ARMS[0] * ARMS[1]))  # angle between arms
+    try:
+        beta = math.acos((ARMS[0]**2 + ARMS[1]**2 - r**2) / (2 * ARMS[0] * ARMS[1]))  # angle between arms
+    except:
+        print(x, y)
+        print("ERRRRRRRRRRRRRRRRRRRRRRRRRRRROOOOOOOOOOOOOOOOOOOOOOOOOOOOORRRRRRRRRRRRRRRRRRRRR")
+        exit()
     # b = -1 + (1 + (ARMS[0]**2 - ARMS[1]**2 + r**2) * (1.0 / (2 * ARMS[0] * r))) % 2
     # delta = math.acos(b)  # angle between r and 1st arm
     delta = math.acos((r**2 + ARMS[0]**2 - ARMS[1]**2) / (2 * r * ARMS[0]))

@@ -2,10 +2,10 @@ import time
 import Algorithmics as Algo
 
 
-ARM_DELAY = 0.1
+ARM_DELAY = 0.25
 AVERAGE_SLICE_TIME = 0.5
-CRITICAL_TIME = 0.2
-
+CRITICAL_TIME = 0.3
+MINIMUM_NUM_OF_FRUITS_TO_SLICE = 2
 
 class State:
 
@@ -43,7 +43,7 @@ class State:
         Determines whether or not should we slice right now.
         :return: tuple - (True, slice, sliced_fruits) if the state is good, (False, None, []) otherwise.
         """
-        if len(self.fruits_in_range) > 2:
+        if len(self.fruits_in_range) >= MINIMUM_NUM_OF_FRUITS_TO_SLICE:
             current_slice_points, sliced_fruits = Algo.create_slice(self, 0)
             if current_slice_points:
                 return True, current_slice_points, sliced_fruits
@@ -90,12 +90,6 @@ class State:
         for index in range(len(fruits_out_of_range_locs)):
             flag = Algo.on_screen(fruits_out_of_range_locs[index][1])
             if not flag:
-                # print("*************************", fruits_out_of_range_locs[index][0], "centers: ",
-                #       fruits_out_of_range_locs[index][0].centers)
-                f = fruits_out_of_range_locs[index][0]
-                # print("self.time: ", self.current_time, "center: ", fruits_out_of_range_locs[index][1])
-                # for t in [k*0.05 for k in range(40)]:
-                    # print("t = ", t, "center from trajectory: ", f.trajectory.calc_trajectory()(t))
                 self.fruits_out_of_range.remove(fruits_out_of_range_locs[index][0])
 
 
